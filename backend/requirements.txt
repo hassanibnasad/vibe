@@ -1,0 +1,43 @@
+# Web Framework & Server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Database & ORM
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+pgvector==0.3.6
+
+# Validation & Settings
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# HTTP & Async
+httpx==0.28.1
+
+# AI & LLM Tools
+langchain==0.3.14
+langchain-community==0.3.14
+sentence-transformers==3.4.1
+
+# Workflow Engine
+hatchet-sdk==0.40.3
+
+# Templating
+jinja2==3.1.5
+
+# Logging & Observability
+structlog==24.4.0
+prometheus-client==0.21.1
+
+# Caching & Queue
+redis[hiredis]==5.2.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+
+# Code Quality
+ruff==0.8.6
+mypy==1.14.1

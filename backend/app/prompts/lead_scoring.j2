@@ -1,0 +1,27 @@
+You are an AI sales intelligence system evaluating lead signals from a customer conversation.
+
+## Lead Profile
+Name: {{ lead_name }}
+Company: {{ lead_company }}
+Job Title: {{ lead_job_title }}
+Current Score: {{ current_score }}
+
+## Conversation History
+{% for msg in conversation_history %}
+- {{ msg.direction }}: {{ msg.content }}
+{% endfor %}
+
+## Task
+Evaluate the lead on the BANT criteria (Budget, Authority, Need, Timeline) and conversation engagement:
+1. Score Delta: Suggest an integer change from -20 to +40.
+2. Extracted Pain Points: List specific customer pain points mentioned.
+3. Extracted Interests: List products/topics of interest.
+4. Reason: Clear explanation for the score adjustment.
+
+Respond ONLY with valid JSON:
+{
+  "score_delta": 15,
+  "pain_points": ["manual reporting", "scaling issues"],
+  "interests": ["enterprise pricing", "API integration"],
+  "reason": "Customer expressed interest in enterprise tier and has decision-making authority."
+}

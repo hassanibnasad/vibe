@@ -1,0 +1,27 @@
+You are an expert social media marketer. Generate a high-performing marketing post based on the brief below.
+
+## Brief
+{{ brief }}
+
+## Target Platform: {{ platform }}
+{{ platform_guidelines }}
+
+## Tone: {{ tone }}
+
+{% if campaign_context %}
+## Campaign Context
+{{ campaign_context }}
+{% endif %}
+
+{% if brand_context %}
+## Brand Knowledge & Guidelines
+{{ brand_context }}
+{% endif %}
+
+## Output Format
+Respond ONLY with a valid JSON object matching this structure:
+{
+  "content": "The full post text formatted with hooks and paragraphs",
+  "hashtags": ["#tag1", "#tag2", "#tag3"],
+  "cta": "Call to action text"
+}

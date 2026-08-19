@@ -1,0 +1,52 @@
+[project]
+name = "vibeagent-backend"
+version = "0.1.0"
+description = "AI Marketing & Lead Qualification Platform Backend"
+readme = "../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.6",
+    "uvicorn[standard]>=0.34.0",
+    "python-multipart>=0.0.20",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.1",
+    "pgvector>=0.3.6",
+    "pydantic>=2.10.4",
+    "pydantic-settings>=2.7.1",
+    "httpx>=0.28.1",
+    "langchain>=0.3.14",
+    "langchain-community>=0.3.14",
+    "sentence-transformers>=3.4.1",
+    "hatchet-sdk>=0.40.3",
+    "jinja2>=3.1.5",
+    "structlog>=24.4.0",
+    "prometheus-client>=0.21.1",
+    "redis[hiredis]>=5.2.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.0",
+    "aiosqlite>=0.20.0",
+    "ruff>=0.8.6",
+    "mypy>=1.14.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "ASYNC", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
