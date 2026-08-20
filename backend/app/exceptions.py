@@ -58,6 +58,12 @@ class PlatformAPIError(VibeAgentError):
     error_code: str = "PLATFORM_API_ERROR"
 
 
+class RateLimitExceededError(VibeAgentError):
+    status_code: int = 429
+    error_code: str = "RATE_LIMIT_EXCEEDED"
+
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(VibeAgentError)
     async def vibeagent_error_handler(request: Request, exc: VibeAgentError) -> JSONResponse:
