@@ -1,0 +1,85 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vibeagent-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=VibeAgent
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+asyncpg://vibeagent:vibeagent@postgres:5432/vibeagent
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL_FAST=llama3.1:8b
+      - OLLAMA_MODEL_COMPLEX=llama3.1:70b
+      - OLLAMA_EMBED_MODEL=all-minilm:l6-v2
+    volumes:
+      - ./backend/app:/app/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vibeagent-network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: vibeagent-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vibeagent
+      POSTGRES_PASSWORD: vibeagent
+      POSTGRES_DB: vibeagent
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibeagent -d vibeagent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vibeagent-network
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: vibeagent-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vibeagent-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: vibeagent-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+    networks:
+      - vibeagent-network
+
+volumes:
+  pgdata:
+  redisdata:
+  ollamadata:
+
+networks:
+  vibeagent-network:
+    driver: bridge
