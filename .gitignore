@@ -62,6 +62,10 @@ models/checkpoints/
 *.onnx
 *.safetensors
 
+# --- AI Agents & Workspace Customizations ---
+.agents/
+.gemini/
+
 # --- Logs ---
 *.log
 logs/
