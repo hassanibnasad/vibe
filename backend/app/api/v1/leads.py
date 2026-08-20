@@ -1,4 +1,5 @@
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_lead_repo, get_score_event_repo
@@ -18,10 +19,14 @@ router = APIRouter(prefix="/leads", tags=["Leads"])
 
 
 def calculate_lead_stage(score: int) -> str:
-    if score >= 90: return "sql"
-    if score >= 75: return "mql"
-    if score >= 50: return "hot"
-    if score >= 20: return "warm"
+    if score >= 90:
+        return "sql"
+    if score >= 75:
+        return "mql"
+    if score >= 50:
+        return "hot"
+    if score >= 20:
+        return "warm"
     return "cold"
 
 

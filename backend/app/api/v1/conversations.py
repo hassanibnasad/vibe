@@ -1,4 +1,5 @@
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_conversation_repo, get_message_repo

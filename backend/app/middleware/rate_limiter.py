@@ -1,6 +1,7 @@
 import time
-from fastapi import HTTPException, status
+
 import redis.asyncio as aioredis
+from fastapi import HTTPException, status
 
 
 class RedisRateLimiter:
