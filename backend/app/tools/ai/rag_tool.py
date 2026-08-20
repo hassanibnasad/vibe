@@ -9,6 +9,10 @@ class RAGResult(BaseModel):
     formatted_text: str
     top_score: float
 
+    @property
+    def context_text(self) -> str:
+        return self.formatted_text
+
 
 class RAGTool:
     def __init__(self, knowledge_repo: KnowledgeRepository, llm_client: LLMClient):
@@ -31,7 +35,7 @@ class RAGTool:
         )
 
         formatted_text = "\n\n---\n\n".join(
-            f"[{doc['doc_type'].upper()}] {doc['title']}:\n{doc['content']}"
+            f"[{doc.get('doc_type', 'GENERAL').upper()}] {doc.get('title', 'Untitled')}:\n{doc.get('content', '')}"
             for doc in documents
         )
         top_score = documents[0]["similarity"] if documents else 0.0
@@ -41,3 +45,18 @@ class RAGTool:
             formatted_text=formatted_text,
             top_score=top_score,
         )
+
+    async def retrieve_context(
+        self,
+        query: str,
+        doc_types: list[str] | None = None,
+        limit: int = 3,
+        similarity_threshold: float = 0.3,
+    ) -> RAGResult:
+        return await self.search(
+            query=query,
+            doc_types=doc_types,
+            limit=limit,
+            similarity_threshold=similarity_threshold,
+        )
+

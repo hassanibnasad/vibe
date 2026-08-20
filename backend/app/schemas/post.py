@@ -53,9 +53,14 @@ class PostResponse(BaseModel):
     published_at: datetime | None = None
     engagement_metrics: dict = {}
     variant_label: str | None = None
+    ai_generated: bool = False
+    confidence_score: float | None = None
+    requires_review: bool = False
+    rag_sources: list[str] = []
     created_at: datetime
 
 
 class PostListResponse(BaseModel):
     data: list[PostResponse]
     pagination: dict
+

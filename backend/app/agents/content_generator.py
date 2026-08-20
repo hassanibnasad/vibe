@@ -62,7 +62,7 @@ class ContentGeneratorAgent(BaseAgent):
             try:
                 retrieval = await self.rag.retrieve_context(query=brief, limit=3)
                 brand_context = retrieval.context_text
-                rag_sources = [f"doc_{doc.id}" for doc in retrieval.documents]
+                rag_sources = [f"doc_{doc.get('id', 'unknown')}" for doc in retrieval.documents]
             except Exception as e:
                 self.logger.warning("rag_retrieval_failed", error=str(e))
 

@@ -5,6 +5,7 @@ import pytest
 
 from app.agents.content_generator import ContentGeneratorAgent
 from app.tools.ai.llm_client import LLMResponse
+from app.tools.ai.rag_tool import RAGResult
 
 
 @pytest.mark.asyncio
@@ -33,3 +34,59 @@ async def test_content_generator_agent_success():
     assert "🚀 Excited to announce" in result.data["content"]
     assert len(result.data["hashtags"]) == 3
     assert result.data["platform"] == "linkedin"
+
+
+@pytest.mark.asyncio
+async def test_content_generator_with_rag_context():
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = LLMResponse(
+        text=json.dumps({
+            "content": "Enterprise AI for modern marketing teams. Secure, self-hosted, scalable.",
+            "hashtags": ["#EnterpriseAI", "#B2B"],
+            "cta": "Book an onboarding consultation."
+        }),
+        model="llama3.1:70b",
+        tokens_used=140,
+        latency_ms=620,
+    )
+
+    mock_rag = AsyncMock()
+    mock_rag.retrieve_context.return_value = RAGResult(
+        documents=[{"id": "doc-123", "title": "Brand Guidelines", "content": "Enterprise focus", "doc_type": "brand", "similarity": 0.92}],
+        formatted_text="[BRAND] Brand Guidelines: Enterprise focus",
+        top_score=0.92,
+    )
+
+    agent = ContentGeneratorAgent(llm_client=mock_llm, rag_tool=mock_rag)
+    result = await agent.generate_post(
+        brief="Enterprise product launch",
+        platform="linkedin",
+        tone="authoritative",
+    )
+
+    assert result.success is True
+    assert result.confidence_score >= 0.85
+    assert result.data["rag_sources"] == ["doc_doc-123"]
+    mock_rag.retrieve_context.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_content_generator_fallback_raw_text():
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = LLMResponse(
+        text="This is a raw text post without JSON formatting from the LLM.",
+        model="llama3.1:8b",
+        tokens_used=80,
+        latency_ms=300,
+    )
+
+    agent = ContentGeneratorAgent(llm_client=mock_llm)
+    result = await agent.generate_post(
+        brief="Quick tip on social marketing",
+        platform="twitter",
+        tone="casual",
+    )
+
+    assert result.success is True
+    assert result.requires_review is True
+    assert "raw text post without JSON formatting" in result.data["content"]
