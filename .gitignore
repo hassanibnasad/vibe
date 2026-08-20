@@ -1,0 +1,111 @@
+# ==========================================
+# VibeAgent Production .gitignore
+# ==========================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.dylib
+*.dll
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+*.whl
+
+# --- Virtual Environments ---
+.venv/
+venv/
+ENV/
+env/
+.env.virtualenv/
+
+# --- Environment & Secret Files ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+
+# --- Databases & Local Storage ---
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+redis_data/
+docker_data/
+storage/
+local_storage/
+
+# --- Testing, Coverage & Linters ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# --- AI & Model Caches ---
+.cache/
+hf_cache/
+models/checkpoints/
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+
+# --- Logs ---
+*.log
+logs/
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Node / Frontend (Next.js / Vite) ---
+node_modules/
+.next/
+out/
+.turbo/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# --- IDE & Editors ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# --- Operating System ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# --- Scratch & Temporary ---
+scratch/
+tmp/
+temp/
+*.tmp
+*.bak
