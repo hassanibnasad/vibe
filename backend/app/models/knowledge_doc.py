@@ -1,4 +1,5 @@
 import uuid
+
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID

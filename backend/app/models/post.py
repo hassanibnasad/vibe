@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,7 +34,13 @@ class Post(BaseModel):
 
     engagement_metrics: Mapped[dict] = mapped_column(JSONB, default=dict)
 
+    # AI Generation & Review Metadata
+    ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
+    confidence_score: Mapped[float | None] = mapped_column(Float)
+    requires_review: Mapped[bool] = mapped_column(Boolean, default=False)
     generation_prompt: Mapped[str | None] = mapped_column(Text)
+    rag_sources: Mapped[list] = mapped_column(JSONB, default=list)
+    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
     variant_group: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     variant_label: Mapped[str | None] = mapped_column(String(10))
 

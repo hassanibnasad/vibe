@@ -66,5 +66,10 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 def get_redis_client() -> aioredis.Redis:
     global _redis
     if _redis is None:
-        _redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        _redis = aioredis.from_url(
+            settings.REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=2.0,
+            socket_timeout=2.0,
+        )
     return _redis

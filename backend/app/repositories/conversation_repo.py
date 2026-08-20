@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation

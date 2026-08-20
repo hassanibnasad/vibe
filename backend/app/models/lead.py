@@ -1,6 +1,14 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,9 +50,9 @@ class Lead(BaseModel):
     )
     source_type: Mapped[str | None] = mapped_column(String(50))
 
-    first_interaction_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
-    last_interaction_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False, index=True)
-    qualified_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    first_interaction_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    last_interaction_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True)
+    qualified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     conversations = relationship("Conversation", back_populates="lead", lazy="select")
     score_events = relationship("LeadScoreEvent", back_populates="lead", lazy="select")
