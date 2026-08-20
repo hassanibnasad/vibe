@@ -1,4 +1,5 @@
 import json
+
 from pydantic import BaseModel
 
 from app.tools.ai.llm_client import LLMClient
