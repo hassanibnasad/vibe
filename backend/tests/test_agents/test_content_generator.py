@@ -90,3 +90,32 @@ async def test_content_generator_fallback_raw_text():
     assert result.success is True
     assert result.requires_review is True
     assert "raw text post without JSON formatting" in result.data["content"]
+
+
+@pytest.mark.asyncio
+async def test_content_generator_generate_variants():
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = LLMResponse(
+        text=json.dumps({
+            "content": "Variant post copy",
+            "hashtags": ["#AI"],
+            "cta": "Check it out"
+        }),
+        model="llama3.1:8b",
+        tokens_used=50,
+        latency_ms=200,
+    )
+
+    agent = ContentGeneratorAgent(llm_client=mock_llm)
+    variants = await agent.generate_variants(
+        brief="Multi-angle promotion",
+        platform="linkedin",
+        variants_count=3,
+    )
+
+    assert len(variants) == 3
+    assert variants[0].data["variant_label"] == "A"
+    assert variants[1].data["variant_label"] == "B"
+    assert variants[2].data["variant_label"] == "C"
+    assert variants[0].data["variant_group"] is not None
+    assert variants[0].data["variant_group"] == variants[1].data["variant_group"]

@@ -1,5 +1,9 @@
+from unittest.mock import AsyncMock, patch
+import json
 import pytest
 from httpx import AsyncClient
+
+from app.tools.ai.llm_client import LLMResponse
 
 
 @pytest.mark.asyncio
@@ -69,3 +73,37 @@ async def test_list_and_delete_post(client: AsyncClient):
     # Verify not found
     get_res = await client.get(f"/api/v1/posts/{post2_id}")
     assert get_res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_generate_post_variants_api(client: AsyncClient):
+    mock_generate = AsyncMock(
+        return_value=LLMResponse(
+            text=json.dumps({
+                "content": "AI generated candidate post",
+                "hashtags": ["#B2B", "#AI"],
+                "cta": "Sign up today",
+            }),
+            model="llama3.1:8b",
+            tokens_used=70,
+            latency_ms=250,
+        )
+    )
+
+    with patch("app.tools.ai.llm_client.LLMClient.generate", mock_generate):
+        res = await client.post(
+            "/api/v1/posts/generate-variants",
+            json={
+                "brief": "Launch of our new agentic workflow automation platform",
+                "platforms": ["linkedin"],
+                "tone": "innovative",
+                "variants": 2,
+            },
+        )
+
+        assert res.status_code == 201
+        data = res.json()
+        assert isinstance(data, list)
+        assert len(data) == 2
+        assert data[0]["variant_label"] == "A"
+        assert data[1]["variant_label"] == "B"

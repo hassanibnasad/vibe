@@ -1,5 +1,4 @@
-from uuid import UUID
-
+from uuid import UUID, uuid4
 import structlog
 
 from app.agents.content_generator import ContentGeneratorAgent
@@ -29,6 +28,7 @@ class ContentService:
         tone: str = "professional",
         campaign_id: UUID | None = None,
         campaign_context: str | None = None,
+        model: str | None = None,
     ) -> Post:
         logger.info("content_service_generate_draft", platform=platform_type, tone=tone)
 
@@ -37,6 +37,7 @@ class ContentService:
             platform=platform_type,
             tone=tone,
             campaign_context=campaign_context,
+            model=model,
         )
 
         content = agent_result.data.get("content", "")
@@ -61,6 +62,7 @@ class ContentService:
                 "cta": cta,
                 "tokens_used": agent_result.data.get("tokens_used", 0),
                 "latency_ms": agent_result.data.get("latency_ms", 0),
+                "model_used": agent_result.data.get("model_used"),
             },
         )
 
@@ -71,6 +73,64 @@ class ContentService:
             requires_review=post.requires_review,
         )
         return post
+
+    async def generate_and_save_variants(
+        self,
+        brief: str,
+        platform_id: UUID,
+        platform_type: str = "linkedin",
+        tone: str = "professional",
+        campaign_id: UUID | None = None,
+        campaign_context: str | None = None,
+        variants_count: int = 3,
+        model: str | None = None,
+    ) -> list[Post]:
+        """Generate and save multiple copy variants for A/B testing."""
+        logger.info("content_service_generate_variants", platform=platform_type, count=variants_count)
+
+        agent_results = await self.agent.generate_variants(
+            brief=brief,
+            platform=platform_type,
+            tone=tone,
+            campaign_context=campaign_context,
+            variants_count=variants_count,
+            model=model,
+        )
+
+        posts: list[Post] = []
+        for result in agent_results:
+            content = result.data.get("content", "")
+            hashtags = result.data.get("hashtags", [])
+            cta = result.data.get("cta", "")
+            rag_sources = result.data.get("rag_sources", [])
+            variant_label = result.data.get("variant_label")
+            variant_group_str = result.data.get("variant_group")
+            variant_group_uuid = UUID(variant_group_str) if variant_group_str else None
+
+            post = await self.post_repo.create(
+                platform_id=platform_id,
+                campaign_id=campaign_id,
+                content=content,
+                status="draft",
+                ai_generated=True,
+                confidence_score=result.confidence_score,
+                requires_review=result.requires_review,
+                generation_prompt=brief,
+                rag_sources=rag_sources,
+                variant_label=variant_label,
+                variant_group=variant_group_uuid,
+                metadata_={
+                    "tone": tone,
+                    "hashtags": hashtags,
+                    "cta": cta,
+                    "tokens_used": result.data.get("tokens_used", 0),
+                    "latency_ms": result.data.get("latency_ms", 0),
+                    "model_used": result.data.get("model_used"),
+                },
+            )
+            posts.append(post)
+
+        return posts
 
     async def approve_post(self, post_id: UUID) -> Post:
         post = await self.post_repo.get_by_id(post_id)

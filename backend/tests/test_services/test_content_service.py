@@ -47,3 +47,37 @@ async def test_content_service_generate_draft(db_session: AsyncSession):
     approved = await service.approve_post(post.id)
     assert approved.status == "approved"
     assert approved.requires_review is False
+
+
+@pytest.mark.asyncio
+async def test_content_service_generate_variants(db_session: AsyncSession):
+    mock_llm = AsyncMock()
+    mock_llm.generate.return_value = LLMResponse(
+        text=json.dumps({
+            "content": "A/B Variant Copy for LinkedIn",
+            "hashtags": ["#Variant"],
+            "cta": "Click link in bio."
+        }),
+        model="llama3.1:8b",
+        tokens_used=60,
+        latency_ms=210,
+    )
+
+    agent = ContentGeneratorAgent(llm_client=mock_llm)
+    post_repo = PostRepository(db_session)
+    service = ContentService(post_repo=post_repo, agent=agent)
+
+    platform_id = uuid.uuid4()
+    posts = await service.generate_and_save_variants(
+        brief="Variant testing campaign",
+        platform_id=platform_id,
+        platform_type="linkedin",
+        variants_count=3,
+    )
+
+    assert len(posts) == 3
+    assert posts[0].variant_label == "A"
+    assert posts[1].variant_label == "B"
+    assert posts[2].variant_label == "C"
+    assert posts[0].variant_group is not None
+    assert posts[0].variant_group == posts[1].variant_group

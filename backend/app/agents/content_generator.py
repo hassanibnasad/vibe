@@ -1,12 +1,15 @@
 import json
 from pathlib import Path
-
+from uuid import UUID, uuid4
 from jinja2 import Environment, FileSystemLoader
+import structlog
 
 from app.agents.base import AgentResult, BaseAgent
 from app.exceptions import LLMError
 from app.tools.ai.llm_client import LLMClient
 from app.tools.ai.rag_tool import RAGTool
+
+logger = structlog.get_logger()
 
 PLATFORM_GUIDELINES = {
     "linkedin": (
@@ -28,6 +31,14 @@ PLATFORM_GUIDELINES = {
     ),
 }
 
+VARIANT_ANGLES = [
+    "Thought Leadership & High-Impact Industry Insight",
+    "Story-driven Case Study & Real-world Transformation",
+    "Actionable Step-by-Step Tactical Framework",
+    "Contrarian & Challenging Conventional Wisdom",
+    "Data-Driven Benchmark & Trend Analysis",
+]
+
 
 class ContentGeneratorAgent(BaseAgent):
     """Generates channel-tailored marketing posts grounded in brand knowledge."""
@@ -42,7 +53,6 @@ class ContentGeneratorAgent(BaseAgent):
         self.llm = llm_client or LLMClient()
         self.rag = rag_tool
 
-        # Template loader
         prompt_dir = Path(__file__).parent.parent / "prompts"
         self.jinja_env = Environment(loader=FileSystemLoader(str(prompt_dir)), autoescape=False)
 
@@ -52,6 +62,10 @@ class ContentGeneratorAgent(BaseAgent):
         platform: str = "linkedin",
         tone: str = "professional",
         campaign_context: str | None = None,
+        model: str | None = None,
+        angle_guideline: str | None = None,
+        variant_label: str | None = None,
+        variant_group: UUID | None = None,
     ) -> AgentResult:
         self.logger.info("generating_post", platform=platform, tone=tone, brief_len=len(brief))
 
@@ -70,6 +84,8 @@ class ContentGeneratorAgent(BaseAgent):
             platform.lower(),
             "Professional, clear, engaging, and aligned with industry best practices.",
         )
+        if angle_guideline:
+            platform_guide = f"{platform_guide}\n\nCreative Angle: {angle_guideline}"
 
         template = self.jinja_env.get_template("content_generation.j2")
         prompt = template.render(
@@ -84,12 +100,12 @@ class ContentGeneratorAgent(BaseAgent):
         try:
             llm_response = await self.llm.generate(
                 prompt=prompt,
+                model=model,
                 temperature=0.7,
             )
 
             # Parse JSON output from LLM
             raw_text = llm_response.text.strip()
-            # Clean possible markdown fence
             if raw_text.startswith("```json"):
                 raw_text = raw_text[7:]
             if raw_text.startswith("```"):
@@ -102,7 +118,7 @@ class ContentGeneratorAgent(BaseAgent):
             hashtags = parsed.get("hashtags", [])
             cta = parsed.get("cta", "")
 
-            # Heuristic confidence calculation
+            # Confidence scoring heuristic
             confidence = 0.90 if brand_context else 0.85
             if len(content) < 50:
                 confidence -= 0.30
@@ -122,6 +138,9 @@ class ContentGeneratorAgent(BaseAgent):
                     "tokens_used": llm_response.tokens_used,
                     "latency_ms": llm_response.latency_ms,
                     "rag_sources": rag_sources,
+                    "variant_label": variant_label,
+                    "variant_group": str(variant_group) if variant_group else None,
+                    "model_used": llm_response.model,
                 },
                 reasoning="Generated using Jinja2 prompt and RAG context."
             )
@@ -140,9 +159,43 @@ class ContentGeneratorAgent(BaseAgent):
                     "tokens_used": llm_response.tokens_used,
                     "latency_ms": llm_response.latency_ms,
                     "rag_sources": rag_sources,
+                    "variant_label": variant_label,
+                    "variant_group": str(variant_group) if variant_group else None,
+                    "model_used": llm_response.model,
                 },
                 reasoning="LLM output could not be strictly parsed as JSON; fallback text used."
             )
         except Exception as exc:
             self.logger.error("generation_failed", error=str(exc))
             raise LLMError(f"Content generation failed: {exc}") from exc
+
+    async def generate_variants(
+        self,
+        brief: str,
+        platform: str = "linkedin",
+        tone: str = "professional",
+        campaign_context: str | None = None,
+        variants_count: int = 3,
+        model: str | None = None,
+    ) -> list[AgentResult]:
+        """Generate multiple distinct copy variants for A/B testing."""
+        group_id = uuid4()
+        results: list[AgentResult] = []
+        labels = ["A", "B", "C", "D", "E"]
+
+        for idx in range(min(variants_count, len(VARIANT_ANGLES))):
+            label = labels[idx] if idx < len(labels) else f"V{idx+1}"
+            angle = VARIANT_ANGLES[idx]
+            res = await self.generate_post(
+                brief=brief,
+                platform=platform,
+                tone=tone,
+                campaign_context=campaign_context,
+                model=model,
+                angle_guideline=angle,
+                variant_label=label,
+                variant_group=group_id,
+            )
+            results.append(res)
+
+        return results

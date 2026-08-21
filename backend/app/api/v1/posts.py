@@ -30,6 +30,17 @@ async def generate_post(
     service = ContentService(post_repo=post_repo)
     platform_type = data.platforms[0] if data.platforms else "linkedin"
 
+    if data.variants > 1:
+        posts = await service.generate_and_save_variants(
+            brief=data.brief,
+            platform_id=UUID("00000000-0000-0000-0000-000000000001"),
+            platform_type=platform_type,
+            tone=data.tone,
+            campaign_id=data.campaign_id,
+            variants_count=data.variants,
+        )
+        return PostResponse.model_validate(posts[0])
+
     post = await service.generate_and_save_draft(
         brief=data.brief,
         platform_id=UUID("00000000-0000-0000-0000-000000000001"),
@@ -38,6 +49,28 @@ async def generate_post(
         campaign_id=data.campaign_id,
     )
     return PostResponse.model_validate(post)
+
+
+@router.post("/generate-variants", response_model=list[PostResponse], status_code=status.HTTP_201_CREATED)
+async def generate_post_variants(
+    data: PostGenerateRequest,
+    post_repo: PostRepository = Depends(get_post_repo),
+    current_user: dict = Depends(get_current_user),
+) -> list[PostResponse]:
+    """Generate multiple marketing post draft variants for A/B testing."""
+    service = ContentService(post_repo=post_repo)
+    platform_type = data.platforms[0] if data.platforms else "linkedin"
+
+    posts = await service.generate_and_save_variants(
+        brief=data.brief,
+        platform_id=UUID("00000000-0000-0000-0000-000000000001"),
+        platform_type=platform_type,
+        tone=data.tone,
+        campaign_id=data.campaign_id,
+        variants_count=data.variants,
+    )
+    return [PostResponse.model_validate(p) for p in posts]
+
 
 
 @router.post("/{post_id}/approve", response_model=PostResponse)
