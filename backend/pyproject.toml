@@ -23,6 +23,7 @@ dependencies = [
     "structlog>=24.4.0",
     "prometheus-client>=0.21.1",
     "redis[hiredis]>=5.2.1",
+    "litellm>=1.50.0",
 ]
 
 [project.optional-dependencies]

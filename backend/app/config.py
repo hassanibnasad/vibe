@@ -24,11 +24,26 @@ class Settings(BaseSettings):
     # ── Redis ──
     REDIS_URL: str
 
-    # ── Ollama LLM ──
-    OLLAMA_BASE_URL: str
-    OLLAMA_MODEL_PRIMARY: str
-    OLLAMA_MODEL_FAST: str
-    OLLAMA_EMBED_MODEL: str
+    # ── LiteLLM & AI Gateway ──
+    LITELLM_PROXY_URL: str = ""
+    LITELLM_API_KEY: str = ""
+    LITELLM_DROP_PARAMS: bool = True
+
+    # Cloud Provider Keys (Optional)
+    OPENAI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
+
+    # Legacy / Direct Ollama Settings
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL_PRIMARY: str = "ollama/llama3.1:70b"
+    OLLAMA_MODEL_FAST: str = "ollama/llama3.1:8b"
+    OLLAMA_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"
+
+    # Unified Model Names
+    LLM_MODEL_PRIMARY: str = "ollama/llama3.1:70b"
+    LLM_MODEL_FAST: str = "ollama/llama3.1:8b"
+    LLM_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"
 
     # ── Agent Thresholds ──
     REPLY_CONFIDENCE_THRESHOLD: float = 0.75
