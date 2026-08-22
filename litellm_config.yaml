@@ -1,0 +1,35 @@
+model_list:
+  - model_name: general-fast
+    litellm_params:
+      model: ollama/llama3.1:8b
+      api_base: http://ollama:11434
+
+  - model_name: general-complex
+    litellm_params:
+      model: ollama/llama3.1:70b
+      api_base: http://ollama:11434
+
+  - model_name: embeddings
+    litellm_params:
+      model: ollama/all-minilm:l6-v2
+      api_base: http://ollama:11434
+
+  # Optional Cloud Models (Enabled if keys present)
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: groq-fast
+    litellm_params:
+      model: groq/llama-3.1-8b-instant
+      api_key: os.environ/GROQ_API_KEY
+
+router_settings:
+  routing_strategy: usage-based-routing
+  fallbacks:
+    - general-complex: ["general-fast"]
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false

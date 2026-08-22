@@ -42,6 +42,22 @@ services:
     volumes:
       - ollamadata:/root/.ollama
 
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: vibeagent-litellm
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--host", "0.0.0.0"]
+    depends_on:
+      - ollama
+
 volumes:
   pgdata:
   redisdata:
