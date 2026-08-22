@@ -1,6 +1,9 @@
 from collections.abc import AsyncGenerator
+import contextvars
+import uuid
 
 import redis.asyncio as aioredis
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -9,6 +12,12 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.config import settings
+
+# Global ContextVar for tenant isolation
+DEFAULT_TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+current_tenant_id: contextvars.ContextVar[uuid.UUID] = contextvars.ContextVar(
+    "current_tenant_id", default=DEFAULT_TENANT_ID
+)
 
 _engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
@@ -55,6 +64,13 @@ async def close_db() -> None:
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as session:
+        # Enforce PostgreSQL Row-Level Security tenant context
+        tenant = current_tenant_id.get()
+        if session.bind and session.bind.dialect.name == "postgresql":
+            await session.execute(
+                text("SELECT set_config('app.current_tenant', :tenant, true)"),
+                {"tenant": str(tenant)},
+            )
         try:
             yield session
             await session.commit()

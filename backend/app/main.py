@@ -9,6 +9,7 @@ from app.config import settings
 from app.dependencies import close_db, init_db
 from app.exceptions import register_exception_handlers
 from app.middleware.logging import StructuredLoggingMiddleware
+from app.middleware.tenant import TenantMiddleware
 
 logger = structlog.get_logger()
 
@@ -28,10 +29,12 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
+    docs_url_oauth2_redirect_url="/docs/oauth2-redirect",
     redoc_url="/redoc",
 )
 
-# Logging middleware
+# Multi-tenant and logging middlewares
+app.add_middleware(TenantMiddleware)
 app.add_middleware(StructuredLoggingMiddleware)
 
 # CORS
