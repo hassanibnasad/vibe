@@ -11,6 +11,12 @@ from app.models.base import BaseModel
 class Conversation(BaseModel):
     __tablename__ = "conversations"
 
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        default=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        nullable=False,
+        index=True,
+    )
     lead_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), index=True, nullable=False
     )
