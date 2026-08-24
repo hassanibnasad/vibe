@@ -10,6 +10,15 @@ from app.models.platform import Platform
 from app.models.post import Post
 from app.models.webhook_event import WebhookEvent
 
+from app.models.enums import (
+    LeadStage,
+    MessageDirection,
+    PlatformType,
+    PostStatus,
+    ReviewStatus,
+    calculate_lead_stage,
+)
+
 __all__ = [
     "Base",
     "BaseModel",
@@ -24,4 +33,11 @@ __all__ = [
     "Platform",
     "Post",
     "WebhookEvent",
+    "LeadStage",
+    "PostStatus",
+    "PlatformType",
+    "ReviewStatus",
+    "MessageDirection",
+    "calculate_lead_stage",
 ]
+
