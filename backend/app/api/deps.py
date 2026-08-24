@@ -8,8 +8,14 @@ from app.repositories.lead_repo import LeadRepository
 from app.repositories.message_repo import MessageRepository
 from app.repositories.post_repo import PostRepository
 from app.repositories.score_event_repo import ScoreEventRepository
+from app.services.content_service import ContentService
+from app.services.engagement_service import EngagementService
+from app.services.lead_service import LeadService
+from app.services.publishing_service import PublishingService
+from app.services.scoring_service import ScoringService
 
 
+# Repositories
 async def get_lead_repo(session: AsyncSession = Depends(get_db_session)) -> LeadRepository:
     return LeadRepository(session)
 
@@ -32,3 +38,45 @@ async def get_score_event_repo(session: AsyncSession = Depends(get_db_session)) 
 
 async def get_knowledge_repo(session: AsyncSession = Depends(get_db_session)) -> KnowledgeRepository:
     return KnowledgeRepository(session)
+
+
+# Domain Services
+async def get_lead_service(
+    lead_repo: LeadRepository = Depends(get_lead_repo),
+    score_repo: ScoreEventRepository = Depends(get_score_event_repo),
+) -> LeadService:
+    return LeadService(lead_repo=lead_repo, score_event_repo=score_repo)
+
+
+async def get_engagement_service(
+    lead_repo: LeadRepository = Depends(get_lead_repo),
+    conv_repo: ConversationRepository = Depends(get_conversation_repo),
+    msg_repo: MessageRepository = Depends(get_message_repo),
+) -> EngagementService:
+    return EngagementService(lead_repo=lead_repo, conv_repo=conv_repo, msg_repo=msg_repo)
+
+
+async def get_content_service(
+    post_repo: PostRepository = Depends(get_post_repo),
+) -> ContentService:
+    return ContentService(post_repo=post_repo)
+
+
+async def get_publishing_service(
+    post_repo: PostRepository = Depends(get_post_repo),
+) -> PublishingService:
+    return PublishingService(post_repo=post_repo)
+
+
+async def get_scoring_service(
+    lead_repo: LeadRepository = Depends(get_lead_repo),
+    score_repo: ScoreEventRepository = Depends(get_score_event_repo),
+    conv_repo: ConversationRepository = Depends(get_conversation_repo),
+    msg_repo: MessageRepository = Depends(get_message_repo),
+) -> ScoringService:
+    return ScoringService(
+        lead_repo=lead_repo,
+        score_event_repo=score_repo,
+        conversation_repo=conv_repo,
+        message_repo=msg_repo,
+    )

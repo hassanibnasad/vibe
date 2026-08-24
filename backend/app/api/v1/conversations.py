@@ -2,11 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import get_conversation_repo, get_message_repo
-from app.exceptions import ConversationNotFoundError, NotFoundError
+from app.api.deps import get_engagement_service
 from app.middleware.auth import get_current_user
-from app.repositories.conversation_repo import ConversationRepository
-from app.repositories.message_repo import MessageRepository
 from app.schemas.conversation import (
     ConversationResponse,
     MessageCreateRequest,
@@ -14,6 +11,7 @@ from app.schemas.conversation import (
     ReviewActionRequest,
     ReviewItemResponse,
 )
+from app.services.engagement_service import EngagementService
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
@@ -21,22 +19,19 @@ router = APIRouter(prefix="/conversations", tags=["Conversations"])
 @router.get("", response_model=list[ConversationResponse])
 async def list_conversations(
     lead_id: UUID | None = Query(None),
-    conv_repo: ConversationRepository = Depends(get_conversation_repo),
+    engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
 ) -> list[ConversationResponse]:
-    if lead_id:
-        convs = await conv_repo.get_active_by_lead(lead_id)
-    else:
-        convs = await conv_repo.get_all(limit=50)
+    convs = await engagement_service.list_conversations(lead_id=lead_id)
     return [ConversationResponse.model_validate(c) for c in convs]
 
 
 @router.get("/review-queue", response_model=list[ReviewItemResponse])
 async def get_review_queue(
-    msg_repo: MessageRepository = Depends(get_message_repo),
+    engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
 ) -> list[ReviewItemResponse]:
-    messages = await msg_repo.get_review_queue(limit=50)
+    messages = await engagement_service.get_review_queue(limit=50)
     return [
         ReviewItemResponse(
             message_id=m.id,
@@ -54,18 +49,10 @@ async def get_review_queue(
 @router.post("/review-queue/{message_id}/approve", status_code=status.HTTP_200_OK)
 async def approve_reply(
     message_id: UUID,
-    msg_repo: MessageRepository = Depends(get_message_repo),
+    engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
 ) -> dict:
-    message = await msg_repo.get_by_id(message_id)
-    if not message:
-        raise NotFoundError(f"Message {message_id} not found")
-
-    await msg_repo.update(
-        message_id,
-        review_status="approved",
-        requires_review=False,
-    )
+    await engagement_service.approve_reply(message_id)
     return {"status": "approved", "message_id": str(message_id)}
 
 
@@ -73,33 +60,23 @@ async def approve_reply(
 async def reject_reply(
     message_id: UUID,
     data: ReviewActionRequest,
-    msg_repo: MessageRepository = Depends(get_message_repo),
+    engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
 ) -> dict:
-    message = await msg_repo.get_by_id(message_id)
-    if not message:
-        raise NotFoundError(f"Message {message_id} not found")
-
-    update_payload: dict = {
-        "review_status": "rejected",
-        "requires_review": False,
-    }
-    if data.alternative_reply:
-        update_payload["original_content"] = message.content
-        update_payload["content"] = data.alternative_reply
-        update_payload["review_status"] = "edited"
-
-    await msg_repo.update(message_id, **update_payload)
-    return {"status": update_payload["review_status"], "message_id": str(message_id)}
+    updated = await engagement_service.reject_or_edit_reply(
+        message_id=message_id,
+        alternative_reply=data.alternative_reply,
+    )
+    return {"status": updated.review_status, "message_id": str(message_id)}
 
 
 @router.get("/{conversation_id}/messages", response_model=list[MessageResponse])
 async def get_messages(
     conversation_id: UUID,
-    msg_repo: MessageRepository = Depends(get_message_repo),
+    engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
 ) -> list[MessageResponse]:
-    messages = await msg_repo.get_messages_for_conversation(conversation_id)
+    messages = await engagement_service.get_messages(conversation_id)
     return [MessageResponse.model_validate(m) for m in messages]
 
 
@@ -107,20 +84,12 @@ async def get_messages(
 async def send_manual_message(
     conversation_id: UUID,
     data: MessageCreateRequest,
-    conv_repo: ConversationRepository = Depends(get_conversation_repo),
-    msg_repo: MessageRepository = Depends(get_message_repo),
+    engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
 ) -> MessageResponse:
-    conv = await conv_repo.get_by_id(conversation_id)
-    if not conv:
-        raise ConversationNotFoundError(f"Conversation {conversation_id} not found")
-
-    message = await msg_repo.create(
+    message = await engagement_service.send_manual_message(
         conversation_id=conversation_id,
-        direction="outbound",
         content=data.content,
         media_urls=data.media_urls,
-        platform=conv.platform.name if conv.platform else "linkedin",
-        review_status="approved",
     )
     return MessageResponse.model_validate(message)
