@@ -1,8 +1,11 @@
+from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 import structlog
 
 from app.agents.content_generator import ContentGeneratorAgent
 from app.exceptions import PostNotFoundError
+from app.models.enums import PostStatus
 from app.models.post import Post
 from app.repositories.post_repo import PostRepository
 
@@ -10,7 +13,7 @@ logger = structlog.get_logger()
 
 
 class ContentService:
-    """Business logic service for AI content generation and post lifecycle."""
+    """Deep domain service for AI content generation, copy variant optimization, and post lifecycle management."""
 
     def __init__(
         self,
@@ -19,6 +22,70 @@ class ContentService:
     ):
         self.post_repo = post_repo
         self.agent = agent or ContentGeneratorAgent()
+
+    async def get_post(self, post_id: UUID) -> Post:
+        """Retrieve post by ID or raise PostNotFoundError."""
+        post = await self.post_repo.get_by_id(post_id)
+        if not post:
+            raise PostNotFoundError(f"Post {post_id} not found")
+        return post
+
+    async def list_posts(
+        self,
+        status_filter: str | None = None,
+        platform_id: UUID | None = None,
+        campaign_id: UUID | None = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[Post], int]:
+        """List and paginate posts with criteria filtering."""
+        return await self.post_repo.filter_posts(
+            status=status_filter,
+            platform_id=platform_id,
+            campaign_id=campaign_id,
+            skip=skip,
+            limit=limit,
+        )
+
+    async def create_manual_post(
+        self,
+        content: str,
+        platform_id: UUID | None = None,
+        campaign_id: UUID | None = None,
+        scheduled_at: datetime | None = None,
+        media_urls: list[str] | None = None,
+        hashtags: list[str] | None = None,
+        cta: str | None = None,
+        **extra_fields: Any,
+    ) -> Post:
+        """Create a human-authored post ready for scheduling or staging."""
+        status = PostStatus.SCHEDULED.value if scheduled_at else PostStatus.DRAFT.value
+        post = await self.post_repo.create(
+            platform_id=platform_id,
+            campaign_id=campaign_id,
+            content=content,
+            status=status,
+            scheduled_at=scheduled_at,
+            media_urls=media_urls or [],
+            hashtags=hashtags or [],
+            cta=cta,
+            ai_generated=False,
+            requires_review=False,
+            **extra_fields,
+        )
+        logger.info("manual_post_created", post_id=str(post.id), status=post.status)
+        return post
+
+    async def update_post(self, post_id: UUID, **update_data: Any) -> Post:
+        """Update draft or scheduled post fields."""
+        await self.get_post(post_id)
+        updated = await self.post_repo.update(post_id, **update_data)
+        return updated  # type: ignore[return-value]
+
+    async def delete_post(self, post_id: UUID) -> bool:
+        """Delete post by ID."""
+        await self.get_post(post_id)
+        return await self.post_repo.delete(post_id)
 
     async def generate_and_save_draft(
         self,
@@ -50,7 +117,7 @@ class ContentService:
             platform_id=platform_id,
             campaign_id=campaign_id,
             content=content,
-            status="draft",
+            status=PostStatus.DRAFT.value,
             ai_generated=True,
             confidence_score=agent_result.confidence_score,
             requires_review=agent_result.requires_review,
@@ -111,7 +178,7 @@ class ContentService:
                 platform_id=platform_id,
                 campaign_id=campaign_id,
                 content=content,
-                status="draft",
+                status=PostStatus.DRAFT.value,
                 ai_generated=True,
                 confidence_score=result.confidence_score,
                 requires_review=result.requires_review,
@@ -133,13 +200,10 @@ class ContentService:
         return posts
 
     async def approve_post(self, post_id: UUID) -> Post:
-        post = await self.post_repo.get_by_id(post_id)
-        if not post:
-            raise PostNotFoundError(f"Post {post_id} not found")
-
+        await self.get_post(post_id)
         updated = await self.post_repo.update(
             post_id,
-            status="approved",
+            status=PostStatus.APPROVED.value,
             requires_review=False,
         )
         logger.info("post_approved", post_id=str(post_id))

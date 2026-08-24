@@ -4,6 +4,7 @@ import structlog
 
 from app.agents.publisher import PublisherAgent
 from app.exceptions import PostNotFoundError, ValidationError
+from app.models.enums import PostStatus
 from app.models.post import Post
 from app.repositories.post_repo import PostRepository
 
@@ -28,7 +29,7 @@ class PublishingService:
             raise PostNotFoundError(f"Post {post_id} not found.")
 
         # Update to publishing state
-        await self.post_repo.update(post_id, status="publishing")
+        await self.post_repo.update(post_id, status=PostStatus.PUBLISHING.value)
 
         # Execute via PublisherAgent
         result = await self.agent.publish_post(
@@ -42,7 +43,7 @@ class PublishingService:
         if result.success:
             updated = await self.post_repo.update(
                 post_id,
-                status="published",
+                status=PostStatus.PUBLISHED.value,
                 published_at=datetime.now(UTC),
                 platform_post_id=result.data.get("platform_post_id"),
                 platform_post_url=result.data.get("platform_post_url"),
@@ -53,7 +54,7 @@ class PublishingService:
         else:
             updated = await self.post_repo.update(
                 post_id,
-                status="failed",
+                status=PostStatus.FAILED.value,
                 error_message=result.data.get("error", "Unknown publishing error"),
                 retry_count=post.retry_count + 1,
             )
@@ -71,7 +72,7 @@ class PublishingService:
 
         updated = await self.post_repo.update(
             post_id,
-            status="scheduled",
+            status=PostStatus.SCHEDULED.value,
             scheduled_at=scheduled_at,
         )
         logger.info("post_scheduled", post_id=str(post_id), scheduled_at=scheduled_at.isoformat())
@@ -89,4 +90,3 @@ class PublishingService:
             published_posts.append(published)
 
         return published_posts
-
