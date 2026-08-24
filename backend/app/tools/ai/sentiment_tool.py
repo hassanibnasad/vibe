@@ -11,8 +11,8 @@ class SentimentResult(BaseModel):
 
 
 class SentimentTool:
-    def __init__(self, llm_client: LLMClient):
-        self.llm = llm_client
+    def __init__(self, llm_client: LLMClient | None = None):
+        self.llm = llm_client or LLMClient()
 
     async def analyze(self, text: str) -> SentimentResult:
         prompt = f"""Classify the sentiment of this social media message as positive, neutral, or negative.

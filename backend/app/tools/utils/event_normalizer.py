@@ -33,7 +33,7 @@ class EventNormalizer:
         )
         parent_id = payload.get("parentComment") or payload.get("parent_comment_id")
 
-        actor = payload.get("actor", {})
+        actor = payload.get("actor") or payload.get("author") or {}
         if isinstance(actor, dict):
             author_id = actor.get("id") or actor.get("urn") or "urn:li:person:anonymous"
             author_name = actor.get("name")
@@ -43,8 +43,13 @@ class EventNormalizer:
             author_name = payload.get("author_name")
             author_headline = payload.get("author_headline")
 
-        message = payload.get("message", {})
-        content = message.get("text") if isinstance(message, dict) else payload.get("text", payload.get("content", ""))
+        message = payload.get("message")
+        if isinstance(message, dict):
+            content = message.get("text") or payload.get("text") or payload.get("content", "")
+        elif isinstance(message, str):
+            content = message
+        else:
+            content = payload.get("text") or payload.get("content") or ""
 
         return NormalizedEvent(
             platform="linkedin",
