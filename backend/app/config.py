@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     GROQ_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    DEEPSEEK_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
+    TOGETHER_API_KEY: str = ""
 
     # Legacy / Direct Ollama Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
