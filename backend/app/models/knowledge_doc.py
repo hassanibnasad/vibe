@@ -11,6 +11,12 @@ from app.models.base import BaseModel
 class KnowledgeDoc(BaseModel):
     __tablename__ = "knowledge_docs"
 
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        default=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        nullable=False,
+        index=True,
+    )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     doc_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)

@@ -2,12 +2,17 @@ import asyncio
 import json
 import time
 from typing import Any, TypeVar
-import httpx
+
+import litellm
 from pydantic import BaseModel
 import structlog
 
 from app.config import settings
 from app.exceptions import LLMError
+
+# Configure LiteLLM global settings
+litellm.drop_params = getattr(settings, "LITELLM_DROP_PARAMS", True)
+litellm.suppress_debug_info = True
 
 logger = structlog.get_logger()
 T = TypeVar("T", bound=BaseModel)
@@ -18,27 +23,44 @@ class LLMResponse(BaseModel):
     model: str
     tokens_used: int
     latency_ms: int
+    cost_usd: float = 0.0
     fallback_used: bool = False
 
 
 class LLMClient:
-    """Async HTTP client for Ollama LLM and embedding inference with automatic model routing and fallback."""
+    """Enterprise async client for LiteLLM Gateway supporting 100+ LLM providers."""
 
-    def __init__(self, base_url: str | None = None, http_client: httpx.AsyncClient | None = None):
-        self.base_url = (base_url or settings.OLLAMA_BASE_URL).rstrip("/")
-        self.client = http_client or httpx.AsyncClient(timeout=120.0)
+    def __init__(
+        self,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        proxy_url: str | None = None,
+    ):
+        self.ollama_base_url = (base_url or settings.OLLAMA_BASE_URL).rstrip("/")
+        self.proxy_url = proxy_url or settings.LITELLM_PROXY_URL
+        self.api_key = api_key or settings.LITELLM_API_KEY or None
 
     def _resolve_model_name(self, model: str | None) -> str:
         if not model:
-            return settings.OLLAMA_MODEL_FAST
+            return settings.LLM_MODEL_FAST
         norm = model.lower()
         if norm in ("primary", "70b", "llama-70b", "llama3.1:70b"):
-            return settings.OLLAMA_MODEL_PRIMARY
+            return settings.LLM_MODEL_PRIMARY
         if norm in ("fast", "8b", "llama-8b", "llama3.1:8b"):
-            return settings.OLLAMA_MODEL_FAST
+            return settings.LLM_MODEL_FAST
         if norm in ("embed", "embedding"):
-            return settings.OLLAMA_EMBED_MODEL
+            return settings.LLM_EMBED_MODEL
+        # If user passes bare model name without provider prefix, default to ollama
+        if not ("/" in model):
+            return f"ollama/{model}"
         return model
+
+    def _get_api_base(self, model: str) -> str | None:
+        if self.proxy_url:
+            return self.proxy_url
+        if model.startswith("ollama/"):
+            return self.ollama_base_url
+        return None
 
     async def generate(
         self,
@@ -48,78 +70,66 @@ class LLMClient:
         max_tokens: int = 2048,
         system_prompt: str | None = None,
         allow_fallback: bool = True,
-        max_retries: int = 2,
+        fallbacks: list[str] | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> LLMResponse:
-        """Generate text completion from Ollama with retries and fallback."""
+        """Generate text completion via LiteLLM Gateway."""
         target_model = self._resolve_model_name(model)
         start = time.monotonic()
 
-        payload: dict[str, Any] = {
-            "model": target_model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": temperature,
-                "num_predict": max_tokens,
-            },
-        }
+        messages: list[dict[str, str]] = []
         if system_prompt:
-            payload["system"] = system_prompt
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
 
-        last_error: Exception | None = None
-        for attempt in range(max_retries + 1):
-            try:
-                response = await self.client.post(
-                    f"{self.base_url}/api/generate",
-                    json=payload,
-                )
-                response.raise_for_status()
-                data = response.json()
+        # Prepare fallback list
+        fallback_models: list[str] = []
+        if fallbacks:
+            fallback_models = [self._resolve_model_name(fb) for fb in fallbacks]
+        elif allow_fallback and target_model != settings.LLM_MODEL_FAST:
+            fallback_models = [settings.LLM_MODEL_FAST]
 
-                latency_ms = int((time.monotonic() - start) * 1000)
-                return LLMResponse(
-                    text=data.get("response", "").strip(),
-                    model=target_model,
-                    tokens_used=data.get("eval_count", 0),
-                    latency_ms=latency_ms,
-                    fallback_used=False,
-                )
-            except Exception as exc:
-                last_error = exc
-                logger.warning(
-                    "ollama_request_failed",
-                    model=target_model,
-                    attempt=attempt + 1,
-                    error=str(exc),
-                )
-                if attempt < max_retries:
-                    await asyncio.sleep(0.5 * (2 ** attempt))
+        kwargs: dict[str, Any] = {
+            "model": target_model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
 
-        # Fallback to fast model if primary failed and fallback is enabled
-        if allow_fallback and target_model == settings.OLLAMA_MODEL_PRIMARY:
-            fallback_model = settings.OLLAMA_MODEL_FAST
-            logger.warning("triggering_ollama_fallback", from_model=target_model, to_model=fallback_model)
-            payload["model"] = fallback_model
-            try:
-                response = await self.client.post(
-                    f"{self.base_url}/api/generate",
-                    json=payload,
-                )
-                response.raise_for_status()
-                data = response.json()
-                latency_ms = int((time.monotonic() - start) * 1000)
-                return LLMResponse(
-                    text=data.get("response", "").strip(),
-                    model=fallback_model,
-                    tokens_used=data.get("eval_count", 0),
-                    latency_ms=latency_ms,
-                    fallback_used=True,
-                )
-            except Exception as fb_exc:
-                logger.error("ollama_fallback_also_failed", error=str(fb_exc))
-                raise LLMError(f"Ollama generation and fallback failed: {fb_exc}") from fb_exc
+        api_base = self._get_api_base(target_model)
+        if api_base:
+            kwargs["api_base"] = api_base
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+        if response_format:
+            kwargs["response_format"] = response_format
+        if fallback_models:
+            kwargs["fallbacks"] = fallback_models
 
-        raise LLMError(f"Ollama generation failed ({target_model}): {last_error}") from last_error
+        try:
+            response = await litellm.acompletion(**kwargs)
+            latency_ms = int((time.monotonic() - start) * 1000)
+
+            choice = response.choices[0]
+            output_text = choice.message.content or ""
+            actual_model = getattr(response, "model", target_model)
+            usage = getattr(response, "usage", None)
+            tokens_used = usage.total_tokens if usage else 0
+            cost = getattr(response, "_response_cost", 0.0) or 0.0
+
+            fallback_used = (actual_model != target_model)
+
+            return LLMResponse(
+                text=output_text.strip(),
+                model=actual_model,
+                tokens_used=tokens_used,
+                latency_ms=latency_ms,
+                cost_usd=round(cost, 6),
+                fallback_used=fallback_used,
+            )
+        except Exception as exc:
+            logger.error("litellm_completion_failed", model=target_model, error=str(exc))
+            raise LLMError(f"LiteLLM completion failed for {target_model}: {exc}") from exc
 
     async def generate_structured(
         self,
@@ -129,12 +139,13 @@ class LLMClient:
         temperature: float = 0.2,
         system_prompt: str | None = None,
     ) -> tuple[T, LLMResponse]:
-        """Generate and parse structured Pydantic response from LLM."""
+        """Generate and parse structured Pydantic response from LiteLLM."""
         response = await self.generate(
             prompt=prompt,
             model=model,
             temperature=temperature,
             system_prompt=system_prompt,
+            response_format={"type": "json_object"},
         )
 
         raw_text = response.text.strip()
@@ -149,20 +160,29 @@ class LLMClient:
             data = json.loads(raw_text.strip())
             return schema.model_validate(data), response
         except Exception as exc:
-            raise LLMError(f"Failed to parse structured LLM response into {schema.__name__}: {exc}") from exc
+            raise LLMError(f"Failed to parse structured response into {schema.__name__}: {exc}") from exc
 
     async def embed(self, text: str, model: str | None = None) -> list[float]:
-        """Generate 384-dimensional vector embedding for text chunk."""
-        model_name = self._resolve_model_name(model or "embed")
+        """Generate vector embedding using LiteLLM."""
+        target_model = self._resolve_model_name(model or "embed")
+        kwargs: dict[str, Any] = {
+            "model": target_model,
+            "input": [text],
+        }
+
+        api_base = self._get_api_base(target_model)
+        if api_base:
+            kwargs["api_base"] = api_base
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+
         try:
-            response = await self.client.post(
-                f"{self.base_url}/api/embeddings",
-                json={"model": model_name, "prompt": text},
-            )
-            response.raise_for_status()
-            return response.json().get("embedding", [])
+            response = await litellm.aembedding(**kwargs)
+            return response.data[0]["embedding"]
         except Exception as exc:
-            raise LLMError(f"Ollama embedding failed ({model_name}): {exc}") from exc
+            logger.error("litellm_embedding_failed", model=target_model, error=str(exc))
+            raise LLMError(f"LiteLLM embedding failed for {target_model}: {exc}") from exc
 
     async def close(self) -> None:
-        await self.client.aclose()
+        """Cleanup resources if necessary."""
+        pass

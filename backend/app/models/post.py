@@ -11,6 +11,12 @@ from app.models.base import BaseModel
 class Post(BaseModel):
     __tablename__ = "posts"
 
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        default=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        nullable=False,
+        index=True,
+    )
     campaign_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("campaigns.id", ondelete="SET NULL"), index=True
     )

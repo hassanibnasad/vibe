@@ -11,6 +11,12 @@ from app.models.base import BaseModel
 class Message(BaseModel):
     __tablename__ = "messages"
 
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        default=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        nullable=False,
+        index=True,
+    )
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), index=True, nullable=False
     )
