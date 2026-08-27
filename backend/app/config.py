@@ -12,17 +12,17 @@ class Settings(BaseSettings):
     )
 
     # ── Application ──
-    APP_NAME: str = "vibeagent"
-    APP_ENV: str
+    APP_NAME: str = "VibeAgent"
+    APP_ENV: str = "development"
     APP_DEBUG: bool = False
-    APP_SECRET_KEY: str
+    APP_SECRET_KEY: str = "dev-secret-key-change-in-production-vibeagent"
 
     # ── Database ──
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql+asyncpg://vibeagent:vibeagent@localhost:5432/vibeagent"
     DATABASE_POOL_SIZE: int = 20
 
     # ── Redis ──
-    REDIS_URL: str
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # ── LiteLLM & AI Gateway ──
     LITELLM_PROXY_URL: str = ""
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     LINKEDIN_ORGANIZATION_ID: str = ""
 
     # ── Webhooks ──
-    WEBHOOK_SECRET: str
+    WEBHOOK_SECRET: str = "dev-webhook-secret-vibeagent"
 
     # ── Monitoring & Observability ──
     PROMETHEUS_ENABLED: bool = True
