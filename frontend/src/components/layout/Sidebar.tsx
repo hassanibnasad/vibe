@@ -5,58 +5,72 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Sparkles,
+  FileEdit,
   Inbox,
   Users,
   Bot,
   Database,
-  Share2,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  badgeVariant?: "default" | "warning" | "success" | "hot";
+interface NavGroup {
+  label: string;
+  items: {
+    name: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: string;
+    badgeVariant?: "default" | "secondary" | "warning" | "hot" | "sql" | "outline" | "review";
+  }[];
 }
 
-const navItems: NavItem[] = [
+const navigationGroups: NavGroup[] = [
   {
-    name: "Command Center",
-    href: "/",
-    icon: LayoutDashboard,
+    label: "OPERATE",
+    items: [
+      {
+        name: "Command center",
+        href: "/",
+        icon: LayoutDashboard,
+      },
+      {
+        name: "Review queue",
+        href: "/review-queue",
+        icon: Inbox,
+        badge: "3",
+        badgeVariant: "review",
+      },
+      {
+        name: "Content studio",
+        href: "/studio",
+        icon: FileEdit,
+      },
+    ],
   },
   {
-    name: "Content Studio",
-    href: "/studio",
-    icon: Sparkles,
-  },
-  {
-    name: "Review Queue",
-    href: "/review-queue",
-    icon: Inbox,
-    badge: "3",
-    badgeVariant: "warning",
-  },
-  {
-    name: "Lead Pipeline",
-    href: "/leads",
-    icon: Users,
-    badge: "15 SQL",
-    badgeVariant: "hot",
-  },
-  {
-    name: "AI Copilot",
-    href: "/assistant",
-    icon: Bot,
-  },
-  {
-    name: "Knowledge & RAG",
-    href: "/knowledge",
-    icon: Database,
+    label: "INTELLIGENCE",
+    items: [
+      {
+        name: "Lead pipeline",
+        href: "/leads",
+        icon: Users,
+        badge: "2 SQL",
+        badgeVariant: "sql",
+      },
+      {
+        name: "Knowledge base",
+        href: "/knowledge",
+        icon: Database,
+      },
+      {
+        name: "AI copilot",
+        href: "/assistant",
+        icon: Bot,
+      },
+    ],
   },
 ];
 
@@ -64,71 +78,79 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-slate-800/80 bg-slate-950/90 backdrop-blur-xl">
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-56 flex-col border-r border-border bg-card text-card-foreground">
       {/* Brand Header */}
-      <div className="flex h-16 items-center gap-3 border-b border-slate-800/80 px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 shadow-lg shadow-purple-900/40">
-          <Share2 className="h-5 w-5 text-white" />
+      <div className="flex h-12 items-center gap-2.5 border-b border-border px-4">
+        <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary text-primary-foreground font-bold text-xs">
+          <Radio className="h-3.5 w-3.5" />
         </div>
-        <div>
-          <div className="flex items-center gap-1.5 font-bold text-white tracking-tight">
-            <span>VibeAgent</span>
-            <span className="rounded bg-purple-500/20 px-1.5 py-0.2 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
-              MVP
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400">Autonomous Marketing AI</p>
+        <div className="flex items-center gap-1.5 font-semibold text-xs tracking-tight">
+          <span>VibeAgent</span>
+          <span className="text-[10px] text-muted-foreground font-mono">v1.0</span>
         </div>
       </div>
 
-      {/* Navigation List */}
-      <nav className="flex-1 space-y-1.5 px-3 py-4">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
+      {/* Navigation Groups */}
+      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+        {navigationGroups.map((group) => (
+          <div key={group.label} className="space-y-1">
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground">
+              {group.label}
+            </div>
+            {group.items.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "group flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-150",
-                isActive
-                  ? "bg-gradient-to-r from-purple-600/20 to-indigo-600/10 text-white border border-purple-500/30 shadow-sm"
-                  : "text-slate-400 hover:bg-slate-900/80 hover:text-slate-200"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <Icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
                   className={cn(
-                    "h-4 w-4 transition-colors",
-                    isActive ? "text-purple-400" : "text-slate-400 group-hover:text-slate-200"
+                    "group flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors select-none",
+                    isActive
+                      ? "bg-accent text-accent-foreground font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
-                />
-                <span>{item.name}</span>
-              </div>
-              {item.badge && (
-                <Badge variant={item.badgeVariant || "default"} className="px-1.5 py-0 text-[10px]">
-                  {item.badge}
-                </Badge>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer System Status */}
-      <div className="border-t border-slate-800/80 p-4">
-        <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-3">
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-slate-400">System Gateway</span>
-            <span className="flex items-center gap-1 text-emerald-400 font-medium">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-              Connected
-            </span>
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.badge && (
+                    <Badge
+                      variant={item.badgeVariant || "secondary"}
+                      className="px-1.5 py-0 text-[10px] font-mono h-4 tabular-nums"
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-          <p className="text-[11px] text-slate-400">FastAPI + LiteLLM + Hatchet</p>
-        </div>
+        ))}
+      </div>
+
+      {/* Clean System Status Footer */}
+      <div className="border-t border-border p-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center justify-between text-xs cursor-help">
+              <span className="text-muted-foreground">System status</span>
+              <span className="flex items-center gap-1.5 font-medium text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Operational
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <div className="space-y-0.5 font-mono text-[10px]">
+              <div>Engine: Groq Llama 3.3 70B via LiteLLM</div>
+              <div>Orchestration: Hatchet async workers</div>
+              <div>Vectors: PostgreSQL + pgvector</div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </aside>
   );

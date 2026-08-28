@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "VibeAgent — Autonomous Marketing AI & Lead Qualification",
-  description: "Enterprise multi-agent social marketing and BANT lead qualification platform.",
+  title: "VibeAgent — Enterprise Social Agent & Lead Orchestration",
+  description: "Enterprise multi-agent autonomous marketing and BANT qualification console.",
 };
 
 export default function RootLayout({
@@ -15,14 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen flex antialiased selection:bg-purple-500/30 selection:text-purple-200">
-        <Sidebar />
-        <div className="flex-1 ml-64 flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-1 p-8 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+      <body className="bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
