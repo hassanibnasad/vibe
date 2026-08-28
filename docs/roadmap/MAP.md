@@ -19,7 +19,7 @@ Deliver a functional, production-grade **VibeAgent Phase 1 MVP End-to-End Pipeli
 ## Frontier & Open Tickets
 
 1. ⚡ [001-cloud-llm-and-embedding-strategy.md](./tickets/001-cloud-llm-and-embedding-strategy.md) (`wayfinder:grilling`) — Select and configure cloud LLM & embedding providers (Groq / OpenRouter / Gemini) for zero-GPU local development.
-2. ⚡ [002-frontend-scaffold-and-api-client-seam.md](./tickets/002-frontend-scaffold-and-api-client-seam.md) (`wayfinder:prototype`) — Scaffold Next.js 14 frontend with Tailwind/shadcn and establish OpenAPI client generation.
+2. ✅ [002-frontend-scaffold-and-api-client-seam.md](./tickets/002-frontend-scaffold-and-api-client-seam.md) (`wayfinder:prototype`) — Scaffold Next.js 14 frontend with Tailwind/shadcn, Enterprise UI design system, and establish OpenAPI client generation.
 3. ⚡ [003-linkedin-api-and-webhook-lifecycle.md](./tickets/003-linkedin-api-and-webhook-lifecycle.md) (`wayfinder:research`) — Investigate LinkedIn Marketing API OAuth2 token refresh, webhook payloads, and test sandboxing.
 4. 🔒 [004-hatchet-workflow-orchestration-and-review-pause.md](./tickets/004-hatchet-workflow-orchestration-and-review-pause.md) (`wayfinder:grilling`) — Define async worker topology, retry policies, and human-in-the-loop review queue pause/resume logic. *(Blocked by #001)*
 5. 🔒 [005-bant-lead-scoring-and-funnel-transitions.md](./tickets/005-bant-lead-scoring-and-funnel-transitions.md) (`wayfinder:grilling`) — Solidify lead scoring mathematical weighting and automated stage transitions (`cold` → `warm` → `hot` → `mql` → `sql`). *(Blocked by #001)*
