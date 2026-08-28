@@ -4,16 +4,37 @@ import React, { useState } from "react";
 import {
   Users,
   Search,
-  Building,
   ChevronRight,
 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Lead } from "@/lib/api-client";
+import { formatRelativeTime } from "@/lib/utils";
 
 export default function LeadsPipelinePage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStage, setSelectedStage] = useState<string>("all");
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const mockLeads: Lead[] = [
     {
@@ -44,7 +65,7 @@ export default function LeadsPipelinePage() {
       sentiment: "positive",
       intent_signals: ["booked_demo_inquiry", "budget_approved"],
       interaction_count: 3,
-      last_interaction_at: new Date().toISOString(),
+      last_interaction_at: new Date(Date.now() - 3600000 * 2).toISOString(),
     },
     {
       id: "3",
@@ -59,7 +80,7 @@ export default function LeadsPipelinePage() {
       sentiment: "inquisitive",
       intent_signals: ["multi_turn_convo", "competitor_switch"],
       interaction_count: 5,
-      last_interaction_at: new Date().toISOString(),
+      last_interaction_at: new Date(Date.now() - 3600000 * 12).toISOString(),
     },
     {
       id: "4",
@@ -74,7 +95,7 @@ export default function LeadsPipelinePage() {
       sentiment: "positive",
       intent_signals: ["post_like", "positive_comment"],
       interaction_count: 2,
-      last_interaction_at: new Date().toISOString(),
+      last_interaction_at: new Date(Date.now() - 86400000).toISOString(),
     },
     {
       id: "5",
@@ -89,123 +110,251 @@ export default function LeadsPipelinePage() {
       sentiment: "neutral",
       intent_signals: ["first_touch"],
       interaction_count: 1,
-      last_interaction_at: new Date().toISOString(),
+      last_interaction_at: new Date(Date.now() - 86400000 * 3).toISOString(),
     },
   ];
 
-  const columns: { stage: Lead["lead_stage"]; label: string; badgeVariant: "default" | "warning" | "hot" | "mql" | "sql" }[] = [
-    { stage: "cold", label: "Cold Inbound", badgeVariant: "default" },
-    { stage: "warm", label: "Warm Engaged", badgeVariant: "warning" },
-    { stage: "hot", label: "Hot Intent", badgeVariant: "hot" },
-    { stage: "mql", label: "Marketing Qualified", badgeVariant: "mql" },
-    { stage: "sql", label: "Sales Qualified (SQL)", badgeVariant: "sql" },
+  const stages = [
+    { id: "all", label: "All Stages" },
+    { id: "sql", label: "SQL (Sales Qualified)" },
+    { id: "mql", label: "MQL (Marketing Qualified)" },
+    { id: "hot", label: "Hot Intent" },
+    { id: "warm", label: "Warm" },
+    { id: "cold", label: "Cold" },
   ];
 
-  const filteredLeads = mockLeads.filter(
-    (lead) =>
-      lead.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredLeads = mockLeads.filter((l) => {
+    const matchesSearch =
+      (l.full_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (l.company?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (l.headline?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    const matchesStage = selectedStage === "all" || l.lead_stage === selectedStage;
+    return matchesSearch && matchesStage;
+
+  });
+
+  const getStageBadgeVariant = (stage: Lead["lead_stage"]) => {
+    switch (stage) {
+      case "sql":
+        return "sql";
+      case "mql":
+        return "mql";
+      case "hot":
+        return "hot";
+      case "warm":
+        return "warning";
+      default:
+        return "secondary";
+    }
+  };
+
+  const handleRowClick = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDrawerOpen(true);
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Users className="h-6 w-6 text-purple-400" />
-            <span>Lead Pipeline & BANT Kanban</span>
+          <h1 className="text-sm font-semibold text-foreground tracking-tight flex items-center gap-2">
+            <Users className="h-4 w-4 text-foreground" />
+            <span>Lead Qualification & Pipeline</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Automated prospect progression from social interaction to sales qualification.
+          <p className="text-xs text-muted-foreground mt-0.5">
+            BANT scoring and intent signal tracking derived from LinkedIn inbound commentary and DMs.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search leads or company..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 text-xs rounded-xl"
-            />
-          </div>
+        {/* Pipeline Quick Counts */}
+        <div className="flex items-center gap-2">
+          <Badge variant="sql" className="font-mono text-[10px] h-5">
+            2 SQL Ready
+          </Badge>
+          <Badge variant="mql" className="font-mono text-[10px] h-5">
+            1 MQL
+          </Badge>
+          <Badge variant="outline" className="font-mono text-[10px] h-5">
+            5 Total
+          </Badge>
         </div>
       </div>
 
-      {/* Kanban Board Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
-        {columns.map((col) => {
-          const colLeads = filteredLeads.filter((l) => l.lead_stage === col.stage);
+      {/* Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search leads by name, title, or company..."
+            className="pl-8 h-8 text-xs bg-card"
+          />
+        </div>
 
-          return (
-            <div
-              key={col.stage}
-              className="flex flex-col rounded-2xl border border-slate-800/80 bg-slate-950/60 p-3 min-w-[240px]"
+        {/* Stage Filter Buttons */}
+        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          {stages.map((st) => (
+            <button
+              key={st.id}
+              onClick={() => setSelectedStage(st.id)}
+              className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs transition-colors ${
+                selectedStage === st.id
+                  ? "bg-accent text-accent-foreground border border-border font-medium"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
             >
-              {/* Column Header */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
-                <span className="text-xs font-semibold text-slate-200">{col.label}</span>
-                <Badge variant={col.badgeVariant} className="text-[10px] px-1.5 py-0">
-                  {colLeads.length}
-                </Badge>
-              </div>
+              {st.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-              {/* Lead Cards List */}
-              <div className="space-y-3 flex-1">
-                {colLeads.map((lead) => (
-                  <Card
-                    key={lead.id}
-                    className="p-3.5 border-slate-800 bg-slate-900/80 hover:border-slate-700 transition-all hover:scale-[1.01] cursor-pointer shadow-md"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <h4 className="text-xs font-bold text-white">{lead.full_name}</h4>
-                        <p className="text-[11px] text-slate-400 line-clamp-1">{lead.headline}</p>
-                      </div>
-                      <div className="rounded-md bg-purple-950/40 border border-purple-500/30 px-1.5 py-0.5 text-[10px] font-bold text-purple-300">
-                        {lead.lead_score}
-                      </div>
-                    </div>
-
-                    {lead.company && (
-                      <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-2">
-                        <Building className="h-3 w-3" />
-                        <span>{lead.company}</span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-1 mt-2">
+      {/* Enterprise Data Table */}
+      <Card className="p-0 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[240px]">Lead Name & Title</TableHead>
+              <TableHead className="w-[140px]">Company</TableHead>
+              <TableHead className="w-[100px]">Stage</TableHead>
+              <TableHead className="w-[90px] text-right">Lead Score</TableHead>
+              <TableHead>Intent Signals</TableHead>
+              <TableHead className="w-[120px]">Last Active</TableHead>
+              <TableHead className="w-[60px] text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredLeads.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                  No leads match the selected filter criteria.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredLeads.map((lead) => (
+                <TableRow
+                  key={lead.id}
+                  onClick={() => handleRowClick(lead)}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  <TableCell>
+                    <div className="font-semibold text-foreground text-xs">{lead.full_name}</div>
+                    <div className="text-[11px] text-muted-foreground line-clamp-1">{lead.headline}</div>
+                  </TableCell>
+                  <TableCell className="text-xs text-foreground font-medium">
+                    {lead.company}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStageBadgeVariant(lead.lead_stage)} className="text-[10px] uppercase font-mono py-0 h-4">
+                      {lead.lead_stage}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-bold text-xs">
+                    {lead.lead_score}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
                       {lead.intent_signals.map((sig) => (
                         <span
                           key={sig}
-                          className="rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-medium text-slate-300"
+                          className="rounded border border-border bg-muted/40 px-1.5 py-0.2 text-[10px] font-mono text-muted-foreground"
                         >
-                          {sig.replace("_", " ")}
+                          {sig}
                         </span>
                       ))}
                     </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-[10px] text-muted-foreground whitespace-nowrap">
+                    {formatRelativeTime(lead.last_interaction_at)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground inline" />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
-                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-800 text-[10px] text-slate-400">
-                      <span>{lead.interaction_count} interactions</span>
-                      <span className="text-purple-400 flex items-center gap-0.5 font-medium">
-                        View <ChevronRight className="h-3 w-3" />
-                      </span>
-                    </div>
-                  </Card>
-                ))}
+      {/* Slide-over Lead Detail Drawer */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-card p-6 flex flex-col justify-between">
+          {selectedLead && (
+            <>
+              <SheetHeader className="pb-4 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <Badge variant={getStageBadgeVariant(selectedLead.lead_stage)} className="uppercase font-mono text-[10px]">
+                    {selectedLead.lead_stage}
+                  </Badge>
+                  <span className="font-mono text-xs font-bold">
+                    Score: {selectedLead.lead_score}/100
+                  </span>
+                </div>
+                <SheetTitle className="text-base font-semibold mt-2">{selectedLead.full_name}</SheetTitle>
+                <SheetDescription className="text-xs">{selectedLead.headline}</SheetDescription>
+              </SheetHeader>
 
-                {colLeads.length === 0 && (
-                  <div className="h-28 rounded-xl border border-dashed border-slate-800/60 flex items-center justify-center text-[11px] text-slate-400">
-                    No leads in stage
+              <div className="space-y-4 py-4 overflow-y-auto flex-1 text-xs">
+                {/* Company & Profile Info */}
+                <div className="space-y-2 rounded-md border border-border p-3 bg-muted/20">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Company</span>
+                    <span className="font-medium text-foreground">{selectedLead.company}</span>
                   </div>
-                )}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Platform Handle</span>
+                    <span className="font-mono text-foreground">{selectedLead.platform_username}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Total Touchpoints</span>
+                    <span className="font-mono text-foreground">{selectedLead.interaction_count}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Sentiment</span>
+                    <span className="capitalize text-foreground font-medium">{selectedLead.sentiment}</span>
+                  </div>
+                </div>
+
+                {/* BANT Intent Signals Breakdown */}
+                <div className="space-y-2">
+                  <div className="font-semibold text-foreground text-xs">BANT Intent Signals</div>
+                  <div className="space-y-1.5">
+                    {selectedLead.intent_signals.map((signal) => (
+                      <div
+                        key={signal}
+                        className="rounded-md border border-border bg-background p-2 font-mono text-[11px] text-muted-foreground"
+                      >
+                        ✓ {signal.replace(/_/g, " ")}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommended SDR Action */}
+                <div className="rounded-md border border-indigo-500/30 bg-indigo-500/10 p-3 space-y-1 text-indigo-300">
+                  <div className="font-semibold text-xs">Recommended Action</div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Lead meets criteria for direct SDR handoff. Schedule meeting link or export contact to HubSpot.
+                  </p>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+
+              {/* Drawer Actions */}
+              <div className="pt-4 border-t border-border flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1 text-xs">
+                  Export to CRM
+                </Button>
+                <Button size="sm" className="flex-1 text-xs">
+                  Draft DM Reply
+                </Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
