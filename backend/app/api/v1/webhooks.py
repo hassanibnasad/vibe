@@ -39,4 +39,15 @@ async def handle_platform_webhook(
         processing_status="pending",
     )
 
+    # Fire-and-forget: hand off to the Hatchet worker for durable, retried processing.
+    # The webhook endpoint must return 200 quickly; all heavy work happens in the background.
+    from app.workflows.engagement_workflow import (  # noqa: PLC0415
+        EngagementInput,
+        engagement_pipeline_task,
+    )
+
+    await engagement_pipeline_task.aio_run_no_wait(
+        EngagementInput(platform=platform, raw_payload=body)
+    )
+
     return {"status": "received", "platform": platform}
