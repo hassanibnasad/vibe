@@ -51,9 +51,20 @@ async def test_engine():
 
 @pytest_asyncio.fixture
 async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
+    import app.dependencies as deps
+
+    orig_engine = deps._engine
+    orig_sessionmaker = deps._sessionmaker
+
     session_maker = async_sessionmaker(test_engine, expire_on_commit=False)
+    deps._engine = test_engine
+    deps._sessionmaker = session_maker
+
     async with session_maker() as session:
         yield session
+
+    deps._engine = orig_engine
+    deps._sessionmaker = orig_sessionmaker
 
 
 @pytest_asyncio.fixture

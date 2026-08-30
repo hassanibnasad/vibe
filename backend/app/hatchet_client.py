@@ -1,10 +1,9 @@
 """
 Hatchet workflow engine client — lazily-initialized module singleton.
 
-The client is only fully initialized when a token is available. During
-testing or when ``HATCHET_CLIENT_TOKEN`` is not set, a deferred wrapper
-returns a stub-like object that raises a clear error if any task is actually
-dispatched, rather than crashing at import time.
+The client defers connection attempts until call time. During testing,
+headless OpenAPI export, or when ``HATCHET_CLIENT_TOKEN`` is not set,
+task wrappers allow clean direct execution and module imports without crashing.
 
 All tokens and host values are read from app.config.Settings to satisfy the
 "Zero Hardcoding" architectural invariant defined in CONTEXT.md.
@@ -12,7 +11,10 @@ All tokens and host values are read from app.config.Settings to satisfy the
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import logging
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Any
 
@@ -21,17 +23,21 @@ from hatchet_sdk import ClientConfig, Hatchet
 logger = logging.getLogger(__name__)
 
 
+def is_hatchet_configured() -> bool:
+    """Return True if a Hatchet client token is available in settings."""
+    try:
+        from app.config import settings  # noqa: PLC0415
+        return bool(settings.HATCHET_CLIENT_TOKEN)
+    except Exception:
+        return False
+
+
 @lru_cache(maxsize=1)
 def get_hatchet() -> Hatchet:
     """Return a cached Hatchet client, initialised lazily from Settings.
 
     Raises ``RuntimeError`` if ``HATCHET_CLIENT_TOKEN`` is not configured.
-    The error surfaces at call time (when a task is dispatched or a worker
-    is started), **not** at import time, so tests that never touch Hatchet
-    are unaffected.
     """
-    # Deferred import to avoid circular imports and to keep module-level
-    # code (executed at import time) free of side-effects.
     from app.config import settings  # noqa: PLC0415
 
     token = settings.HATCHET_CLIENT_TOKEN
@@ -49,29 +55,80 @@ def get_hatchet() -> Hatchet:
     return Hatchet(config=ClientConfig(**config_kwargs))
 
 
+class _TaskWrapper:
+    """Wrapper that preserves the task interface and supports both Hatchet dispatch and direct execution."""
+
+    def __init__(self, fn: Callable, task_kwargs: dict[str, Any]):
+        self.fn = fn
+        self.task_kwargs = task_kwargs
+        self._real_task: Any = None
+
+    def _get_real_task(self) -> Any:
+        if self._real_task is None and is_hatchet_configured():
+            try:
+                client = get_hatchet()
+                self._real_task = client.task(**self.task_kwargs)(self.fn)
+            except Exception as e:
+                logger.warning("hatchet_task_binding_failed", error=str(e))
+        return self._real_task
+
+    async def aio_run(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
+        real_task = self._get_real_task()
+        if real_task is not None and hasattr(real_task, "aio_run"):
+            try:
+                return await real_task.aio_run(input_data, *args, **kwargs)
+            except Exception as e:
+                logger.warning("hatchet_dispatch_fallback", error=str(e))
+        # Fallback to direct async invocation
+        if inspect.iscoroutinefunction(self.fn):
+            return await self.fn(input_data, None)
+        return self.fn(input_data, None)
+
+    async def aio_run_no_wait(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
+        real_task = self._get_real_task()
+        if real_task is not None and hasattr(real_task, "aio_run_no_wait"):
+            try:
+                return await real_task.aio_run_no_wait(input_data, *args, **kwargs)
+            except Exception as e:
+                logger.warning("hatchet_no_wait_dispatch_fallback", error=str(e))
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self.aio_run(input_data, *args, **kwargs))
+        except RuntimeError:
+            return asyncio.run(self.aio_run(input_data, *args, **kwargs))
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.fn(*args, **kwargs)
+
+
+class _WorkflowWrapper:
+    """Wrapper that defers Hatchet workflow registration."""
+
+    def __init__(self, workflow_kwargs: dict[str, Any]):
+        self.workflow_kwargs = workflow_kwargs
+
+    def task(self, **task_kwargs: Any) -> Callable:
+        def decorator(fn: Callable) -> _TaskWrapper:
+            return _TaskWrapper(fn, {**self.workflow_kwargs, **task_kwargs})
+        return decorator
+
+
 class _LazyHatchet:
-    """Transparent proxy that defers Hatchet initialisation until first use.
+    """Transparent proxy that defers Hatchet initialisation until execution."""
 
-    This allows workflow modules to do ``from app.hatchet_client import hatchet``
-    at module level without triggering a connection attempt at import time.
-    Any attribute access (e.g. ``hatchet.task``, ``hatchet.worker``) triggers
-    the actual initialisation on first use.
-    """
+    def task(self, **kwargs: Any) -> Callable:
+        def decorator(fn: Callable) -> _TaskWrapper:
+            return _TaskWrapper(fn, kwargs)
+        return decorator
 
-    _instance: Hatchet | None = None
+    def workflow(self, **kwargs: Any) -> _WorkflowWrapper:
+        return _WorkflowWrapper(kwargs)
 
-    def _get(self) -> Hatchet:
-        if self._instance is None:
-            self._instance = get_hatchet()
-        return self._instance
+    def worker(self, *args: Any, **kwargs: Any) -> Any:
+        return get_hatchet().worker(*args, **kwargs)
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self._get(), name)
-
-    def __repr__(self) -> str:  # pragma: no cover
-        return f"<LazyHatchet instance={self._instance!r}>"
+        return getattr(get_hatchet(), name)
 
 
-# Module-level singleton. Attribute access is deferred until first use,
-# so importing this module does NOT open a connection to Hatchet.
 hatchet: Hatchet = _LazyHatchet()  # type: ignore[assignment]

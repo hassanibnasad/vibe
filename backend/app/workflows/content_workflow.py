@@ -25,6 +25,8 @@ class ContentPipelineInput(BaseModel):
     platform_id: str
     platform_type: str = "linkedin"
     tone: str = "professional"
+    campaign_id: str | None = None
+    variants_count: int = 1
     auto_publish: bool = False
 
 
@@ -45,18 +47,44 @@ async def content_pipeline_task(
     from app.services.publishing_service import PublishingService  # noqa: PLC0415
 
     platform_id = UUID(input.platform_id)
+    campaign_id = UUID(input.campaign_id) if input.campaign_id else None
 
     session_factory = get_sessionmaker()
     async with session_factory() as session:
         post_repo = PostRepository(session)
         content_service = ContentService(post_repo=post_repo)
 
-        # 1. Generate post and save draft
+        if input.variants_count > 1:
+            posts = await content_service.generate_and_save_variants(
+                brief=input.brief,
+                platform_id=platform_id,
+                platform_type=input.platform_type,
+                tone=input.tone,
+                campaign_id=campaign_id,
+                variants_count=input.variants_count,
+            )
+            await session.commit()
+            logger.info(
+                "content_pipeline_variants_completed",
+                variants_count=len(posts),
+                post_ids=[str(p.id) for p in posts],
+            )
+            return {
+                "post_id": str(posts[0].id),
+                "post_ids": [str(p.id) for p in posts],
+                "status": posts[0].status,
+                "requires_review": posts[0].requires_review,
+                "confidence_score": posts[0].confidence_score,
+                "platform_post_url": posts[0].platform_post_url,
+            }
+
+        # 1. Single post generation
         post = await content_service.generate_and_save_draft(
             brief=input.brief,
             platform_id=platform_id,
             platform_type=input.platform_type,
             tone=input.tone,
+            campaign_id=campaign_id,
         )
 
         # 2. Auto-publish if requested and confidence is high enough
@@ -75,6 +103,7 @@ async def content_pipeline_task(
 
     return {
         "post_id": str(post.id),
+        "post_ids": [str(post.id)],
         "status": post.status,
         "requires_review": post.requires_review,
         "confidence_score": post.confidence_score,
