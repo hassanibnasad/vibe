@@ -12,6 +12,7 @@
           "Health"
         ],
         "summary": "Health Check",
+        "description": "Comprehensive system health and service telemetry endpoint.",
         "operationId": "health_check_api_v1_health_get",
         "responses": {
           "200": {
@@ -35,7 +36,7 @@
           "Posts"
         ],
         "summary": "Generate Post",
-        "description": "Generate marketing post draft via ContentGeneratorAgent.",
+        "description": "Generate marketing post draft via ContentGeneratorAgent, dispatched through Hatchet.",
         "operationId": "generate_post_api_v1_posts_generate_post",
         "requestBody": {
           "content": {
@@ -82,7 +83,7 @@
           "Posts"
         ],
         "summary": "Generate Post Variants",
-        "description": "Generate multiple marketing post draft variants for A/B testing.",
+        "description": "Generate multiple marketing post draft variants for A/B testing via Hatchet.",
         "operationId": "generate_post_variants_api_v1_posts_generate_variants_post",
         "requestBody": {
           "content": {
@@ -773,6 +774,65 @@
         }
       }
     },
+    "/api/v1/leads/{lead_id}/stage": {
+      "patch": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Update Lead Stage",
+        "description": "Update lead funnel stage directly (e.g. from Kanban drag-and-drop or pipeline triage).",
+        "operationId": "update_lead_stage_api_v1_leads__lead_id__stage_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Lead Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadStageUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/leads/{lead_id}/score": {
       "post": {
         "tags": [
@@ -944,15 +1004,30 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReviewActionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Approve Reply Api V1 Conversations Review Queue  Message Id  Approve Post"
+                  "$ref": "#/components/schemas/ReviewActionResponse"
                 }
               }
             }
@@ -995,11 +1070,18 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReviewActionRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReviewActionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
               }
             }
           }
@@ -1010,9 +1092,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Reject Reply Api V1 Conversations Review Queue  Message Id  Reject Post"
+                  "$ref": "#/components/schemas/ReviewActionResponse"
                 }
               }
             }
@@ -1326,6 +1406,7 @@
           "Analytics"
         ],
         "summary": "Get Analytics Overview",
+        "description": "High-level system metrics overview without raw SQL queries.",
         "operationId": "get_analytics_overview_api_v1_analytics_overview_get",
         "responses": {
           "200": {
@@ -1334,6 +1415,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AnalyticsOverviewResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/analytics/dashboard": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Dashboard Metrics",
+        "description": "Rich enterprise dashboard telemetry feeding the Next.js Command Center.",
+        "operationId": "get_dashboard_metrics_api_v1_analytics_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardMetricsResponse"
                 }
               }
             }
@@ -1649,6 +1757,77 @@
         ],
         "title": "ConversationResponse"
       },
+      "DashboardMetricsResponse": {
+        "properties": {
+          "total_posts_published": {
+            "type": "integer",
+            "title": "Total Posts Published",
+            "default": 0
+          },
+          "total_leads": {
+            "type": "integer",
+            "title": "Total Leads",
+            "default": 0
+          },
+          "mql_sql_leads": {
+            "type": "integer",
+            "title": "Mql Sql Leads",
+            "default": 0
+          },
+          "review_queue_pending": {
+            "type": "integer",
+            "title": "Review Queue Pending",
+            "default": 0
+          },
+          "avg_reply_confidence": {
+            "type": "number",
+            "title": "Avg Reply Confidence",
+            "default": 0.85
+          },
+          "avg_response_time_sec": {
+            "type": "number",
+            "title": "Avg Response Time Sec",
+            "default": 1.4
+          },
+          "sentiment_distribution": {
+            "$ref": "#/components/schemas/SentimentDistribution",
+            "default": {
+              "positive": 0,
+              "neutral": 0,
+              "inquisitive": 0,
+              "negative": 0
+            }
+          },
+          "leads_by_stage": {
+            "$ref": "#/components/schemas/LeadsByStage",
+            "default": {
+              "cold": 0,
+              "warm": 0,
+              "hot": 0,
+              "mql": 0,
+              "sql": 0
+            }
+          },
+          "recent_posts": {
+            "items": {
+              "$ref": "#/components/schemas/PostResponse"
+            },
+            "type": "array",
+            "title": "Recent Posts",
+            "default": []
+          },
+          "review_queue": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewItemResponse"
+            },
+            "type": "array",
+            "title": "Review Queue",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "DashboardMetricsResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1811,8 +1990,8 @@
           },
           "lead_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Lead Score"
           },
           "lead_stage": {
@@ -1876,8 +2055,8 @@
         "properties": {
           "new_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "New Score"
           },
           "reason": {
@@ -1892,6 +2071,31 @@
           "reason"
         ],
         "title": "LeadScoreUpdateRequest"
+      },
+      "LeadStageUpdateRequest": {
+        "properties": {
+          "lead_stage": {
+            "type": "string",
+            "pattern": "^(cold|warm|hot|mql|sql|disqualified)$",
+            "title": "Lead Stage"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_stage"
+        ],
+        "title": "LeadStageUpdateRequest"
       },
       "LeadUpdateRequest": {
         "properties": {
@@ -1976,8 +2180,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -2014,6 +2218,37 @@
         },
         "type": "object",
         "title": "LeadUpdateRequest"
+      },
+      "LeadsByStage": {
+        "properties": {
+          "cold": {
+            "type": "integer",
+            "title": "Cold",
+            "default": 0
+          },
+          "warm": {
+            "type": "integer",
+            "title": "Warm",
+            "default": 0
+          },
+          "hot": {
+            "type": "integer",
+            "title": "Hot",
+            "default": 0
+          },
+          "mql": {
+            "type": "integer",
+            "title": "Mql",
+            "default": 0
+          },
+          "sql": {
+            "type": "integer",
+            "title": "Sql",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "LeadsByStage"
       },
       "MessageCreateRequest": {
         "properties": {
@@ -2286,8 +2521,8 @@
           },
           "variants": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Variants",
             "default": 1
           }
@@ -2613,13 +2848,65 @@
               }
             ],
             "title": "Alternative Reply"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
           }
         },
         "type": "object",
         "title": "ReviewActionRequest"
       },
+      "ReviewActionResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message_id"
+        ],
+        "title": "ReviewActionResponse"
+      },
       "ReviewItemResponse": {
         "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
           "message_id": {
             "type": "string",
             "format": "uuid",
@@ -2635,13 +2922,52 @@
             "format": "uuid",
             "title": "Lead Id"
           },
+          "lead_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Name"
+          },
+          "lead_headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Headline"
+          },
           "platform": {
             "type": "string",
             "title": "Platform"
           },
+          "incoming_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incoming Message"
+          },
+          "draft_reply": {
+            "type": "string",
+            "title": "Draft Reply",
+            "default": ""
+          },
           "suggested_reply": {
             "type": "string",
-            "title": "Suggested Reply"
+            "title": "Suggested Reply",
+            "default": ""
           },
           "confidence_score": {
             "anyOf": [
@@ -2653,6 +2979,16 @@
               }
             ],
             "title": "Confidence Score"
+          },
+          "sentiment": {
+            "type": "string",
+            "title": "Sentiment",
+            "default": "inquisitive"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status",
+            "default": "pending"
           },
           "created_at": {
             "type": "string",
@@ -2666,10 +3002,35 @@
           "conversation_id",
           "lead_id",
           "platform",
-          "suggested_reply",
           "created_at"
         ],
         "title": "ReviewItemResponse"
+      },
+      "SentimentDistribution": {
+        "properties": {
+          "positive": {
+            "type": "integer",
+            "title": "Positive",
+            "default": 0
+          },
+          "neutral": {
+            "type": "integer",
+            "title": "Neutral",
+            "default": 0
+          },
+          "inquisitive": {
+            "type": "integer",
+            "title": "Inquisitive",
+            "default": 0
+          },
+          "negative": {
+            "type": "integer",
+            "title": "Negative",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "SentimentDistribution"
       },
       "ValidationError": {
         "properties": {

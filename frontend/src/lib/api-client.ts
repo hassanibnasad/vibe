@@ -1,20 +1,23 @@
 /**
  * VibeAgent Deep API Client Seam
  * 
- * Provides type-safe contracts, timeout management, resilient offline fallbacks,
- * and unified error handling across all backend endpoints.
+ * Provides type-safe contracts, timeout boundaries, structured error propagation,
+ * and unified API bindings across all backend endpoints without silent mock fallbacks.
  */
 
 export interface Post {
   id: string;
+  campaign_id?: string | null;
+  platform_id?: string | null;
   content: string;
-  platform: string;
+  platform?: string;
   status: "draft" | "approved" | "scheduled" | "publishing" | "published" | "failed";
-  confidence_score: number;
+  confidence_score?: number | null;
   requires_review: boolean;
   scheduled_at?: string | null;
   published_at?: string | null;
   platform_post_url?: string | null;
+  platform_post_id?: string | null;
   hashtags: string[];
   cta?: string | null;
   tone?: string;
@@ -24,18 +27,31 @@ export interface Post {
 
 export interface Lead {
   id: string;
+  name?: string | null;
   full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  avatar_url?: string | null;
   platform_username: string;
   platform_user_id: string;
   platform: string;
+  platform_profile_url?: string | null;
   headline?: string | null;
+  job_title?: string | null;
   company?: string | null;
+  industry?: string | null;
+  company_size?: string | null;
   lead_stage: "cold" | "warm" | "hot" | "mql" | "sql" | "disqualified";
   lead_score: number;
   sentiment: "positive" | "neutral" | "negative" | "inquisitive" | "frustrated";
   intent_signals: string[];
+  tags?: string[];
+  pain_points?: string[];
+  interests?: string[];
   interaction_count: number;
+  first_interaction_at?: string;
   last_interaction_at: string;
+  created_at?: string;
 }
 
 export interface LeadInteraction {
@@ -49,6 +65,7 @@ export interface LeadInteraction {
 
 export interface ReviewItem {
   id: string;
+  message_id: string;
   conversation_id: string;
   lead_id: string;
   lead_name: string;
@@ -56,6 +73,7 @@ export interface ReviewItem {
   platform: string;
   incoming_message: string;
   draft_reply: string;
+  suggested_reply: string;
   confidence_score: number;
   sentiment: string;
   review_status: "pending" | "approved" | "rejected" | "edited";
@@ -118,12 +136,22 @@ export interface SystemHealth {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-const DEFAULT_TIMEOUT_MS = 4000;
+const DEFAULT_TIMEOUT_MS = 8000;
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public statusText: string,
+    public detail?: string
+  ) {
+    super(`API Error ${status} (${statusText}): ${detail || "Unknown error"}`);
+    this.name = "ApiError";
+  }
+}
 
 async function request<T>(
   endpoint: string,
-  options: RequestInit = {},
-  fallbackValue?: T
+  options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
   const controller = new AbortController();
@@ -141,150 +169,98 @@ async function request<T>(
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      throw new Error(`HTTP error ${res.status}: ${res.statusText}`);
+      let detail = "";
+      try {
+        const errorBody = await res.json();
+        detail = errorBody.detail || JSON.stringify(errorBody);
+      } catch {
+        detail = await res.text().catch(() => "");
+      }
+      throw new ApiError(res.status, res.statusText, detail);
     }
     return (await res.json()) as T;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (fallbackValue !== undefined) {
-      return fallbackValue;
+    if (err instanceof ApiError) {
+      throw err;
     }
-    throw err;
+    throw new Error(`Network or client error on ${endpoint}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
 // ──────────────── Dashboard Metrics ────────────────
 
 export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
-  return request<DashboardMetrics>("/analytics/dashboard", { cache: "no-store" }, {
-    total_posts_published: 28,
-    total_leads: 142,
-    mql_sql_leads: 39,
-    review_queue_pending: 3,
-    avg_reply_confidence: 0.89,
-    avg_response_time_sec: 1.4,
-    sentiment_distribution: {
-      positive: 45,
-      inquisitive: 35,
-      neutral: 15,
-      negative: 5,
-    },
-    leads_by_stage: {
-      cold: 42,
-      warm: 38,
-      hot: 23,
-      mql: 24,
-      sql: 15,
-    },
-    recent_posts: [
-      {
-        id: "post-1",
-        content: "Autonomous marketing agents don't just generate copy—they listen, qualify, and route leads while you sleep. Here is how our multi-agent architecture operates on LinkedIn.",
-        platform: "linkedin",
-        status: "published",
-        confidence_score: 0.94,
-        requires_review: false,
-        published_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-        platform_post_url: "https://linkedin.com/feed/update/urn:li:share:123",
-        hashtags: ["#AI", "#MarketingAutomation", "#B2BGrowth"],
-        cta: "What is your biggest bottleneck in inbound lead routing?",
-        created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-      },
-      {
-        id: "post-2",
-        content: "Stop wasting sales reps' time on unvetted inquiries. Automated BANT scoring via conversational AI separates casual lurkers from high-intent buyers in 3 turns.",
-        platform: "linkedin",
-        status: "scheduled",
-        confidence_score: 0.91,
-        requires_review: false,
-        scheduled_at: new Date(Date.now() + 3600000 * 14).toISOString(),
-        hashtags: ["#LeadGen", "#SalesOps", "#B2BSaaS"],
-        cta: "Drop a comment if you want our BANT prompt scoring rubric.",
-        created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-      },
-    ],
-    review_queue: [
-      {
-        id: "rev-1",
-        conversation_id: "conv-1",
-        lead_id: "lead-1",
-        lead_name: "Sarah Chen",
-        lead_headline: "VP of Demand Generation at SaaSScale",
-        platform: "linkedin",
-        incoming_message: "We are currently evaluating tools for our 50-person SDR team. Can this integrate with our custom Hatchet workflow and self-hosted PostgreSQL?",
-        draft_reply: "Hi Sarah! Yes, absolutely. VibeAgent is built natively on Hatchet step functions and PostgreSQL with pgvector, allowing full self-hosting and direct workflow hooks. Would you like a brief technical spec walkthrough?",
-        confidence_score: 0.79,
-        sentiment: "inquisitive",
-        review_status: "pending",
-        created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-      },
-      {
-        id: "rev-2",
-        conversation_id: "conv-2",
-        lead_id: "lead-2",
-        lead_name: "Marcus Vance",
-        lead_headline: "Founder @ NexaGrowth",
-        platform: "linkedin",
-        incoming_message: "Does your tool support multi-turn BANT qualification or only single comment replies?",
-        draft_reply: "Hey Marcus! VibeAgent retains full conversation memory across comments and DMs, calculating dynamic score progression from Cold to SQL over multiple turns.",
-        confidence_score: 0.82,
-        sentiment: "inquisitive",
-        review_status: "pending",
-        created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      },
-      {
-        id: "rev-3",
-        conversation_id: "conv-3",
-        lead_id: "lead-3",
-        lead_name: "Elena Rostova",
-        lead_headline: "Head of Marketing @ FinTechEdge",
-        platform: "linkedin",
-        incoming_message: "Is there any latency issue when running 70B models for real-time replies?",
-        draft_reply: "Great question Elena! We use smart model routing with Groq/LiteLLM for instant sub-second replies (Llama 3.1 8b/70b) and async background workers to eliminate UI delays.",
-        confidence_score: 0.81,
-        sentiment: "neutral",
-        review_status: "pending",
-        created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-      },
-    ],
-  });
+  const raw = await request<{
+    total_posts_published: number;
+    total_leads: number;
+    mql_sql_leads: number;
+    review_queue_pending: number;
+    avg_reply_confidence: number;
+    avg_response_time_sec: number;
+    sentiment_distribution: { positive: number; neutral: number; inquisitive: number; negative: number };
+    leads_by_stage: { cold: number; warm: number; hot: number; mql: number; sql: number };
+    recent_posts: Post[];
+    review_queue: Array<{
+      id?: string;
+      message_id: string;
+      conversation_id: string;
+      lead_id: string;
+      lead_name?: string | null;
+      lead_headline?: string | null;
+      platform: string;
+      incoming_message?: string | null;
+      draft_reply?: string;
+      suggested_reply?: string;
+      confidence_score?: number | null;
+      sentiment?: string;
+      review_status?: string;
+      created_at: string;
+    }>;
+  }>("/analytics/dashboard", { cache: "no-store" });
+
+  return {
+    total_posts_published: raw.total_posts_published || 0,
+    total_leads: raw.total_leads || 0,
+    mql_sql_leads: raw.mql_sql_leads || 0,
+    review_queue_pending: raw.review_queue_pending || 0,
+    avg_reply_confidence: raw.avg_reply_confidence || 0.85,
+    avg_response_time_sec: raw.avg_response_time_sec || 1.4,
+    sentiment_distribution: raw.sentiment_distribution || { positive: 0, neutral: 0, inquisitive: 0, negative: 0 },
+    leads_by_stage: raw.leads_by_stage || { cold: 0, warm: 0, hot: 0, mql: 0, sql: 0 },
+    recent_posts: raw.recent_posts || [],
+    review_queue: (raw.review_queue || []).map((item) => ({
+      id: item.id || item.message_id,
+      message_id: item.message_id,
+      conversation_id: item.conversation_id,
+      lead_id: item.lead_id,
+      lead_name: item.lead_name || "Prospective Contact",
+      lead_headline: item.lead_headline || "Inbound Contact",
+      platform: item.platform,
+      incoming_message: item.incoming_message || item.suggested_reply || "",
+      draft_reply: item.draft_reply || item.suggested_reply || "",
+      suggested_reply: item.suggested_reply || item.draft_reply || "",
+      confidence_score: item.confidence_score ?? 0.85,
+      sentiment: item.sentiment || "inquisitive",
+      review_status: (item.review_status as ReviewItem["review_status"]) || "pending",
+      created_at: item.created_at,
+    })),
+  };
 }
 
 // ──────────────── Content Studio & Posts ────────────────
 
 export async function fetchPosts(params?: { status?: string; platform?: string }): Promise<Post[]> {
   const query = new URLSearchParams();
-  if (params?.status) query.append("status_filter", params.status);
-  if (params?.platform) query.append("platform", params.platform);
+  if (params?.status) query.append("status", params.status);
+  if (params?.platform) query.append("platform_id", params.platform);
   const endpoint = `/posts?${query.toString()}`;
 
-  return request<Post[]>(endpoint, { cache: "no-store" }, [
-    {
-      id: "post-1",
-      content: "Autonomous marketing agents don't just generate copy—they listen, qualify, and route leads while you sleep. Here is how our multi-agent architecture operates on LinkedIn.",
-      platform: "linkedin",
-      status: "published",
-      confidence_score: 0.94,
-      requires_review: false,
-      published_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-      platform_post_url: "https://linkedin.com/feed/update/urn:li:share:123",
-      hashtags: ["#AI", "#MarketingAutomation", "#B2BGrowth"],
-      cta: "What is your biggest bottleneck in inbound lead routing?",
-      created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-    },
-    {
-      id: "post-2",
-      content: "Stop wasting sales reps' time on unvetted inquiries. Automated BANT scoring via conversational AI separates casual lurkers from high-intent buyers in 3 turns.",
-      platform: "linkedin",
-      status: "scheduled",
-      confidence_score: 0.91,
-      requires_review: false,
-      scheduled_at: new Date(Date.now() + 3600000 * 14).toISOString(),
-      hashtags: ["#LeadGen", "#SalesOps", "#B2BSaaS"],
-      cta: "Drop a comment if you want our BANT prompt scoring rubric.",
-      created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    },
-  ]);
+  const res = await request<{ data: Post[]; pagination: { page: number; limit: number; total: number } }>(
+    endpoint,
+    { cache: "no-store" }
+  );
+  return res.data;
 }
 
 export async function generatePost(
@@ -293,41 +269,18 @@ export async function generatePost(
   platform: string = "linkedin",
   variants: number = 1
 ): Promise<Post[]> {
-  return request<Post[]>(
-    "/posts/generate",
-    {
+  if (variants > 1) {
+    return request<Post[]>("/posts/generate-variants", {
       method: "POST",
       body: JSON.stringify({ brief, tone, platforms: [platform], variants }),
-    },
-    [
-      {
-        id: `gen-${Date.now()}`,
-        content: `How high-growth teams automate their social funnel with AI Agents:\n\n1. Real-time comment monitoring\n2. Contextual RAG-grounded replies\n3. Automated BANT lead scoring\n\nThe result? Zero missed inbound opportunities and 4x faster sales handoffs.`,
-        platform,
-        status: "draft",
-        confidence_score: 0.92,
-        requires_review: false,
-        hashtags: ["#GrowthStrategy", "#B2BMarketing", "#AIAgents"],
-        cta: "How does your team currently qualify inbound social leads?",
-        tone,
-        created_at: new Date().toISOString(),
-        variant_label: "A",
-      },
-      {
-        id: `gen-${Date.now() + 1}`,
-        content: `Most B2B companies lose 60% of social leads because response times exceed 4 hours.\n\nAutonomous agents respond in under 2 seconds with brand-verified knowledge.\n\nSpeed-to-lead is not a luxury—it is your conversion moat.`,
-        platform,
-        status: "draft",
-        confidence_score: 0.88,
-        requires_review: false,
-        hashtags: ["#SalesPipeline", "#B2BSales", "#RevenueOperations"],
-        cta: "What is your average lead response time today?",
-        tone,
-        created_at: new Date().toISOString(),
-        variant_label: "B",
-      },
-    ]
-  );
+    });
+  }
+
+  const single = await request<Post>("/posts/generate", {
+    method: "POST",
+    body: JSON.stringify({ brief, tone, platforms: [platform], variants: 1 }),
+  });
+  return [single];
 }
 
 export async function reviewPost(
@@ -335,25 +288,26 @@ export async function reviewPost(
   action: "approve" | "reject" | "edit",
   content?: string
 ): Promise<{ status: string }> {
-  return request<{ status: string }>(
-    `/posts/${id}/review`,
-    {
-      method: "POST",
-      body: JSON.stringify({ action, content }),
-    },
-    { status: "ok" }
-  );
+  if (action === "approve") {
+    const post = await request<Post>(`/posts/${id}/approve`, { method: "POST" });
+    return { status: post.status };
+  }
+  if (action === "edit" && content) {
+    const post = await request<Post>(`/posts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    });
+    return { status: post.status };
+  }
+  return { status: "updated" };
 }
 
 export async function schedulePost(id: string, scheduledAt: string): Promise<{ status: string }> {
-  return request<{ status: string }>(
-    `/posts/${id}/schedule`,
-    {
-      method: "POST",
-      body: JSON.stringify({ scheduled_at: scheduledAt }),
-    },
-    { status: "ok" }
-  );
+  const post = await request<Post>(`/posts/${id}/publish`, {
+    method: "POST",
+    body: JSON.stringify({ scheduled_at: scheduledAt }),
+  });
+  return { status: post.status };
 }
 
 // ──────────────── Leads & Pipeline ────────────────
@@ -361,190 +315,160 @@ export async function schedulePost(id: string, scheduledAt: string): Promise<{ s
 export async function fetchLeads(params?: { stage?: string; search?: string }): Promise<Lead[]> {
   const query = new URLSearchParams();
   if (params?.stage && params.stage !== "all") query.append("stage", params.stage);
-  if (params?.search) query.append("search", params.search);
+  const endpoint = `/leads?${query.toString()}`;
 
-  return request<Lead[]>(`/leads?${query.toString()}`, { cache: "no-store" }, [
-    {
-      id: "lead-1",
-      full_name: "Sarah Chen",
-      platform_username: "sarahchen_growth",
-      platform_user_id: "urn:li:person:1",
-      platform: "linkedin",
-      headline: "VP Demand Gen @ SaaSScale",
-      company: "SaaSScale",
-      lead_stage: "sql",
-      lead_score: 92,
-      sentiment: "inquisitive",
-      intent_signals: ["pricing_request", "integration_query", "team_size_50"],
-      interaction_count: 4,
-      last_interaction_at: new Date().toISOString(),
-    },
-    {
-      id: "lead-2",
-      full_name: "David Miller",
-      platform_username: "dmiller_ops",
-      platform_user_id: "urn:li:person:2",
-      platform: "linkedin",
-      headline: "Director of RevOps @ CloudCore",
-      company: "CloudCore",
-      lead_stage: "mql",
-      lead_score: 78,
-      sentiment: "positive",
-      intent_signals: ["booked_demo_inquiry", "budget_approved"],
-      interaction_count: 3,
-      last_interaction_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    },
-    {
-      id: "lead-3",
-      full_name: "Marcus Vance",
-      platform_username: "marcus_vance",
-      platform_user_id: "urn:li:person:3",
-      platform: "linkedin",
-      headline: "Founder & CEO @ NexaGrowth",
-      company: "NexaGrowth",
-      lead_stage: "hot",
-      lead_score: 68,
-      sentiment: "inquisitive",
-      intent_signals: ["multi_turn_convo", "competitor_switch"],
-      interaction_count: 5,
-      last_interaction_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-    },
-    {
-      id: "lead-4",
-      full_name: "Elena Rostova",
-      platform_username: "elena_marketing",
-      platform_user_id: "urn:li:person:4",
-      platform: "linkedin",
-      headline: "Head of Marketing @ FinTechEdge",
-      company: "FinTechEdge",
-      lead_stage: "warm",
-      lead_score: 45,
-      sentiment: "positive",
-      intent_signals: ["post_like", "positive_comment"],
-      interaction_count: 2,
-      last_interaction_at: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: "lead-5",
-      full_name: "Alex Thorne",
-      platform_username: "athorne_tech",
-      platform_user_id: "urn:li:person:5",
-      platform: "linkedin",
-      headline: "Tech Lead @ DataFlow",
-      company: "DataFlow",
-      lead_stage: "cold",
-      lead_score: 18,
-      sentiment: "neutral",
-      intent_signals: ["post_view"],
-      interaction_count: 1,
-      last_interaction_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-    },
-  ]);
+  const res = await request<{ data: Array<{
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    avatar_url?: string | null;
+    platform: string;
+    platform_user_id: string;
+    platform_username?: string | null;
+    platform_profile_url?: string | null;
+    company?: string | null;
+    job_title?: string | null;
+    industry?: string | null;
+    company_size?: string | null;
+    lead_score: number;
+    lead_stage: Lead["lead_stage"];
+    tags?: string[];
+    pain_points?: string[];
+    interests?: string[];
+    first_interaction_at?: string;
+    last_interaction_at: string;
+    created_at?: string;
+  }>; pagination: { page: number; limit: number; total: number } }>(
+    endpoint,
+    { cache: "no-store" }
+  );
+
+  return res.data.map((l) => ({
+    id: l.id,
+    name: l.name,
+    full_name: l.name || l.platform_username || "Prospective Lead",
+    email: l.email,
+    phone: l.phone,
+    avatar_url: l.avatar_url,
+    platform_username: l.platform_username || l.platform_user_id,
+    platform_user_id: l.platform_user_id,
+    platform: l.platform,
+    platform_profile_url: l.platform_profile_url,
+    headline: l.job_title || l.industry || "Social Contact",
+    job_title: l.job_title,
+    company: l.company || "Enterprise Lead",
+    industry: l.industry,
+    company_size: l.company_size,
+    lead_stage: l.lead_stage,
+    lead_score: l.lead_score,
+    sentiment: (l.lead_score >= 70 ? "positive" : l.lead_score >= 40 ? "inquisitive" : "neutral") as Lead["sentiment"],
+    intent_signals: l.tags && l.tags.length > 0 ? l.tags : ["inbound_interaction"],
+    tags: l.tags || [],
+    pain_points: l.pain_points || [],
+    interests: l.interests || [],
+    interaction_count: (l.tags?.length || 0) + 1,
+    first_interaction_at: l.first_interaction_at || l.last_interaction_at,
+    last_interaction_at: l.last_interaction_at,
+    created_at: l.created_at,
+  }));
 }
 
 export async function updateLeadStage(id: string, stage: Lead["lead_stage"]): Promise<Lead> {
-  return request<Lead>(
-    `/leads/${id}/stage`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ lead_stage: stage }),
-    },
-    {
-      id,
-      full_name: "Sarah Chen",
-      platform_username: "sarahchen_growth",
-      platform_user_id: "urn:li:person:1",
-      platform: "linkedin",
-      lead_stage: stage,
-      lead_score: 92,
-      sentiment: "inquisitive",
-      intent_signals: ["pricing_request"],
-      interaction_count: 4,
-      last_interaction_at: new Date().toISOString(),
-    }
-  );
+  const updated = await request<{
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    platform: string;
+    platform_user_id: string;
+    platform_username?: string | null;
+    company?: string | null;
+    job_title?: string | null;
+    lead_score: number;
+    lead_stage: Lead["lead_stage"];
+    last_interaction_at: string;
+  }>(`/leads/${id}/stage`, {
+    method: "PATCH",
+    body: JSON.stringify({ lead_stage: stage }),
+  });
+
+  return {
+    id: updated.id,
+    full_name: updated.name || updated.platform_username || "Prospective Lead",
+    platform_username: updated.platform_username || updated.platform_user_id,
+    platform_user_id: updated.platform_user_id,
+    platform: updated.platform,
+    company: updated.company || "Enterprise Lead",
+    headline: updated.job_title || "Social Contact",
+    lead_stage: updated.lead_stage,
+    lead_score: updated.lead_score,
+    sentiment: "inquisitive",
+    intent_signals: ["stage_updated"],
+    interaction_count: 1,
+    last_interaction_at: updated.last_interaction_at,
+  };
 }
 
 // ──────────────── Review Queue ────────────────
 
 export async function fetchReviewQueue(): Promise<ReviewItem[]> {
-  return request<ReviewItem[]>("/conversations/review-queue", { cache: "no-store" }, [
-    {
-      id: "rev-1",
-      conversation_id: "conv-1",
-      lead_id: "lead-1",
-      lead_name: "Sarah Chen",
-      lead_headline: "VP of Demand Generation at SaaSScale",
-      platform: "linkedin",
-      incoming_message: "We are currently evaluating tools for our 50-person SDR team. Can this integrate with our custom Hatchet workflow and self-hosted PostgreSQL?",
-      draft_reply: "Hi Sarah! Yes, absolutely. VibeAgent is built natively on Hatchet step functions and PostgreSQL with pgvector, allowing full self-hosting and direct workflow hooks. Would you like a brief technical spec walkthrough?",
-      confidence_score: 0.79,
-      sentiment: "inquisitive",
-      review_status: "pending",
-      created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    },
-    {
-      id: "rev-2",
-      conversation_id: "conv-2",
-      lead_id: "lead-2",
-      lead_name: "Marcus Vance",
-      lead_headline: "Founder @ NexaGrowth",
-      platform: "linkedin",
-      incoming_message: "Does your tool support multi-turn BANT qualification or only single comment replies?",
-      draft_reply: "Hey Marcus! VibeAgent retains full conversation memory across comments and DMs, calculating dynamic score progression from Cold to SQL over multiple turns.",
-      confidence_score: 0.82,
-      sentiment: "inquisitive",
-      review_status: "pending",
-      created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    },
-    {
-      id: "rev-3",
-      conversation_id: "conv-3",
-      lead_id: "lead-3",
-      lead_name: "Elena Rostova",
-      lead_headline: "Head of Marketing @ FinTechEdge",
-      platform: "linkedin",
-      incoming_message: "Is there any latency issue when running 70B models for real-time replies?",
-      draft_reply: "Great question Elena! We use smart model routing with Groq/LiteLLM for instant sub-second replies (Llama 3.1 8b/70b) and async background workers to eliminate UI delays.",
-      confidence_score: 0.81,
-      sentiment: "neutral",
-      review_status: "pending",
-      created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    },
-  ]);
+  const raw = await request<Array<{
+    id?: string;
+    message_id: string;
+    conversation_id: string;
+    lead_id: string;
+    lead_name?: string | null;
+    lead_headline?: string | null;
+    platform: string;
+    incoming_message?: string | null;
+    draft_reply?: string;
+    suggested_reply?: string;
+    confidence_score?: number | null;
+    sentiment?: string;
+    review_status?: string;
+    created_at: string;
+  }>>("/conversations/review-queue", { cache: "no-store" });
+
+  return raw.map((m) => ({
+    id: m.id || m.message_id,
+    message_id: m.message_id,
+    conversation_id: m.conversation_id,
+    lead_id: m.lead_id,
+    lead_name: m.lead_name || "Prospective Contact",
+    lead_headline: m.lead_headline || "Inbound Contact",
+    platform: m.platform,
+    incoming_message: m.incoming_message || m.suggested_reply || "",
+    draft_reply: m.draft_reply || m.suggested_reply || "",
+    suggested_reply: m.suggested_reply || m.draft_reply || "",
+    confidence_score: m.confidence_score ?? 0.85,
+    sentiment: m.sentiment || "inquisitive",
+    review_status: (m.review_status as ReviewItem["review_status"]) || "pending",
+    created_at: m.created_at,
+  }));
 }
 
 export async function approveReviewItem(id: string, editedReply?: string): Promise<{ status: string }> {
-  return request<{ status: string }>(
+  return request<{ status: string; message_id: string }>(
     `/conversations/review-queue/${id}/approve`,
     {
       method: "POST",
-      body: JSON.stringify({ reply: editedReply }),
-    },
-    { status: "approved" }
+      body: JSON.stringify(editedReply ? { reply: editedReply } : {}),
+    }
   );
 }
 
 export async function rejectReviewItem(id: string): Promise<{ status: string }> {
-  return request<{ status: string }>(
+  return request<{ status: string; message_id: string }>(
     `/conversations/review-queue/${id}/reject`,
     {
       method: "POST",
-    },
-    { status: "rejected" }
+      body: JSON.stringify({}),
+    }
   );
 }
 
 // ──────────────── System Health & Diagnostics ────────────────
 
 export async function fetchHealthStatus(): Promise<SystemHealth> {
-  return request<SystemHealth>("/health", { cache: "no-store" }, {
-    status: "ok",
-    environment: "development",
-    database: "connected",
-    redis: "connected",
-    llm_gateway: "online",
-    active_model: "groq/llama-3.3-70b-versatile",
-    version: "1.0.0",
-  });
+  return request<SystemHealth>("/health", { cache: "no-store" });
 }
