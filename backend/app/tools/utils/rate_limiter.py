@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+
 import structlog
 
 from app.exceptions import RateLimitExceededError

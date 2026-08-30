@@ -1,6 +1,6 @@
-from collections.abc import AsyncGenerator
 import contextvars
 import uuid
+from collections.abc import AsyncGenerator
 
 import redis.asyncio as aioredis
 from sqlalchemy import text

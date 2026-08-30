@@ -1,11 +1,10 @@
-import asyncio
 import json
 import time
 from typing import Any, TypeVar
 
 import litellm
-from pydantic import BaseModel
 import structlog
+from pydantic import BaseModel
 
 from app.config import settings
 from app.exceptions import LLMError
@@ -51,7 +50,7 @@ class LLMClient:
         if norm in ("embed", "embedding"):
             return settings.LLM_EMBED_MODEL
         # If user passes bare model name without provider prefix, default to ollama
-        if not ("/" in model):
+        if "/" not in model:
             return f"ollama/{model}"
         return model
 

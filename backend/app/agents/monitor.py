@@ -1,11 +1,8 @@
 from datetime import UTC, datetime
-from typing import Any
+
 import structlog
 
 from app.agents.base import AgentResult, BaseAgent
-from app.models.conversation import Conversation
-from app.models.lead import Lead
-from app.models.message import Message
 from app.repositories.conversation_repo import ConversationRepository
 from app.repositories.lead_repo import LeadRepository
 from app.repositories.message_repo import MessageRepository

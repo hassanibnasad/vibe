@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 from uuid import UUID, uuid4
-from jinja2 import Environment, FileSystemLoader
+
 import structlog
+from jinja2 import Environment, FileSystemLoader
 
 from app.agents.base import AgentResult, BaseAgent
 from app.exceptions import LLMError

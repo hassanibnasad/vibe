@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
+
 import structlog
 
 from app.agents.content_generator import ContentGeneratorAgent

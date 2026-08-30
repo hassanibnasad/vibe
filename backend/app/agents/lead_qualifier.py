@@ -1,16 +1,16 @@
 import json
+import uuid
 from pathlib import Path
 from typing import Any
-import uuid
 
+import structlog
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-import structlog
 
 from app.agents.base import AgentResult, BaseAgent
-from app.exceptions import LLMError, LeadNotFoundError
-from app.models.enums import LeadStage, calculate_lead_stage
+from app.exceptions import LeadNotFoundError, LLMError
+from app.models.enums import calculate_lead_stage
 from app.models.lead import Lead
 from app.models.lead_field_history import LeadFieldHistory
 from app.tools.ai.llm_client import LLMClient
@@ -95,7 +95,7 @@ Need: {current_state.get('need') or 'Unknown'}
 Timeline: {current_state.get('timeline') or 'Unknown'}
 """
         try:
-            extraction, llm_resp = await self.llm.generate_structured(
+            extraction, _ = await self.llm.generate_structured(
                 prompt=new_user_message,
                 schema=BantExtraction,
                 system_prompt=system_prompt,
@@ -104,7 +104,6 @@ Timeline: {current_state.get('timeline') or 'Unknown'}
         except Exception as exc:
             self.logger.warning("structured_extraction_fallback", error=str(exc))
             extraction = BantExtraction()
-            llm_resp = None
 
         # Compute field updates
         changes: dict[str, dict[str, Any]] = {}

@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from uuid import UUID
+
 import structlog
 
 from app.agents.lead_qualifier import LeadQualifierAgent

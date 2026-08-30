@@ -1,8 +1,9 @@
 import uuid
+
+import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-import structlog
 
 from app.dependencies import DEFAULT_TENANT_ID, current_tenant_id
 

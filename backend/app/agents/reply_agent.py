@@ -1,5 +1,6 @@
 from pathlib import Path
 from uuid import UUID
+
 import structlog
 from jinja2 import Environment, FileSystemLoader
 

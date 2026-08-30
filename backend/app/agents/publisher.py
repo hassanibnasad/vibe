@@ -1,10 +1,8 @@
-from typing import Any
 import structlog
 
 from app.agents.base import AgentResult, BaseAgent
 from app.exceptions import ValidationError
 from app.tools.platform.base import BasePlatformTool
-from app.tools.platform.linkedin_tool import LinkedInTool
 from app.tools.platform.registry import PlatformRegistry, default_platform_registry
 
 logger = structlog.get_logger()

@@ -1,5 +1,6 @@
 from typing import Any
 from uuid import UUID
+
 import structlog
 
 from app.agents.monitor import MonitorAgent
