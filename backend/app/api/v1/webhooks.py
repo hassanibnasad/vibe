@@ -1,3 +1,5 @@
+from typing import Any
+
 import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +8,7 @@ from app.config import settings
 from app.dependencies import get_db_session
 from app.models.webhook_event import WebhookEvent
 from app.repositories.base import BaseRepository
+from app.workflows.engagement_workflow import EngagementInput, engagement_pipeline_task
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
@@ -17,7 +20,7 @@ async def handle_platform_webhook(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
     x_webhook_secret: str | None = Header(None, alias="X-Webhook-Secret"),
-) -> dict:
+) -> dict[str, Any]:
     if settings.WEBHOOK_SECRET and x_webhook_secret != settings.WEBHOOK_SECRET:
         if settings.APP_ENV != "development":
             raise HTTPException(
@@ -40,12 +43,6 @@ async def handle_platform_webhook(
     )
 
     # Fire-and-forget: hand off to the Hatchet worker for durable, retried processing.
-    # The webhook endpoint must return 200 quickly; all heavy work happens in the background.
-    from app.workflows.engagement_workflow import (  # noqa: PLC0415
-        EngagementInput,
-        engagement_pipeline_task,
-    )
-
     await engagement_pipeline_task.aio_run_no_wait(
         EngagementInput(platform=platform, raw_payload=body)
     )

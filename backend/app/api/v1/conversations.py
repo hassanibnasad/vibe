@@ -9,6 +9,7 @@ from app.schemas.conversation import (
     MessageCreateRequest,
     MessageResponse,
     ReviewActionRequest,
+    ReviewActionResponse,
     ReviewItemResponse,
 )
 from app.services.engagement_service import EngagementService
@@ -34,40 +35,65 @@ async def get_review_queue(
     messages = await engagement_service.get_review_queue(limit=50)
     return [
         ReviewItemResponse(
+            id=m.id,
             message_id=m.id,
             conversation_id=m.conversation_id,
             lead_id=m.conversation.lead_id if m.conversation else m.id,
+            lead_name=m.conversation.lead.name if m.conversation and m.conversation.lead else None,
+            lead_headline=m.conversation.lead.job_title if m.conversation and m.conversation.lead else None,
             platform=m.platform,
+            incoming_message=m.content,
+            draft_reply=m.content,
             suggested_reply=m.content,
             confidence_score=m.confidence_score,
+            sentiment=m.sentiment or "inquisitive",
+            review_status=m.review_status or "pending",
             created_at=m.created_at,
         )
         for m in messages
     ]
 
 
-@router.post("/review-queue/{message_id}/approve", status_code=status.HTTP_200_OK)
+@router.post(
+    "/review-queue/{message_id}/approve",
+    response_model=ReviewActionResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def approve_reply(
     message_id: UUID,
+    data: ReviewActionRequest | None = None,
     engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
-) -> dict:
+) -> ReviewActionResponse:
+    if data and (data.reply or data.alternative_reply):
+        await engagement_service.reject_or_edit_reply(
+            message_id=message_id,
+            alternative_reply=data.reply or data.alternative_reply,
+        )
     await engagement_service.approve_reply(message_id)
-    return {"status": "approved", "message_id": str(message_id)}
+    return ReviewActionResponse(status="approved", message_id=str(message_id))
 
 
-@router.post("/review-queue/{message_id}/reject", status_code=status.HTTP_200_OK)
+@router.post(
+    "/review-queue/{message_id}/reject",
+    response_model=ReviewActionResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def reject_reply(
     message_id: UUID,
-    data: ReviewActionRequest,
+    data: ReviewActionRequest | None = None,
     engagement_service: EngagementService = Depends(get_engagement_service),
     current_user: dict = Depends(get_current_user),
-) -> dict:
+) -> ReviewActionResponse:
+    alt = data.alternative_reply or data.reply if data else None
     updated = await engagement_service.reject_or_edit_reply(
         message_id=message_id,
-        alternative_reply=data.alternative_reply,
+        alternative_reply=alt,
     )
-    return {"status": updated.review_status, "message_id": str(message_id)}
+    return ReviewActionResponse(
+        status=updated.review_status or "rejected",
+        message_id=str(message_id),
+    )
 
 
 @router.get("/{conversation_id}/messages", response_model=list[MessageResponse])

@@ -8,6 +8,7 @@ from app.schemas.lead import (
     LeadListResponse,
     LeadResponse,
     LeadScoreUpdateRequest,
+    LeadStageUpdateRequest,
     LeadUpdateRequest,
     PipelineResponse,
 )
@@ -74,6 +75,19 @@ async def update_lead(
 ) -> LeadResponse:
     lead = await lead_service.update_lead(lead_id, **data.model_dump(exclude_unset=True))
     return LeadResponse.model_validate(lead)
+
+
+@router.patch("/{lead_id}/stage", response_model=LeadResponse)
+async def update_lead_stage(
+    lead_id: UUID,
+    data: LeadStageUpdateRequest,
+    lead_service: LeadService = Depends(get_lead_service),
+    current_user: dict = Depends(get_current_user),
+) -> LeadResponse:
+    """Update lead funnel stage directly (e.g. from Kanban drag-and-drop or pipeline triage)."""
+    lead = await lead_service.update_lead(lead_id, lead_stage=data.lead_stage)
+    return LeadResponse.model_validate(lead)
+
 
 
 @router.post("/{lead_id}/score", response_model=LeadResponse)

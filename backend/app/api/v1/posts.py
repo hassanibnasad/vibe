@@ -15,6 +15,8 @@ from app.schemas.post import (
 )
 from app.services.content_service import ContentService
 from app.services.publishing_service import PublishingService
+from app.workflows.content_workflow import ContentPipelineInput, content_pipeline_task
+from app.workflows.scheduled_publish import PublishSinglePostInput, publish_single_post_task
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
@@ -26,40 +28,21 @@ async def generate_post(
     current_user: dict = Depends(get_current_user),
 ) -> PostResponse:
     """Generate marketing post draft via ContentGeneratorAgent, dispatched through Hatchet."""
-    from app.workflows.content_workflow import (  # noqa: PLC0415
-        ContentPipelineInput,
-        content_pipeline_task,
-    )
-
     platform_type = data.platforms[0] if data.platforms else "linkedin"
 
-    # For variant generation (multiple posts), fall through to direct service call
-    # as variants require saving multiple posts and Hatchet returns a single result dict.
-    if data.variants > 1:
-        posts = await content_service.generate_and_save_variants(
-            brief=data.brief,
-            platform_id=DEFAULT_TENANT_ID,
-            platform_type=platform_type,
-            tone=data.tone,
-            campaign_id=data.campaign_id,
-            variants_count=data.variants,
-        )
-        return PostResponse.model_validate(posts[0])
-
-    # Fire-and-wait: dispatch via Hatchet for durable execution with retries.
-    # aio_run blocks until the task completes, preserving the same HTTP response contract.
     result = await content_pipeline_task.aio_run(
         ContentPipelineInput(
             brief=data.brief,
             platform_id=str(DEFAULT_TENANT_ID),
             platform_type=platform_type,
             tone=data.tone,
+            campaign_id=str(data.campaign_id) if data.campaign_id else None,
+            variants_count=data.variants,
             auto_publish=False,
         )
     )
 
-    # Fetch the persisted post to return the full PostResponse schema.
-    post = await content_service.get_post(result["post_id"])
+    post = await content_service.get_post(UUID(result["post_id"]))
     return PostResponse.model_validate(post)
 
 
@@ -69,17 +52,23 @@ async def generate_post_variants(
     content_service: ContentService = Depends(get_content_service),
     current_user: dict = Depends(get_current_user),
 ) -> list[PostResponse]:
-    """Generate multiple marketing post draft variants for A/B testing."""
+    """Generate multiple marketing post draft variants for A/B testing via Hatchet."""
     platform_type = data.platforms[0] if data.platforms else "linkedin"
 
-    posts = await content_service.generate_and_save_variants(
-        brief=data.brief,
-        platform_id=DEFAULT_TENANT_ID,
-        platform_type=platform_type,
-        tone=data.tone,
-        campaign_id=data.campaign_id,
-        variants_count=data.variants,
+    result = await content_pipeline_task.aio_run(
+        ContentPipelineInput(
+            brief=data.brief,
+            platform_id=str(DEFAULT_TENANT_ID),
+            platform_type=platform_type,
+            tone=data.tone,
+            campaign_id=str(data.campaign_id) if data.campaign_id else None,
+            variants_count=max(data.variants, 2),
+            auto_publish=False,
+        )
     )
+
+    post_ids = [UUID(pid) for pid in result.get("post_ids", [result["post_id"]])]
+    posts = [await content_service.get_post(pid) for pid in post_ids]
     return [PostResponse.model_validate(p) for p in posts]
 
 
@@ -158,22 +147,11 @@ async def publish_post(
     content_service: ContentService = Depends(get_content_service),
     current_user: dict = Depends(get_current_user),
 ) -> PostResponse:
-    from app.workflows.scheduled_publish import (  # noqa: PLC0415
-        PublishSinglePostInput,
-        publish_single_post_task,
-    )
-
     if data.scheduled_at:
-        # Scheduling is a lightweight DB update — no need to go through Hatchet.
         post = await publishing_service.schedule(post_id, scheduled_at=data.scheduled_at)
         return PostResponse.model_validate(post)
 
-    # Immediate publish: dispatch via Hatchet for durable execution with retries.
-    await publish_single_post_task.aio_run(
-        PublishSinglePostInput(post_id=str(post_id))
-    )
-
-    # Fetch the updated post state after Hatchet task completes.
+    await publish_single_post_task.aio_run(PublishSinglePostInput(post_id=str(post_id)))
     post = await content_service.get_post(post_id)
     return PostResponse.model_validate(post)
 
