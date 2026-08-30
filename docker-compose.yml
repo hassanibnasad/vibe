@@ -41,8 +41,50 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN:-}
+      - HATCHET_HOST=${HATCHET_HOST:-}
     volumes:
       - ./backend/app:/app/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      litellm:
+        condition: service_started
+    networks:
+      - vibeagent-network
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vibeagent-worker
+    restart: unless-stopped
+    # Override the default CMD (uvicorn) to run the Hatchet worker process.
+    command: ["python", "worker.py"]
+    environment:
+      - APP_NAME=VibeAgent
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://vibeagent:vibeagent@postgres:5432/vibeagent
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LITELLM_PROXY_URL=http://litellm:4000
+      - LLM_MODEL_FAST=groq/llama-3.1-8b-instant
+      - LLM_MODEL_PRIMARY=groq/llama-3.3-70b-versatile
+      - LLM_EMBED_MODEL=all-minilm:l6-v2
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      # Hatchet connection — required for the worker to register tasks and receive work.
+      - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN:-}
+      - HATCHET_HOST=${HATCHET_HOST:-}
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/worker.py:/app/worker.py:ro
     depends_on:
       postgres:
         condition: service_healthy
