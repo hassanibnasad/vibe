@@ -69,3 +69,12 @@ class LeadRepository(BaseRepository[Lead]):
         stmt = select(Lead.lead_stage, func.count(Lead.id)).group_by(Lead.lead_stage)
         result = await self.session.execute(stmt)
         return {row[0]: row[1] for row in result.all()}
+
+    async def get_total_and_qualified_counts(self) -> tuple[int, int]:
+        """Return (total_leads, qualified_leads) where qualified means mql or sql."""
+        total_stmt = select(func.count(Lead.id))
+        qual_stmt = select(func.count(Lead.id)).where(Lead.lead_stage.in_(["mql", "sql"]))
+        total_res = await self.session.execute(total_stmt)
+        qual_res = await self.session.execute(qual_stmt)
+        return (total_res.scalar_one() or 0, qual_res.scalar_one() or 0)
+

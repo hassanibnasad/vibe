@@ -48,6 +48,12 @@ class LeadScoreUpdateRequest(BaseModel):
     reason: str = Field(..., min_length=3)
 
 
+class LeadStageUpdateRequest(BaseModel):
+    lead_stage: str = Field(..., pattern="^(cold|warm|hot|mql|sql|disqualified)$")
+    reason: str | None = None
+
+
+
 class LeadListResponse(BaseModel):
     data: list[LeadResponse]
     pagination: dict

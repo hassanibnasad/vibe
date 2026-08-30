@@ -55,3 +55,23 @@ class PostRepository(BaseRepository[Post]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_counts(self) -> dict[str, int]:
+        """Aggregate total, published, and scheduled post counts."""
+        stmt = select(Post.status, func.count(Post.id)).group_by(Post.status)
+        res = await self.session.execute(stmt)
+        status_map = {row[0]: row[1] for row in res.all()}
+        total = sum(status_map.values())
+        return {
+            "total": total,
+            "published": status_map.get("published", 0),
+            "scheduled": status_map.get("scheduled", 0),
+            "draft": status_map.get("draft", 0),
+        }
+
+    async def get_recent_posts(self, limit: int = 5) -> list[Post]:
+        """Return the most recently created or published posts."""
+        stmt = select(Post).order_by(Post.created_at.desc()).limit(limit)
+        res = await self.session.execute(stmt)
+        return list(res.scalars().all())
+

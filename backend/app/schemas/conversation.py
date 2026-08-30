@@ -44,14 +44,28 @@ class ConversationResponse(BaseModel):
 class ReviewItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: UUID | None = None
     message_id: UUID
     conversation_id: UUID
     lead_id: UUID
+    lead_name: str | None = None
+    lead_headline: str | None = None
     platform: str
-    suggested_reply: str
+    incoming_message: str | None = None
+    draft_reply: str = ""
+    suggested_reply: str = ""
     confidence_score: float | None = None
+    sentiment: str = "inquisitive"
+    review_status: str = "pending"
     created_at: datetime
 
 
 class ReviewActionRequest(BaseModel):
     alternative_reply: str | None = None
+    action: str | None = None
+    reply: str | None = None
+
+
+class ReviewActionResponse(BaseModel):
+    status: str
+    message_id: str

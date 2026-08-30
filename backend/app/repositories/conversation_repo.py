@@ -36,3 +36,11 @@ class ConversationRepository(BaseRepository[Conversation]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_active_count(self) -> int:
+        """Count active conversations."""
+        from sqlalchemy import func  # noqa: PLC0415
+        stmt = select(func.count(Conversation.id)).where(Conversation.status == "active")
+        res = await self.session.execute(stmt)
+        return res.scalar_one() or 0
+
