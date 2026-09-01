@@ -182,6 +182,39 @@ class LLMClient:
             logger.error("litellm_embedding_failed", model=target_model, error=str(exc))
             raise LLMError(f"LiteLLM embedding failed for {target_model}: {exc}") from exc
 
+    async def render_prompt(self, template_name: str, **context: Any) -> str:
+        """Load and render a Jinja2 prompt template from app/prompts."""
+        from app.prompts import load_prompt  # noqa: PLC0415
+        template = load_prompt(template_name)
+        return template.render(**context)
+
+    async def render_and_generate(
+        self,
+        template_name: str,
+        template_context: dict[str, Any],
+        schema: type[T] | None = None,
+        model: str | None = None,
+        temperature: float = 0.3,
+        system_prompt: str | None = None,
+    ) -> Any:
+        """Render a Jinja2 template and generate text or structured output in one call."""
+        rendered = await self.render_prompt(template_name, **template_context)
+        if schema is not None:
+            return await self.generate_structured(
+                prompt=rendered,
+                schema=schema,
+                model=model,
+                temperature=temperature,
+                system_prompt=system_prompt,
+            )
+        return await self.generate(
+            prompt=rendered,
+            model=model,
+            temperature=temperature,
+            system_prompt=system_prompt,
+        )
+
     async def close(self) -> None:
         """Cleanup resources if necessary."""
         pass
+
