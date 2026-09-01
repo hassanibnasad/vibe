@@ -3,6 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.tools.utils.event_normalizer import NormalizedEvent
+
 
 class PublishResult(BaseModel):
     success: bool
@@ -29,7 +31,7 @@ class UserProfile(BaseModel):
 
 
 class BasePlatformTool(ABC):
-    """Abstract base class for all social platform connectors."""
+    """Abstract base class and seam for all social platform connector adapters."""
 
     @abstractmethod
     async def publish_post(
@@ -55,4 +57,9 @@ class BasePlatformTool(ABC):
     @abstractmethod
     async def get_profile(self, user_id: str) -> UserProfile:
         """Fetch profile information for a platform user."""
+        pass
+
+    @abstractmethod
+    def normalize_event(self, raw_payload: dict[str, Any]) -> NormalizedEvent:
+        """Normalize platform-specific inbound webhook payload into a canonical NormalizedEvent."""
         pass

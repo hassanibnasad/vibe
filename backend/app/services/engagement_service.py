@@ -14,7 +14,7 @@ from app.repositories.lead_repo import LeadRepository
 from app.repositories.message_repo import MessageRepository
 from app.tools.ai.sentiment_tool import SentimentTool
 from app.tools.platform.registry import PlatformRegistry, default_platform_registry
-from app.tools.utils.event_normalizer import EventNormalizer, NormalizedEvent
+from app.tools.utils.event_normalizer import NormalizedEvent
 
 logger = structlog.get_logger()
 
@@ -154,8 +154,8 @@ class EngagementService:
         platform: str,
         raw_payload: dict[str, Any],
     ) -> dict[str, Any]:
-        """Complete ingestion pipeline: normalize event, ingest into thread, generate AI reply, auto-dispatch."""
-        event: NormalizedEvent = EventNormalizer.normalize(platform, raw_payload)
+        """Complete ingestion pipeline: normalize event via platform adapter, ingest thread, qualify lead, generate AI reply, auto-dispatch."""
+        event: NormalizedEvent = self.platform_registry.normalize_event(platform, raw_payload)
         monitor_res = await self.monitor_agent.process_event(event)
 
         if not monitor_res.success:
@@ -207,3 +207,4 @@ class EngagementService:
             "conversation_id": str(conv_id),
             "reply": reply_info,
         }
+

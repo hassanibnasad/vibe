@@ -6,6 +6,7 @@ import structlog
 from app.config import settings
 from app.exceptions import PlatformAPIError
 from app.tools.platform.base import BasePlatformTool, PublishResult, SendResult, UserProfile
+from app.tools.utils.event_normalizer import NormalizedEvent
 from app.tools.utils.rate_limiter import SlidingWindowRateLimiter
 
 logger = structlog.get_logger()
@@ -208,3 +209,9 @@ class LinkedInTool(BasePlatformTool):
         except Exception as exc:
             logger.warning("linkedin_profile_lookup_failed", error=str(exc))
             return UserProfile(platform_user_id=user_id, name="LinkedIn Member")
+
+    def normalize_event(self, raw_payload: dict[str, Any]) -> NormalizedEvent:
+        """Normalize inbound LinkedIn webhook payloads (comments, shares, mentions)."""
+        from app.tools.utils.event_normalizer import EventNormalizer  # noqa: PLC0415
+        return EventNormalizer.normalize_linkedin_comment(raw_payload)
+

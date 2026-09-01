@@ -1,9 +1,14 @@
+from typing import TYPE_CHECKING, Any
+
 import structlog
 
 from app.exceptions import ValidationError
 from app.models.enums import PlatformType
 from app.tools.platform.base import BasePlatformTool
 from app.tools.platform.linkedin_tool import LinkedInTool
+
+if TYPE_CHECKING:
+    from app.tools.utils.event_normalizer import NormalizedEvent
 
 logger = structlog.get_logger()
 
@@ -84,6 +89,15 @@ class PlatformRegistry:
             raise ValidationError(
                 f"Media attachments count exceeds {norm} limit of {constraints['max_media']} (got {len(media_urls)})."
             )
+
+    def normalize_event(self, platform: str, raw_payload: dict[str, Any]) -> "NormalizedEvent":
+        """Normalize an inbound webhook event via the registered platform adapter."""
+        from app.tools.utils.event_normalizer import EventNormalizer  # noqa: PLC0415
+        norm = platform.lower()
+        tool = self.get(norm)
+        if hasattr(tool, "normalize_event"):
+            return tool.normalize_event(raw_payload)
+        return EventNormalizer.normalize(norm, raw_payload)
 
 
 # Default global registry singleton
