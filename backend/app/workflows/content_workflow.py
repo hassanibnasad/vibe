@@ -44,7 +44,6 @@ async def content_pipeline_task(
     from app.dependencies import get_sessionmaker  # noqa: PLC0415
     from app.repositories.post_repo import PostRepository  # noqa: PLC0415
     from app.services.content_service import ContentService  # noqa: PLC0415
-    from app.services.publishing_service import PublishingService  # noqa: PLC0415
 
     platform_id = UUID(input.platform_id)
     campaign_id = UUID(input.campaign_id) if input.campaign_id else None
@@ -89,8 +88,7 @@ async def content_pipeline_task(
 
         # 2. Auto-publish if requested and confidence is high enough
         if input.auto_publish and not post.requires_review:
-            pub_service = PublishingService(post_repo=post_repo)
-            post = await pub_service.publish_now(post_id=post.id, platform_type=input.platform_type)
+            post = await content_service.publish_now(post_id=post.id, platform_type=input.platform_type)
 
         await session.commit()
 

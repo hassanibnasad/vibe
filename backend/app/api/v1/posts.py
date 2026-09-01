@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import get_content_service, get_publishing_service
+from app.api.deps import get_content_service
 from app.dependencies import DEFAULT_TENANT_ID
 from app.middleware.auth import get_current_user
 from app.schemas.post import (
@@ -14,7 +14,6 @@ from app.schemas.post import (
     PostUpdateRequest,
 )
 from app.services.content_service import ContentService
-from app.services.publishing_service import PublishingService
 from app.workflows.content_workflow import ContentPipelineInput, content_pipeline_task
 from app.workflows.scheduled_publish import PublishSinglePostInput, publish_single_post_task
 
@@ -143,12 +142,11 @@ async def update_post(
 async def publish_post(
     post_id: UUID,
     data: PostPublishRequest,
-    publishing_service: PublishingService = Depends(get_publishing_service),
     content_service: ContentService = Depends(get_content_service),
     current_user: dict = Depends(get_current_user),
 ) -> PostResponse:
     if data.scheduled_at:
-        post = await publishing_service.schedule(post_id, scheduled_at=data.scheduled_at)
+        post = await content_service.schedule(post_id, scheduled_at=data.scheduled_at)
         return PostResponse.model_validate(post)
 
     await publish_single_post_task.aio_run(PublishSinglePostInput(post_id=str(post_id)))

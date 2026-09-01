@@ -1,11 +1,12 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
 import structlog
 
 from app.agents.content_generator import ContentGeneratorAgent
-from app.exceptions import PostNotFoundError
+from app.agents.publisher import PublisherAgent
+from app.exceptions import PostNotFoundError, ValidationError
 from app.models.enums import PostStatus
 from app.models.post import Post
 from app.repositories.post_repo import PostRepository
@@ -14,15 +15,19 @@ logger = structlog.get_logger()
 
 
 class ContentService:
-    """Deep domain service for AI content generation, copy variant optimization, and post lifecycle management."""
+    """Deep domain service encapsulating full post lifecycle: AI generation, copy variant optimization, human approval, scheduling, and multi-channel platform dispatch."""
 
     def __init__(
         self,
         post_repo: PostRepository,
+        generator_agent: ContentGeneratorAgent | None = None,
+        publisher_agent: PublisherAgent | None = None,
         agent: ContentGeneratorAgent | None = None,
     ):
         self.post_repo = post_repo
-        self.agent = agent or ContentGeneratorAgent()
+        self.generator_agent = generator_agent or agent or ContentGeneratorAgent()
+        self.publisher_agent = publisher_agent or PublisherAgent()
+        self.agent = self.generator_agent
 
     async def get_post(self, post_id: UUID) -> Post:
         """Retrieve post by ID or raise PostNotFoundError."""
@@ -98,9 +103,10 @@ class ContentService:
         campaign_context: str | None = None,
         model: str | None = None,
     ) -> Post:
+        """Generate and stage an AI-authored post draft."""
         logger.info("content_service_generate_draft", platform=platform_type, tone=tone)
 
-        agent_result = await self.agent.generate_post(
+        agent_result = await self.generator_agent.generate_post(
             brief=brief,
             platform=platform_type,
             tone=tone,
@@ -113,7 +119,6 @@ class ContentService:
         cta = agent_result.data.get("cta", "")
         rag_sources = agent_result.data.get("rag_sources", [])
 
-        # Store draft post
         post = await self.post_repo.create(
             platform_id=platform_id,
             campaign_id=campaign_id,
@@ -156,7 +161,7 @@ class ContentService:
         """Generate and save multiple copy variants for A/B testing."""
         logger.info("content_service_generate_variants", platform=platform_type, count=variants_count)
 
-        agent_results = await self.agent.generate_variants(
+        agent_results = await self.generator_agent.generate_variants(
             brief=brief,
             platform=platform_type,
             tone=tone,
@@ -201,6 +206,7 @@ class ContentService:
         return posts
 
     async def approve_post(self, post_id: UUID) -> Post:
+        """Approve a draft post for scheduling or immediate publishing."""
         await self.get_post(post_id)
         updated = await self.post_repo.update(
             post_id,
@@ -209,3 +215,68 @@ class ContentService:
         )
         logger.info("post_approved", post_id=str(post_id))
         return updated  # type: ignore[return-value]
+
+    async def publish_now(self, post_id: UUID, platform_type: str = "linkedin") -> Post:
+        """Immediately dispatch a post to the target platform."""
+        post = await self.get_post(post_id)
+
+        # Transition to publishing state
+        await self.post_repo.update(post_id, status=PostStatus.PUBLISHING.value)
+
+        # Execute dispatch via publisher adapter
+        result = await self.publisher_agent.publish_post(
+            platform=platform_type,
+            content=post.content,
+            media_urls=post.media_urls or [],
+            hashtags=post.hashtags or [],
+            cta=post.cta,
+        )
+
+        if result.success:
+            updated = await self.post_repo.update(
+                post_id,
+                status=PostStatus.PUBLISHED.value,
+                published_at=datetime.now(UTC),
+                platform_post_id=result.data.get("platform_post_id"),
+                platform_post_url=result.data.get("platform_post_url"),
+                error_message=None,
+            )
+            logger.info("post_published_successfully", post_id=str(post_id), url=result.data.get("platform_post_url"))
+            return updated  # type: ignore[return-value]
+        else:
+            updated = await self.post_repo.update(
+                post_id,
+                status=PostStatus.FAILED.value,
+                error_message=result.data.get("error", "Unknown publishing error"),
+                retry_count=post.retry_count + 1,
+            )
+            logger.error("post_publishing_failed", post_id=str(post_id), error=result.data.get("error"))
+            return updated  # type: ignore[return-value]
+
+    async def schedule(self, post_id: UUID, scheduled_at: datetime) -> Post:
+        """Schedule a post for future automated dispatch."""
+        await self.get_post(post_id)
+
+        if scheduled_at <= datetime.now(UTC):
+            raise ValidationError("Scheduled time must be in the future.")
+
+        updated = await self.post_repo.update(
+            post_id,
+            status=PostStatus.SCHEDULED.value,
+            scheduled_at=scheduled_at,
+        )
+        logger.info("post_scheduled", post_id=str(post_id), scheduled_at=scheduled_at.isoformat())
+        return updated  # type: ignore[return-value]
+
+    async def dispatch_due_scheduled_posts(self) -> list[Post]:
+        """Find and publish all scheduled posts that have reached their target time."""
+        now = datetime.now(UTC)
+        due_posts = await self.post_repo.get_due_scheduled_posts(current_time=now)
+        published_posts: list[Post] = []
+
+        logger.info("checking_due_scheduled_posts", count=len(due_posts))
+        for post in due_posts:
+            published = await self.publish_now(post.id)
+            published_posts.append(published)
+
+        return published_posts

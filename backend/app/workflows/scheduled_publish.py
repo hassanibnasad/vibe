@@ -40,12 +40,12 @@ async def dispatch_due_posts_task(input: EmptyModel, ctx: Context) -> dict:
     """Cron-triggered task: find and publish all posts whose scheduled_at has passed."""
     from app.dependencies import get_sessionmaker  # noqa: PLC0415
     from app.repositories.post_repo import PostRepository  # noqa: PLC0415
-    from app.services.publishing_service import PublishingService  # noqa: PLC0415
+    from app.services.content_service import ContentService  # noqa: PLC0415
 
     session_factory = get_sessionmaker()
     async with session_factory() as session:
         post_repo = PostRepository(session)
-        service = PublishingService(post_repo=post_repo)
+        service = ContentService(post_repo=post_repo)
         published = await service.dispatch_due_scheduled_posts()
         await session.commit()
 
@@ -81,14 +81,14 @@ async def publish_single_post_task(
     """On-demand task: publish a specific post with automatic retries on failure."""
     from app.dependencies import get_sessionmaker  # noqa: PLC0415
     from app.repositories.post_repo import PostRepository  # noqa: PLC0415
-    from app.services.publishing_service import PublishingService  # noqa: PLC0415
+    from app.services.content_service import ContentService  # noqa: PLC0415
 
     post_id = UUID(input.post_id)
 
     session_factory = get_sessionmaker()
     async with session_factory() as session:
         post_repo = PostRepository(session)
-        service = PublishingService(post_repo=post_repo)
+        service = ContentService(post_repo=post_repo)
         post = await service.publish_now(post_id=post_id)
         await session.commit()
 
