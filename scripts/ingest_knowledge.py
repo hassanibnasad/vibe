@@ -1,129 +1,202 @@
+#!/usr/bin/env python
+"""
+Knowledge-base seed script.
+
+Delegates to KnowledgeIngestionService (MarkdownAwareChunker, DocumentParser,
+idempotent upsert via checksum).
+
+Usage:
+  # Ingest the full knowledge-base/ directory (run from repo root)
+  uv run python scripts/ingest_knowledge.py --dir knowledge-base/
+
+  # Ingest (or re-ingest) a single file
+  uv run python scripts/ingest_knowledge.py --file knowledge-base/faq/pricing.md --doc-type faq
+
+  # Delete all chunks for a source file then re-ingest (heading restructuring)
+  uv run python scripts/ingest_knowledge.py --file knowledge-base/faq/pricing.md --force-reindex
+
+  # Dry-run: show what would be ingested without writing anything
+  uv run python scripts/ingest_knowledge.py --dir knowledge-base/ --dry-run
+"""
+
+from __future__ import annotations
+
 import argparse
 import asyncio
-from pathlib import Path
 import sys
+import uuid
+from pathlib import Path
 
-# Ensure backend root is on sys.path
-backend_path = Path(__file__).parent.parent / "backend"
-sys.path.insert(0, str(backend_path))
-
-from sqlalchemy import delete
-from app.config import settings
-from app.dependencies import get_engine, get_sessionmaker
-from app.models.knowledge_doc import KnowledgeDoc
-from app.tools.ai.llm_client import LLMClient
+# ── backend/ onto sys.path ────────────────────────────────────────────────────
+_BACKEND = Path(__file__).resolve().parent.parent / "backend"
+if str(_BACKEND) not in sys.path:
+    sys.path.insert(0, str(_BACKEND))
 
 
-def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
-    """Token-aware sliding window chunker."""
-    words = text.split()
-    chunks: list[str] = []
-    i = 0
-    while i < len(words):
-        chunk = " ".join(words[i : i + chunk_size])
-        if chunk.strip():
-            chunks.append(chunk)
-        i += chunk_size - overlap
-    return chunks or [text]
-
-
-async def ingest_knowledge_base(
-    directory: str = "knowledge-base",
-    chunk_size: int = 500,
-    overlap: int = 50,
-    clear_existing: bool = False,
-    dry_run: bool = False,
-):
-    kb_dir = Path(directory)
-    if not kb_dir.is_absolute():
-        kb_dir = Path(__file__).parent.parent / directory
-
-    if not kb_dir.exists():
-        print(f"❌ Knowledge base directory '{kb_dir}' does not exist.")
-        return
-
-    engine = get_engine()
-    session_factory = get_sessionmaker()
-    llm = LLMClient()
-
-    print(f"🔍 Scanning knowledge base at: {kb_dir}")
-    doc_files = list(kb_dir.rglob("*.md")) + list(kb_dir.rglob("*.txt"))
-    print(f"📄 Found {len(doc_files)} documents to ingest.")
-
-    if dry_run:
-        total_chunks = 0
-        for filepath in doc_files:
-            content = filepath.read_text(encoding="utf-8")
-            chunks = chunk_text(content, chunk_size=chunk_size, overlap=overlap)
-            total_chunks += len(chunks)
-            print(f"  - {filepath.name}: {len(chunks)} chunks ({len(content)} chars)")
-        print(f"✅ [Dry Run] Total documents: {len(doc_files)}, Total chunks: {total_chunks}")
-        await llm.close()
-        await engine.dispose()
-        return
-
-    total_chunks = 0
-    async with session_factory() as session:
-        if clear_existing:
-            print("🧹 Clearing existing knowledge docs from database...")
-            await session.execute(delete(KnowledgeDoc))
-
-        for filepath in doc_files:
-            relative_path = filepath.relative_to(kb_dir)
-            doc_type = relative_path.parts[0] if len(relative_path.parts) > 1 else "general"
-            title = filepath.stem.replace("_", " ").replace("-", " ").title()
-
-            content = filepath.read_text(encoding="utf-8")
-            chunks = chunk_text(content, chunk_size=chunk_size, overlap=overlap)
-
-            for idx, chunk in enumerate(chunks):
-                try:
-                    embedding = await llm.embed(chunk)
-                except Exception as exc:
-                    print(f"⚠️ Embedding failed for {filepath.name} chunk {idx}: {exc}. Using zero vector.")
-                    embedding = [0.0] * 384
-
-                doc = KnowledgeDoc(
-                    title=f"{title} (Part {idx + 1})" if len(chunks) > 1 else title,
-                    content=chunk,
-                    doc_type=doc_type,
-                    embedding=embedding,
-                    source_file=str(relative_path),
-                    chunk_index=idx,
-                    metadata_={
-                        "file_size": len(content),
-                        "total_chunks": len(chunks),
-                        "source_path": str(filepath),
-                    },
-                )
-                session.add(doc)
-                total_chunks += 1
-
-        await session.commit()
-        print(f"✅ Ingestion complete! Ingested {len(doc_files)} docs ({total_chunks} chunks) into pgvector.")
-
-    await engine.dispose()
-    await llm.close()
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Ingest markdown & text documents into VibeAgent pgvector Knowledge Base")
-    parser.add_argument("--dir", default="knowledge-base", help="Directory containing knowledge docs (default: knowledge-base)")
-    parser.add_argument("--chunk-size", type=int, default=500, help="Chunk size in words (default: 500)")
-    parser.add_argument("--overlap", type=int, default=50, help="Overlap between chunks in words (default: 50)")
-    parser.add_argument("--clear", action="store_true", help="Clear existing knowledge docs before ingestion")
-    parser.add_argument("--dry-run", action="store_true", help="Count chunks and validate files without database write")
-    args = parser.parse_args()
-
-    asyncio.run(
-        ingest_knowledge_base(
-            directory=args.dir,
-            chunk_size=args.chunk_size,
-            overlap=args.overlap,
-            clear_existing=args.clear,
-            dry_run=args.dry_run,
-        )
+async def _run(args: argparse.Namespace) -> None:
+    from app.config import settings  # noqa: PLC0415
+    from app.dependencies import get_sessionmaker  # noqa: PLC0415
+    from app.repositories.knowledge_repo import KnowledgeRepository  # noqa: PLC0415
+    from app.services.knowledge.ingestion_service import (  # noqa: PLC0415
+        KnowledgeIngestionService,
+        _DIR_TO_DOC_TYPE,
     )
+    from app.services.knowledge.parsers import SUPPORTED_EXTENSIONS  # noqa: PLC0415
+    from app.tools.ai.llm_client import LLMClient  # noqa: PLC0415
+
+    tenant_id = uuid.UUID("00000000-0000-0000-0000-000000000001")  # default tenant
+
+    if args.dry_run:
+        print("── DRY RUN — no writes will occur ──────────────────────────")
+
+    session_factory = get_sessionmaker()
+
+    async with session_factory() as session:
+        repo = KnowledgeRepository(session)
+        llm_client = LLMClient()
+        svc = KnowledgeIngestionService(knowledge_repo=repo, llm_client=llm_client)
+
+        # ── Single file ────────────────────────────────────────────────────────
+        if args.file:
+            path = Path(args.file).resolve()
+            if not path.exists():
+                print(f"ERROR: File not found: {path}", file=sys.stderr)
+                sys.exit(1)
+            if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+                print(
+                    f"ERROR: Unsupported extension '{path.suffix}'. "
+                    f"Supported: {sorted(SUPPORTED_EXTENSIONS)}",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            doc_type = args.doc_type or "general"
+
+            if args.dry_run:
+                from app.services.knowledge.chunker import MarkdownAwareChunker  # noqa: PLC0415
+                from app.services.knowledge.parsers import DocumentParser  # noqa: PLC0415
+
+                parsed = DocumentParser().parse_path(path)
+                chunks = MarkdownAwareChunker(
+                    max_tokens=settings.INGESTION_CHUNK_SIZE,
+                    overlap_tokens=settings.INGESTION_CHUNK_OVERLAP,
+                ).chunk(parsed.raw_text, document_title=parsed.title)
+                print(f"\n  {path}")
+                print(f"  doc_type : {doc_type}")
+                print(f"  title    : {parsed.title}")
+                print(f"  chunks   : {len(chunks)}")
+                for c in chunks:
+                    print(f"    [{c.chunk_index}] {c.title!r}  ({c.char_count} chars)")
+                return
+
+            if args.force_reindex:
+                deleted = await svc.delete_by_source(str(path), tenant_id)
+                print(f"  Deleted {deleted} existing chunks for {path.name}")
+
+            result = await svc.ingest_file(path=path, doc_type=doc_type, tenant_id=tenant_id)
+            await session.commit()
+
+            print(f"\n✓ {path.name}")
+            print(f"  doc_type       : {doc_type}")
+            print(f"  parent_doc_id  : {result.parent_doc_id}")
+            print(f"  chunks total   : {result.chunks_total}")
+            print(f"  chunks written : {result.chunks_written}")
+            print(f"  chunks skipped : {result.chunks_skipped}")
+            if result.chunks_failed:
+                print(f"  chunks FAILED  : {result.chunks_failed} → {result.failed_chunk_indices}")
+
+        # ── Directory ──────────────────────────────────────────────────────────
+        elif args.dir:
+            root = Path(args.dir).resolve()
+            if not root.is_dir():
+                # Try relative to repo root
+                root = Path(__file__).resolve().parent.parent / args.dir
+            if not root.is_dir():
+                print(f"ERROR: Directory not found: {args.dir}", file=sys.stderr)
+                sys.exit(1)
+
+            files = sorted(
+                p for p in root.rglob("*")
+                if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
+            )
+            print(f"\nFound {len(files)} file(s) under {root}\n")
+
+            if args.dry_run:
+                from app.services.knowledge.chunker import MarkdownAwareChunker  # noqa: PLC0415
+                from app.services.knowledge.parsers import DocumentParser  # noqa: PLC0415
+
+                total_chunks = 0
+                for path in files:
+                    rel = path.relative_to(root)
+                    subdir = rel.parts[0] if len(rel.parts) > 1 else ""
+                    doc_type = _DIR_TO_DOC_TYPE.get(subdir, "general")
+                    try:
+                        parsed = DocumentParser().parse_path(path)
+                        chunks = MarkdownAwareChunker(
+                            max_tokens=settings.INGESTION_CHUNK_SIZE,
+                            overlap_tokens=settings.INGESTION_CHUNK_OVERLAP,
+                        ).chunk(parsed.raw_text, document_title=parsed.title)
+                        total_chunks += len(chunks)
+                        print(f"  {rel}  [{doc_type}]  →  {len(chunks)} chunks")
+                    except Exception as e:
+                        print(f"  ERROR {rel}: {e}")
+                print(f"\nTotal chunks that would be written: {total_chunks}")
+                return
+
+            results = await svc.ingest_directory(root=root, tenant_id=tenant_id)
+            await session.commit()
+
+            total_written = sum(r.chunks_written for r in results.values())
+            total_skipped = sum(r.chunks_skipped for r in results.values())
+            total_failed = sum(r.chunks_failed for r in results.values())
+
+            print("\n── Summary ─────────────────────────────────────────────────")
+            for src, result in results.items():
+                icon = "✓" if result.chunks_failed == 0 else "⚠"
+                print(
+                    f"  {icon} {Path(src).name:<40} "
+                    f"written={result.chunks_written}  "
+                    f"skipped={result.chunks_skipped}  "
+                    f"failed={result.chunks_failed}"
+                )
+            print(f"\n  Total written : {total_written}")
+            print(f"  Total skipped : {total_skipped}")
+            if total_failed:
+                print(f"  Total FAILED  : {total_failed}")
+        else:
+            print("ERROR: Specify --file <path> or --dir <directory>", file=sys.stderr)
+            sys.exit(1)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Ingest knowledge-base documents into pgvector.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--file", metavar="PATH", help="Single file to ingest")
+    source.add_argument("--dir", metavar="PATH", help="Directory to walk and ingest")
+
+    parser.add_argument(
+        "--doc-type",
+        metavar="TYPE",
+        default=None,
+        help="Override doc_type. Inferred from subdirectory name when using --dir.",
+    )
+    parser.add_argument(
+        "--force-reindex",
+        action="store_true",
+        help="Delete existing chunks for the file before re-ingesting (--file only).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be ingested without writing to the database.",
+    )
+
+    args = parser.parse_args()
+    asyncio.run(_run(args))
 
 
 if __name__ == "__main__":
