@@ -5,6 +5,7 @@ from app.api.v1 import (
     campaigns,
     conversations,
     health,
+    knowledge,
     leads,
     posts,
     webhooks,
@@ -19,3 +20,5 @@ api_v1_router.include_router(conversations.router)
 api_v1_router.include_router(campaigns.router)
 api_v1_router.include_router(webhooks.router)
 api_v1_router.include_router(analytics.router)
+api_v1_router.include_router(knowledge.router)
+

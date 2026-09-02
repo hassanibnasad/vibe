@@ -10,9 +10,11 @@ from app.repositories.post_repo import PostRepository
 from app.repositories.score_event_repo import ScoreEventRepository
 from app.services.content_service import ContentService
 from app.services.engagement_service import EngagementService
+from app.services.knowledge import KnowledgeIngestionService
 from app.services.lead_service import LeadService
 from app.services.publishing_service import PublishingService
 from app.services.scoring_service import ScoringService
+from app.tools.ai.llm_client import LLMClient
 
 
 # Repositories
@@ -80,3 +82,18 @@ async def get_scoring_service(
         conversation_repo=conv_repo,
         message_repo=msg_repo,
     )
+
+
+async def get_knowledge_ingestion_service(
+    knowledge_repo: KnowledgeRepository = Depends(get_knowledge_repo),
+) -> KnowledgeIngestionService:
+    """
+    Construct a ``KnowledgeIngestionService`` with a live DB session and a
+    fresh ``LLMClient`` (uses settings from ``app.config``).
+    """
+    llm_client = LLMClient()
+    return KnowledgeIngestionService(knowledge_repo=knowledge_repo, llm_client=llm_client)
+
+
+
+
