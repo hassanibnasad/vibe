@@ -28,3 +28,17 @@ class KnowledgeDoc(BaseModel):
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
     chunk_index: Mapped[int] = mapped_column(Integer, default=0)
     parent_doc_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+
+    # ── Added in migration 002 ────────────────────────────────────────────────
+    # SHA-256 hex digest of raw chunk text; enables skip-on-no-change idempotency.
+    checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Character count stored at write time for context-window budget enforcement
+    # at retrieval time (avoids re-counting on every query).
+    char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # pending | embedded | failed — allows Hatchet ingestion step to resume
+    # gracefully when only some chunks fail to embed.
+    ingestion_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="embedded", index=True
+    )
+    # Free-form string tags for structured filtering (e.g. ["pricing", "tier-1"]).
+    tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
