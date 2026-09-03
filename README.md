@@ -64,6 +64,28 @@ All powered by **100% open-source technologies**. No vendor lock-in. Self-hosted
 - Node.js 20+ (for frontend development)
 - Python 3.12+ (for backend development)
 
+### ⚡ Quick Commands (Make / PowerShell)
+
+You can run commands using `make <target>` (if GNU Make is installed) or `.\make <target>` in PowerShell:
+
+```bash
+# Start full development stack (Postgres + Redis in Docker, FastAPI, Next.js)
+make dev         # or .\make dev
+
+# Start development infra only (Postgres + Redis)
+make infra-up    # or .\make infra-up
+
+# Start individual services
+make backend-dev # or .\make backend-dev
+make frontend-dev# or .\make frontend-dev
+
+# Stop all background dev jobs and containers
+make dev-stop    # or .\make dev-stop
+
+# View all available commands
+make help        # or .\make help
+```
+
 ### 1. Clone & Configure
 
 ```bash
