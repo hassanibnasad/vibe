@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Hybrid dev environment — Docker for infra, native for app code.
+    Hybrid dev environment -- Docker for infra, native for app code.
 
 .DESCRIPTION
     Starts Postgres + Redis in Docker (lightweight), then launches:
@@ -42,18 +42,18 @@ param(
 $ErrorActionPreference = "Stop"
 $ROOT = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
-# ── Colors ──────────────────────────────────────────────────────────────────
+# -- Colors ------------------------------------------------------------------
 function Write-Status($icon, $msg) { Write-Host "  $icon  $msg" }
-function Write-Header($msg) { Write-Host "`n━━━ $msg ━━━" -ForegroundColor Cyan }
-function Write-Ok($msg) { Write-Status "✓" $msg }
-function Write-Info($msg) { Write-Status "→" $msg }
-function Write-Warn($msg) { Write-Host "  ⚠  $msg" -ForegroundColor Yellow }
+function Write-Header($msg) { Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
+function Write-Ok($msg) { Write-Status "[OK]" $msg }
+function Write-Info($msg) { Write-Status " -> " $msg }
+function Write-Warn($msg) { Write-Host "  [!] $msg" -ForegroundColor Yellow }
 
-# ── Resolve what to start ───────────────────────────────────────────────────
+# -- Resolve what to start ---------------------------------------------------
 $startBackend  = -not $Frontend
 $startFrontend = -not $Backend
 
-# ── Track child processes for cleanup ───────────────────────────────────────
+# -- Track child processes for cleanup ---------------------------------------
 $script:childJobs = @()
 
 function Stop-Everything {
@@ -84,7 +84,7 @@ function Stop-Everything {
 $null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Stop-Everything }
 trap { Stop-Everything; break }
 
-# ── 1. Docker infrastructure ───────────────────────────────────────────────
+# -- 1. Docker infrastructure -----------------------------------------------
 if (-not $SkipInfra) {
     Write-Header "Starting infrastructure containers"
 
@@ -138,7 +138,7 @@ if (-not $SkipInfra) {
     Pop-Location
 }
 
-# ── 2. Load .env into environment ───────────────────────────────────────────
+# -- 2. Load .env into environment -------------------------------------------
 $envFile = Join-Path $ROOT "backend\.env"
 if (-not (Test-Path $envFile)) {
     $envExample = Join-Path $ROOT ".env.example"
@@ -161,7 +161,7 @@ if (Test-Path $envFile) {
     }
 }
 
-# ── 3. Backend ──────────────────────────────────────────────────────────────
+# -- 3. Backend --------------------------------------------------------------
 if ($startBackend) {
     Write-Header "Starting backend (FastAPI)"
 
@@ -225,7 +225,7 @@ if ($startBackend) {
     }
 }
 
-# ── 4. Frontend ─────────────────────────────────────────────────────────────
+# -- 4. Frontend -------------------------------------------------------------
 if ($startFrontend) {
     Write-Header "Starting frontend (Next.js)"
 
@@ -250,19 +250,19 @@ if ($startFrontend) {
     Write-Ok "Frontend started (job: $($frontendJob.Id))"
 }
 
-# ── 5. Summary ──────────────────────────────────────────────────────────────
+# -- 5. Summary --------------------------------------------------------------
 Write-Header "Dev environment is running"
 Write-Host ""
-if ($startBackend)  { Write-Ok "Backend  → http://localhost:8000" }
-if ($startBackend)  { Write-Ok "API Docs → http://localhost:8000/docs" }
-if ($startFrontend) { Write-Ok "Frontend → http://localhost:3000" }
-if ($Worker)        { Write-Ok "Worker   → Hatchet worker active" }
-if ($WithLitellm)   { Write-Ok "LiteLLM  → http://localhost:4000" }
+if ($startBackend)  { Write-Ok "Backend  -> http://localhost:8000" }
+if ($startBackend)  { Write-Ok "API Docs -> http://localhost:8000/docs" }
+if ($startFrontend) { Write-Ok "Frontend -> http://localhost:3000" }
+if ($Worker)        { Write-Ok "Worker   -> Hatchet worker active" }
+if ($WithLitellm)   { Write-Ok "LiteLLM  -> http://localhost:4000" }
 Write-Host ""
 Write-Info "Press Ctrl+C to stop everything"
 Write-Host ""
 
-# ── 6. Tail logs from all jobs ─────────────────────────────────────────────
+# -- 6. Tail logs from all jobs ---------------------------------------------
 try {
     while ($true) {
         foreach ($job in $script:childJobs) {

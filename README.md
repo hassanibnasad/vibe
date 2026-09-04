@@ -79,6 +79,9 @@ make infra-up    # or .\make infra-up
 make backend-dev # or .\make backend-dev
 make frontend-dev# or .\make frontend-dev
 
+# Watch live consolidated logs from dev services and containers
+make watch       # or .\make watch
+
 # Stop all background dev jobs and containers
 make dev-stop    # or .\make dev-stop
 

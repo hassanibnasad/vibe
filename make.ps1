@@ -28,6 +28,8 @@ switch ($Target.ToLower()) {
         Write-Host "    .\make dev-worker         Start dev stack with Hatchet background worker"
         Write-Host "    .\make dev-litellm        Start dev stack with LiteLLM proxy"
         Write-Host "    .\make dev-stop           Stop all running dev background jobs and containers"
+        Write-Host "    .\make watch              Watch live consolidated logs from dev services"
+        Write-Host "    .\make dev-watch          (Alias for .\make watch)"
         Write-Host ""
         Write-Host "  Docker Infrastructure:" -ForegroundColor Yellow
         Write-Host "    .\make infra-up           Start PostgreSQL and Redis dev containers"
@@ -92,6 +94,12 @@ switch ($Target.ToLower()) {
     }
     "dev-stop" {
         & "$ROOT\scripts\dev-stop.ps1"
+    }
+    "watch" {
+        & "$ROOT\scripts\dev-watch.ps1" @RemainingArgs
+    }
+    "dev-watch" {
+        & "$ROOT\scripts\dev-watch.ps1" @RemainingArgs
     }
     "infra-up" {
         docker compose -f "$ROOT\docker-compose.dev.yml" up -d postgres redis

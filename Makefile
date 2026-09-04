@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 .PHONY: help setup dev dev-backend dev-frontend dev-worker dev-litellm dev-stop \
-        infra-up infra-down infra-logs infra-status \
+        watch dev-watch infra-up infra-down infra-logs infra-status \
         backend-install backend-dev backend-worker backend-migrate backend-migration \
         backend-test backend-lint backend-format \
         frontend-install frontend-dev frontend-build frontend-lint frontend-types \
@@ -21,13 +21,15 @@ help:
 	@echo     make dev-worker         Start dev stack with Hatchet background worker
 	@echo     make dev-litellm        Start dev stack with LiteLLM proxy
 	@echo     make dev-stop           Stop all running dev background jobs and containers
-	@echo ""
+	@echo     make watch              Watch live consolidated logs from dev services
+	@echo     make dev-watch          (Alias for make watch)
+	@echo.
 	@echo   Docker Infrastructure:
 	@echo     make infra-up           Start PostgreSQL and Redis dev containers
 	@echo     make infra-down         Stop development Docker containers
 	@echo     make infra-logs         Follow development Docker container logs
 	@echo     make infra-status       Check status of development Docker containers
-	@echo ""
+	@echo.
 	@echo   Backend (FastAPI):
 	@echo     make backend-install    Install backend dependencies via uv
 	@echo     make backend-dev        Run FastAPI dev server (port 8000)
@@ -37,15 +39,15 @@ help:
 	@echo     make backend-test       Run backend test suite with pytest
 	@echo     make backend-lint       Check backend code with ruff
 	@echo     make backend-format     Format backend code with ruff
-	@echo ""
+	@echo.
 	@echo   Frontend (Next.js):
 	@echo     make frontend-install   Install frontend dependencies via npm
 	@echo     make frontend-dev       Run Next.js dev server (port 3000)
 	@echo     make frontend-build     Build Next.js production bundle
 	@echo     make frontend-lint      Run ESLint on frontend
 	@echo     make frontend-types     Generate TypeScript types from OpenAPI schema
-	@echo ""
-	@echo   Knowledge Base & Production:
+	@echo.
+	@echo   Knowledge Base and Production:
 	@echo     make ingest             Ingest documents from knowledge-base/ directory
 	@echo     make prod-up            Start full production Docker stack
 	@echo     make prod-down          Stop full production Docker stack
@@ -82,6 +84,11 @@ dev-litellm:
 
 dev-stop:
 	powershell -ExecutionPolicy Bypass -File ./scripts/dev-stop.ps1
+
+watch:
+	powershell -ExecutionPolicy Bypass -File ./scripts/dev-watch.ps1
+
+dev-watch: watch
 
 # ------------------------------------------------------------------------------
 # Docker Infrastructure
