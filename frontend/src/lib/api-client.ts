@@ -32,7 +32,7 @@ export interface Lead {
   email?: string | null;
   phone?: string | null;
   avatar_url?: string | null;
-  platform_username: string;
+  platform_username?: string | null;
   platform_user_id: string;
   platform: string;
   platform_profile_url?: string | null;
@@ -43,12 +43,12 @@ export interface Lead {
   company_size?: string | null;
   lead_stage: "cold" | "warm" | "hot" | "mql" | "sql" | "disqualified";
   lead_score: number;
-  sentiment: "positive" | "neutral" | "negative" | "inquisitive" | "frustrated";
+  sentiment?: "positive" | "neutral" | "negative" | "inquisitive" | "frustrated" | null;
   intent_signals: string[];
   tags?: string[];
   pain_points?: string[];
   interests?: string[];
-  interaction_count: number;
+  interaction_count?: number | null;
   first_interaction_at?: string;
   last_interaction_at: string;
   created_at?: string;
@@ -68,8 +68,8 @@ export interface ReviewItem {
   message_id: string;
   conversation_id: string;
   lead_id: string;
-  lead_name: string;
-  lead_headline: string;
+  lead_name?: string | null;
+  lead_headline?: string | null;
   platform: string;
   incoming_message: string;
   draft_reply: string;
@@ -80,14 +80,23 @@ export interface ReviewItem {
   created_at: string;
 }
 
+export interface UploadAcceptedResponse {
+  job_id: string;
+  object_key: string;
+  filename: string;
+  status: string;
+  message: string;
+}
+
 export interface KnowledgeDoc {
   id: string;
   title: string;
-  source_type: "pdf" | "markdown" | "url" | "text";
-  status: "ready" | "processing" | "failed";
-  chunk_count: number;
-  token_count: number;
-  created_at: string;
+  doc_type: string;
+  source_file: string | null;
+  chunk_index: number;
+  char_count: number | null;
+  ingestion_status: string;
+  tags: string[];
 }
 
 export interface Campaign {
@@ -224,8 +233,8 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
     total_leads: raw.total_leads || 0,
     mql_sql_leads: raw.mql_sql_leads || 0,
     review_queue_pending: raw.review_queue_pending || 0,
-    avg_reply_confidence: raw.avg_reply_confidence || 0.85,
-    avg_response_time_sec: raw.avg_response_time_sec || 1.4,
+    avg_reply_confidence: raw.avg_reply_confidence ?? 0,
+    avg_response_time_sec: raw.avg_response_time_sec ?? 0,
     sentiment_distribution: raw.sentiment_distribution || { positive: 0, neutral: 0, inquisitive: 0, negative: 0 },
     leads_by_stage: raw.leads_by_stage || { cold: 0, warm: 0, hot: 0, mql: 0, sql: 0 },
     recent_posts: raw.recent_posts || [],
@@ -234,14 +243,14 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
       message_id: item.message_id,
       conversation_id: item.conversation_id,
       lead_id: item.lead_id,
-      lead_name: item.lead_name || "Prospective Contact",
-      lead_headline: item.lead_headline || "Inbound Contact",
+      lead_name: item.lead_name || (item.platform ? `${item.platform} user` : `Lead #${item.lead_id.slice(0, 8)}`),
+      lead_headline: item.lead_headline || null,
       platform: item.platform,
       incoming_message: item.incoming_message || item.suggested_reply || "",
       draft_reply: item.draft_reply || item.suggested_reply || "",
       suggested_reply: item.suggested_reply || item.draft_reply || "",
-      confidence_score: item.confidence_score ?? 0.85,
-      sentiment: item.sentiment || "inquisitive",
+      confidence_score: item.confidence_score ?? 0,
+      sentiment: item.sentiment || "neutral",
       review_status: (item.review_status as ReviewItem["review_status"]) || "pending",
       created_at: item.created_at,
     })),
@@ -346,28 +355,28 @@ export async function fetchLeads(params?: { stage?: string; search?: string }): 
 
   return res.data.map((l) => ({
     id: l.id,
-    name: l.name,
-    full_name: l.name || l.platform_username || "Prospective Lead",
-    email: l.email,
-    phone: l.phone,
-    avatar_url: l.avatar_url,
-    platform_username: l.platform_username || l.platform_user_id,
+    name: l.name || null,
+    full_name: l.name || (l.platform_username ? `@${l.platform_username}` : `Lead #${l.id.slice(0, 8)}`),
+    email: l.email || null,
+    phone: l.phone || null,
+    avatar_url: l.avatar_url || null,
+    platform_username: l.platform_username || null,
     platform_user_id: l.platform_user_id,
     platform: l.platform,
-    platform_profile_url: l.platform_profile_url,
-    headline: l.job_title || l.industry || "Social Contact",
-    job_title: l.job_title,
-    company: l.company || "Enterprise Lead",
-    industry: l.industry,
-    company_size: l.company_size,
+    platform_profile_url: l.platform_profile_url || null,
+    headline: [l.job_title, l.company].filter(Boolean).join(" at ") || l.job_title || l.industry || null,
+    job_title: l.job_title || null,
+    company: l.company || null,
+    industry: l.industry || null,
+    company_size: l.company_size || null,
     lead_stage: l.lead_stage,
     lead_score: l.lead_score,
-    sentiment: (l.lead_score >= 70 ? "positive" : l.lead_score >= 40 ? "inquisitive" : "neutral") as Lead["sentiment"],
-    intent_signals: l.tags && l.tags.length > 0 ? l.tags : ["inbound_interaction"],
+    sentiment: null,
+    intent_signals: l.tags || [],
     tags: l.tags || [],
     pain_points: l.pain_points || [],
     interests: l.interests || [],
-    interaction_count: (l.tags?.length || 0) + 1,
+    interaction_count: null,
     first_interaction_at: l.first_interaction_at || l.last_interaction_at,
     last_interaction_at: l.last_interaction_at,
     created_at: l.created_at,
@@ -394,17 +403,20 @@ export async function updateLeadStage(id: string, stage: Lead["lead_stage"]): Pr
 
   return {
     id: updated.id,
-    full_name: updated.name || updated.platform_username || "Prospective Lead",
-    platform_username: updated.platform_username || updated.platform_user_id,
+    full_name: updated.name || (updated.platform_username ? `@${updated.platform_username}` : `Lead #${updated.id.slice(0, 8)}`),
+    platform_username: updated.platform_username || null,
     platform_user_id: updated.platform_user_id,
     platform: updated.platform,
-    company: updated.company || "Enterprise Lead",
-    headline: updated.job_title || "Social Contact",
+    company: updated.company || null,
+    headline: updated.job_title || null,
     lead_stage: updated.lead_stage,
     lead_score: updated.lead_score,
-    sentiment: "inquisitive",
-    intent_signals: ["stage_updated"],
-    interaction_count: 1,
+    sentiment: null,
+    intent_signals: [],
+    tags: [],
+    pain_points: [],
+    interests: [],
+    interaction_count: null,
     last_interaction_at: updated.last_interaction_at,
   };
 }
@@ -434,14 +446,14 @@ export async function fetchReviewQueue(): Promise<ReviewItem[]> {
     message_id: m.message_id,
     conversation_id: m.conversation_id,
     lead_id: m.lead_id,
-    lead_name: m.lead_name || "Prospective Contact",
-    lead_headline: m.lead_headline || "Inbound Contact",
+    lead_name: m.lead_name || (m.platform ? `${m.platform} user` : `Lead #${m.lead_id.slice(0, 8)}`),
+    lead_headline: m.lead_headline || null,
     platform: m.platform,
     incoming_message: m.incoming_message || m.suggested_reply || "",
     draft_reply: m.draft_reply || m.suggested_reply || "",
     suggested_reply: m.suggested_reply || m.draft_reply || "",
-    confidence_score: m.confidence_score ?? 0.85,
-    sentiment: m.sentiment || "inquisitive",
+    confidence_score: m.confidence_score ?? 0,
+    sentiment: m.sentiment || "neutral",
     review_status: (m.review_status as ReviewItem["review_status"]) || "pending",
     created_at: m.created_at,
   }));
@@ -465,6 +477,62 @@ export async function rejectReviewItem(id: string): Promise<{ status: string }> 
       body: JSON.stringify({}),
     }
   );
+}
+
+// ──────────────── Knowledge Base ────────────────
+
+export async function fetchKnowledgeDocs(params?: { doc_type?: string }): Promise<KnowledgeDoc[]> {
+  const query = new URLSearchParams();
+  if (params?.doc_type) query.append("doc_type", params.doc_type);
+  const endpoint = `/knowledge?${query.toString()}`;
+
+  const res = await request<{ data: KnowledgeDoc[]; pagination: { page: number; limit: number; total: number } }>(
+    endpoint,
+    { cache: "no-store" }
+  );
+  return res.data;
+}
+
+export async function uploadKnowledgeDoc(
+  file: File,
+  docType: string = "general",
+  tags?: string[]
+): Promise<UploadAcceptedResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("doc_type", docType);
+  if (tags && tags.length > 0) {
+    formData.append("tags", tags.join(","));
+  }
+
+  const url = `${API_BASE}/knowledge/upload`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const errorBody = await res.json();
+        detail = errorBody.detail || JSON.stringify(errorBody);
+      } catch {
+        detail = await res.text().catch(() => "");
+      }
+      throw new ApiError(res.status, res.statusText, detail);
+    }
+    return (await res.json()) as UploadAcceptedResponse;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ApiError) throw err;
+    throw new Error(`Upload error on /knowledge/upload: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 // ──────────────── System Health & Diagnostics ────────────────
