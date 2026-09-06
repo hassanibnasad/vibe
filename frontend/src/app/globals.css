@@ -4,87 +4,50 @@
 
 @layer base {
   :root {
-    /* Enterprise Canvas & Surfaces */
-    --background: 240 10% 3.9%;
-    --canvas: 240 10% 3.9%;
-    --surface: 240 10% 4.9%;
-    --surface-raised: 240 7% 7.5%;
+    /* Shopify Editions Obsidian Luxury Theme */
+    --background: 228 20% 4%; /* #07080b */
+    --canvas: 228 20% 4%;
+    --surface: 228 16% 7%;
+    --surface-raised: 228 14% 10%;
+    --surface-glass: 228 16% 7% / 0.6;
 
-    --foreground: 0 0% 98%;
-    --card: 240 10% 4.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 4.9%;
-    --popover-foreground: 0 0% 98%;
+    --foreground: 210 40% 98%;
+    --card: 228 16% 7% / 0.65;
+    --card-foreground: 210 40% 98%;
+    --popover: 228 16% 7% / 0.9;
+    --popover-foreground: 210 40% 98%;
     
     /* Typography & Hierarchy */
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --text-primary: 0 0% 98%;
-    --text-secondary: 240 5% 64.9%;
-    --text-disabled: 240 4% 40%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 228 20% 6%;
+    --text-primary: 210 40% 98%;
+    --text-secondary: 218 15% 65%;
+    --text-disabled: 218 10% 40%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --secondary: 228 12% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 228 12% 14%;
+    --muted-foreground: 218 15% 60%;
     
-    /* Deliberate Single Accent */
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    /* Luminous Accents */
+    --accent: 228 12% 14%;
+    --accent-foreground: 210 40% 98%;
     --brand-accent: 217 91% 60%;
+    --brand-cyan: 199 89% 48%;
 
-    /* Crisp Enterprise Borders */
-    --border: 240 3.7% 15.9%;
-    --border-strong: 240 5% 26%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --radius: 0.375rem;
+    /* Crisp Precision Hairline Borders */
+    --border: 228 12% 16% / 0.7;
+    --border-strong: 228 14% 28%;
+    --input: 228 12% 16%;
+    --ring: 199 89% 48%;
+    --radius: 0.75rem;
 
     /* Semantic Status Tokens */
-    --status-success: 142 71% 45%;
+    --status-success: 152 69% 45%;
     --status-warning: 38 92% 50%;
     --status-error: 0 84% 60%;
     --status-danger: 0 84% 60%;
-    --status-info: 217 91% 60%;
-  }
-
-  .light {
-    --background: 0 0% 100%;
-    --canvas: 240 5% 98%;
-    --surface: 0 0% 100%;
-    --surface-raised: 240 5% 96%;
-
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --text-primary: 240 10% 3.9%;
-    --text-secondary: 240 3.8% 46.1%;
-    --text-disabled: 240 5% 65%;
-
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --brand-accent: 217 91% 54%;
-
-    --border: 240 5.9% 90%;
-    --border-strong: 240 6% 75%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-
-    --status-success: 142 76% 36%;
-    --status-warning: 38 92% 50%;
-    --status-error: 0 84% 60%;
-    --status-danger: 0 84% 60%;
-    --status-info: 217 91% 54%;
+    --status-info: 199 89% 48%;
   }
 }
 
@@ -96,6 +59,41 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Focus-visible ring for keyboard navigation */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Glassmorphic Surfaces */
+.glass-panel {
+  background: rgba(13, 16, 23, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-hover:hover {
+  background: rgba(18, 22, 32, 0.75);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(56, 189, 248, 0.12);
+}
+
+/* High-Impact Editorial Text Gradients */
+.text-gradient-white {
+  background: linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0.72) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Subtle, non-distracting scrollbar */
@@ -104,12 +102,12 @@
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: rgba(255, 255, 255, 0.2);
 }

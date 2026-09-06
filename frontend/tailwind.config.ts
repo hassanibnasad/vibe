@@ -15,6 +15,11 @@ const config: Config = {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+      display: ["var(--font-display)", "sans-serif"],
+      mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
@@ -26,6 +31,7 @@ const config: Config = {
         surface: {
           DEFAULT: "hsl(var(--surface))",
           raised: "hsl(var(--surface-raised))",
+          glass: "hsl(var(--surface-glass))",
         },
         foreground: "hsl(var(--foreground))",
         primary: {
@@ -48,6 +54,7 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
           brand: "hsl(var(--brand-accent))",
+          cyan: "hsl(var(--brand-cyan))",
         },
         text: {
           primary: "hsl(var(--text-primary))",
@@ -71,9 +78,19 @@ const config: Config = {
         },
       },
       borderRadius: {
+        "2xl": "1rem",
+        xl: "0.75rem",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        "glow-cyan": "0 0 25px -5px rgba(56, 189, 248, 0.25)",
+        "glow-sm": "0 0 15px -3px rgba(255, 255, 255, 0.08)",
+        "glass": "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+      },
+      backdropBlur: {
+        xs: "2px",
       },
     },
   },
