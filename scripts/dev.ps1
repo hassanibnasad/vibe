@@ -36,7 +36,8 @@ param(
     [switch]$Backend,
     [switch]$Frontend,
     [switch]$Worker,
-    [switch]$WithLitellm
+    [switch]$WithLitellm,
+    [switch]$Build
 )
 
 $ErrorActionPreference = "Stop"
@@ -70,10 +71,12 @@ function Stop-Everything {
     if (-not $SkipInfra) {
         Write-Info "Stopping Docker infra containers..."
         Push-Location $ROOT
-        docker compose -f docker-compose.dev.yml stop postgres redis 2>$null
-        if ($WithLitellm) {
-            docker compose -f docker-compose.dev.yml stop litellm 2>$null
-        }
+        try {
+            docker compose -f docker-compose.dev.yml stop postgres redis 2>&1 | Out-Null
+            if ($WithLitellm) {
+                docker compose -f docker-compose.dev.yml stop litellm 2>&1 | Out-Null
+            }
+        } catch {}
         Pop-Location
     }
 
@@ -88,10 +91,23 @@ trap { Stop-Everything; break }
 if (-not $SkipInfra) {
     Write-Header "Starting infrastructure containers"
 
-    # Check Docker is running
-    $dockerInfo = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    # Check Docker daemon is responsive
+    $dockerRunning = $false
+    try {
+        $prevEA = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        docker info 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            $dockerRunning = $true
+        }
+        $ErrorActionPreference = $prevEA
+    } catch {
+        $dockerRunning = $false
+    }
+
+    if (-not $dockerRunning) {
         Write-Warn "Docker is not running. Please start Docker Desktop first."
+        Write-Info "Or run with -SkipInfra if you only want to run frontend/backend without Docker."
         exit 1
     }
 
@@ -167,12 +183,12 @@ if ($startBackend) {
 
     $backendDir = Join-Path $ROOT "backend"
 
-    # Check venv exists
+    # Check venv exists or rebuild
     $venvPath = Join-Path $backendDir ".venv"
-    if (-not (Test-Path $venvPath)) {
-        Write-Info "Creating virtual environment with uv..."
+    if ($Build -or -not (Test-Path $venvPath)) {
+        Write-Info "Syncing backend dependencies with uv..."
         Push-Location $backendDir
-        uv venv
+        if (-not (Test-Path $venvPath)) { uv venv }
         uv sync
         Pop-Location
     }
@@ -231,12 +247,13 @@ if ($startFrontend) {
 
     $frontendDir = Join-Path $ROOT "frontend"
 
-    # Check node_modules exists
+    # Check node_modules exists or rebuild
     $nodeModules = Join-Path $frontendDir "node_modules"
-    if (-not (Test-Path $nodeModules)) {
-        Write-Info "Installing npm dependencies..."
+    if ($Build -or -not (Test-Path $nodeModules)) {
+        Write-Info "Installing npm dependencies & building Next.js..."
         Push-Location $frontendDir
         npm install
+        npm run build
         Pop-Location
     }
 

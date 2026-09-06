@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup dev dev-backend dev-frontend dev-worker dev-litellm dev-stop \
-        watch dev-watch infra-up infra-down infra-logs infra-status \
-        backend-install backend-dev backend-worker backend-migrate backend-migration \
+.PHONY: help setup dev dev-build dev-backend dev-frontend dev-worker dev-litellm dev-stop \
+        watch dev-watch down down-v infra-up infra-down infra-down-v infra-logs infra-status \
+        build backend-install backend-dev backend-worker backend-migrate backend-migration \
         backend-test backend-lint backend-format \
         frontend-install frontend-dev frontend-build frontend-lint frontend-types \
-        ingest prod-up prod-down prod-logs clean
+        ingest docker-build prod-up prod-down prod-down-v prod-logs clean clean-all
 
 # ------------------------------------------------------------------------------
 # Help
@@ -16,19 +16,24 @@ help:
 	@echo ==============================================================================
 	@echo   Development Environment:
 	@echo     make dev                Start full dev stack (Docker infra + Backend + Frontend)
+	@echo     make dev-build          Start dev stack with fresh rebuild of dependencies and frontend
 	@echo     make dev-backend        Start dev stack with Backend and DB only
 	@echo     make dev-frontend       Start dev stack with Frontend only
 	@echo     make dev-worker         Start dev stack with Hatchet background worker
 	@echo     make dev-litellm        Start dev stack with LiteLLM proxy
 	@echo     make dev-stop           Stop all running dev background jobs and containers
+	@echo     make down               Stop dev background jobs and Docker containers
+	@echo     make down-v             Full clean up: stop services and wipe Docker volumes (-v)
 	@echo     make watch              Watch live consolidated logs from dev services
 	@echo     make dev-watch          (Alias for make watch)
 	@echo.
 	@echo   Docker Infrastructure:
 	@echo     make infra-up           Start PostgreSQL and Redis dev containers
 	@echo     make infra-down         Stop development Docker containers
+	@echo     make infra-down-v       Stop development containers and wipe volumes (-v)
 	@echo     make infra-logs         Follow development Docker container logs
 	@echo     make infra-status       Check status of development Docker containers
+	@echo     make docker-build       Build Docker container images (api, frontend, worker)
 	@echo.
 	@echo   Backend (FastAPI):
 	@echo     make backend-install    Install backend dependencies via uv
@@ -49,9 +54,13 @@ help:
 	@echo.
 	@echo   Knowledge Base and Production:
 	@echo     make ingest             Ingest documents from knowledge-base/ directory
+	@echo     make build              Build frontend production bundle
 	@echo     make prod-up            Start full production Docker stack
 	@echo     make prod-down          Stop full production Docker stack
+	@echo     make prod-down-v        Stop full production Docker stack and wipe volumes (-v)
 	@echo     make prod-logs          Follow production Docker logs
+	@echo     make clean              Clean Python and test caches
+	@echo     make clean-all          Full cleanup: stop services, wipe volumes (-v) and caches
 	@echo     make setup              Initialize environment files and install all dependencies
 	@echo ==============================================================================
 
@@ -70,6 +79,9 @@ setup:
 dev:
 	powershell -ExecutionPolicy Bypass -File ./scripts/dev.ps1
 
+dev-build:
+	powershell -ExecutionPolicy Bypass -File ./scripts/dev.ps1 -Build
+
 dev-backend:
 	powershell -ExecutionPolicy Bypass -File ./scripts/dev.ps1 -Backend
 
@@ -85,6 +97,11 @@ dev-litellm:
 dev-stop:
 	powershell -ExecutionPolicy Bypass -File ./scripts/dev-stop.ps1
 
+down: dev-stop
+
+down-v:
+	powershell -ExecutionPolicy Bypass -File ./scripts/dev-stop.ps1 -Volumes
+
 watch:
 	powershell -ExecutionPolicy Bypass -File ./scripts/dev-watch.ps1
 
@@ -97,13 +114,19 @@ infra-up:
 	docker compose -f docker-compose.dev.yml up -d postgres redis
 
 infra-down:
-	docker compose -f docker-compose.dev.yml down
+	docker compose -f docker-compose.dev.yml down --remove-orphans
+
+infra-down-v:
+	docker compose -f docker-compose.dev.yml down -v --remove-orphans
 
 infra-logs:
 	docker compose -f docker-compose.dev.yml logs -f
 
 infra-status:
 	docker compose -f docker-compose.dev.yml ps
+
+docker-build:
+	docker compose build
 
 # ------------------------------------------------------------------------------
 # Backend
@@ -156,6 +179,8 @@ frontend-types:
 ingest:
 	cd backend && uv run python ../scripts/ingest_knowledge.py --dir ../knowledge-base/
 
+build: frontend-build
+
 # ------------------------------------------------------------------------------
 # Full Production Docker
 # ------------------------------------------------------------------------------
@@ -163,7 +188,10 @@ prod-up:
 	docker compose up -d
 
 prod-down:
-	docker compose down
+	docker compose down --remove-orphans
+
+prod-down-v:
+	docker compose down -v --remove-orphans
 
 prod-logs:
 	docker compose logs -f
@@ -173,3 +201,6 @@ prod-logs:
 # ------------------------------------------------------------------------------
 clean:
 	powershell -Command "Get-ChildItem -Path . -Include __pycache__,.pytest_cache,.ruff_cache -Recurse -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force; Write-Host 'Cleaned caches'"
+
+clean-all: down-v clean
+	powershell -Command "if (Test-Path frontend\.next) { Remove-Item frontend\.next -Recurse -Force; Write-Host 'Cleaned frontend/.next' }"

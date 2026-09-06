@@ -23,19 +23,24 @@ switch ($Target.ToLower()) {
         Write-Host "==============================================================================" -ForegroundColor Cyan
         Write-Host "  Development Environment:" -ForegroundColor Yellow
         Write-Host "    .\make dev                Start full dev stack (Docker infra + Backend + Frontend)"
+        Write-Host "    .\make dev-build          Start dev stack with fresh rebuild of dependencies and frontend"
         Write-Host "    .\make dev-backend        Start dev stack with Backend and DB only"
         Write-Host "    .\make dev-frontend       Start dev stack with Frontend only"
         Write-Host "    .\make dev-worker         Start dev stack with Hatchet background worker"
         Write-Host "    .\make dev-litellm        Start dev stack with LiteLLM proxy"
         Write-Host "    .\make dev-stop           Stop all running dev background jobs and containers"
+        Write-Host "    .\make down               Stop dev background jobs and Docker containers"
+        Write-Host "    .\make down -v            Full clean up: stop services and wipe Docker volumes (-v)"
         Write-Host "    .\make watch              Watch live consolidated logs from dev services"
         Write-Host "    .\make dev-watch          (Alias for .\make watch)"
         Write-Host ""
         Write-Host "  Docker Infrastructure:" -ForegroundColor Yellow
         Write-Host "    .\make infra-up           Start PostgreSQL and Redis dev containers"
         Write-Host "    .\make infra-down         Stop development Docker containers"
+        Write-Host "    .\make infra-down-v       Stop development containers and wipe volumes (-v)"
         Write-Host "    .\make infra-logs         Follow development Docker container logs"
         Write-Host "    .\make infra-status       Check status of development Docker containers"
+        Write-Host "    .\make docker-build       Build Docker container images (api, frontend, worker)"
         Write-Host ""
         Write-Host "  Backend (FastAPI):" -ForegroundColor Yellow
         Write-Host "    .\make backend-install    Install backend dependencies via uv"
@@ -55,9 +60,13 @@ switch ($Target.ToLower()) {
         Write-Host ""
         Write-Host "  Knowledge Base & Production:" -ForegroundColor Yellow
         Write-Host "    .\make ingest             Ingest documents from knowledge-base/ directory"
+        Write-Host "    .\make build              Build frontend production bundle"
         Write-Host "    .\make prod-up            Start full production Docker stack"
         Write-Host "    .\make prod-down          Stop full production Docker stack"
+        Write-Host "    .\make prod-down-v        Stop full production Docker stack and wipe volumes (-v)"
         Write-Host "    .\make prod-logs          Follow production Docker logs"
+        Write-Host "    .\make clean              Clean Python and test caches"
+        Write-Host "    .\make clean-all          Full cleanup: stop services, wipe volumes (-v) and caches"
         Write-Host "    .\make setup              Initialize environment files and install dependencies"
         Write-Host "==============================================================================`n" -ForegroundColor Cyan
     }
@@ -80,6 +89,9 @@ switch ($Target.ToLower()) {
     "dev" {
         & "$ROOT\scripts\dev.ps1" @RemainingArgs
     }
+    "dev-build" {
+        & "$ROOT\scripts\dev.ps1" -Build @RemainingArgs
+    }
     "dev-backend" {
         & "$ROOT\scripts\dev.ps1" -Backend @RemainingArgs
     }
@@ -95,6 +107,16 @@ switch ($Target.ToLower()) {
     "dev-stop" {
         & "$ROOT\scripts\dev-stop.ps1"
     }
+    "down" {
+        if ($RemainingArgs -contains "-v" -or $RemainingArgs -contains "--volumes" -or $RemainingArgs -contains "v=1") {
+            & "$ROOT\scripts\dev-stop.ps1" -Volumes
+        } else {
+            & "$ROOT\scripts\dev-stop.ps1"
+        }
+    }
+    "down-v" {
+        & "$ROOT\scripts\dev-stop.ps1" -Volumes
+    }
     "watch" {
         & "$ROOT\scripts\dev-watch.ps1" @RemainingArgs
     }
@@ -105,13 +127,19 @@ switch ($Target.ToLower()) {
         docker compose -f "$ROOT\docker-compose.dev.yml" up -d postgres redis
     }
     "infra-down" {
-        docker compose -f "$ROOT\docker-compose.dev.yml" down
+        docker compose -f "$ROOT\docker-compose.dev.yml" down --remove-orphans
+    }
+    "infra-down-v" {
+        docker compose -f "$ROOT\docker-compose.dev.yml" down -v --remove-orphans
     }
     "infra-logs" {
         docker compose -f "$ROOT\docker-compose.dev.yml" logs -f
     }
     "infra-status" {
         docker compose -f "$ROOT\docker-compose.dev.yml" ps
+    }
+    "docker-build" {
+        docker compose -f "$ROOT\docker-compose.yml" build
     }
     "backend-install" {
         Push-Location "$ROOT\backend"
@@ -178,14 +206,35 @@ switch ($Target.ToLower()) {
         uv run python ..\scripts\ingest_knowledge.py --dir ..\knowledge-base\
         Pop-Location
     }
+    "build" {
+        Push-Location "$ROOT\frontend"
+        npm run build
+        Pop-Location
+    }
     "prod-up" {
         docker compose -f "$ROOT\docker-compose.yml" up -d
     }
     "prod-down" {
-        docker compose -f "$ROOT\docker-compose.yml" down
+        docker compose -f "$ROOT\docker-compose.yml" down --remove-orphans
+    }
+    "prod-down-v" {
+        docker compose -f "$ROOT\docker-compose.yml" down -v --remove-orphans
     }
     "prod-logs" {
         docker compose -f "$ROOT\docker-compose.yml" logs -f
+    }
+    "clean" {
+        Get-ChildItem -Path $ROOT -Include __pycache__,.pytest_cache,.ruff_cache -Recurse -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+        Write-Host "  Cleaned caches" -ForegroundColor Green
+    }
+    "clean-all" {
+        & "$ROOT\scripts\dev-stop.ps1" -Volumes
+        if (Test-Path "$ROOT\frontend\.next") {
+            Remove-Item "$ROOT\frontend\.next" -Recurse -Force
+            Write-Host "  Cleaned frontend/.next" -ForegroundColor Green
+        }
+        Get-ChildItem -Path $ROOT -Include __pycache__,.pytest_cache,.ruff_cache -Recurse -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+        Write-Host "  Cleaned caches" -ForegroundColor Green
     }
     default {
         Write-Host "Unknown target: $Target" -ForegroundColor Red

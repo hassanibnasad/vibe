@@ -72,6 +72,9 @@ You can run commands using `make <target>` (if GNU Make is installed) or `.\make
 # Start full development stack (Postgres + Redis in Docker, FastAPI, Next.js)
 make dev         # or .\make dev
 
+# Start dev stack with fresh rebuild of dependencies & frontend
+make dev-build   # or .\make dev-build
+
 # Start development infra only (Postgres + Redis)
 make infra-up    # or .\make infra-up
 
@@ -83,7 +86,13 @@ make frontend-dev# or .\make frontend-dev
 make watch       # or .\make watch
 
 # Stop all background dev jobs and containers
-make dev-stop    # or .\make dev-stop
+make down        # or .\make down
+
+# Full clean up: stop services & wipe Docker database/redis volumes (-v)
+make down-v      # or .\make down -v
+
+# Full cleanup: stop services, wipe volumes (-v) and all caches
+make clean-all   # or .\make clean-all
 
 # View all available commands
 make help        # or .\make help
