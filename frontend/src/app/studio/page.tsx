@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useCompletion } from "@ai-sdk/react";
 import {
-  FileEdit,
   Send,
   Calendar as CalendarIcon,
   Copy,
   Check,
+  Sparkles,
+  FileEdit,
   RefreshCw,
+  Clock,
+  Layers,
 } from "lucide-react";
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,397 +35,315 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { generatePost, Post } from "@/lib/api-client";
+import { fetchPosts, schedulePost, Post } from "@/lib/api-client";
+import { formatRelativeTime } from "@/lib/utils";
+import { FadeIn } from "@/lib/motion";
+import { AnimatedCheck, PulseBeacon } from "@/components/ui/AnimatedCheck";
+
+const tones = [
+  { id: "thought_leadership", label: "Thought Leadership" },
+  { id: "contrarian", label: "Contrarian & Sharp" },
+  { id: "tactical", label: "Tactical Playbook" },
+  { id: "storytelling", label: "Executive Story" },
+];
 
 export default function ContentStudioPage() {
-  const [brief, setBrief] = useState(
-    "Announce our autonomous B2B marketing agent architecture. Focus on how it solves the 4-hour inbound response delay and qualifies leads via BANT without human intervention."
-  );
+  const [brief, setBrief] = useState("");
   const [tone, setTone] = useState("thought_leadership");
-  const platform = "linkedin";
-  const [variantsCount, setVariantsCount] = useState(2);
-  const [useRAG, setUseRAG] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
-  const [activeVariantIdx, setActiveVariantIdx] = useState(0);
   const [copied, setCopied] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [scheduledSuccess, setScheduledSuccess] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState("");
+  const [scheduling, setScheduling] = useState(false);
 
-  const tones = [
-    { id: "thought_leadership", label: "Thought Leadership", desc: "Executive hooks & frameworks" },
-    { id: "professional", label: "Professional & Authoritative", desc: "Enterprise technical credibility" },
-    { id: "conversational", label: "Conversational & Founder", desc: "Direct authentic journey tone" },
-    { id: "contrarian", label: "Contrarian & Provocative", desc: "Challenging industry dogmas" },
-  ];
+  // Calendar tab data
+  const [calendarPosts, setCalendarPosts] = useState<Post[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
 
-  const handleGenerate = async () => {
-    if (!brief.trim() || generating) return;
-    setGenerating(true);
-    setScheduledSuccess(false);
+  // Vercel AI SDK completion stream
+  const {
+    completion,
+    complete,
+    isLoading: isStreaming,
+  } = useCompletion({
+    api: "/api/generate",
+  });
 
-    try {
-      const posts = await generatePost(brief, tone, platform, variantsCount);
-      setGeneratedPosts(posts);
-      setActiveVariantIdx(0);
-    } finally {
-      setGenerating(false);
-    }
+  const loadCalendarPosts = () => {
+    setCalendarLoading(true);
+    fetchPosts()
+      .then((posts) => {
+        setCalendarPosts(posts);
+        setCalendarLoading(false);
+      })
+      .catch(() => {
+        setCalendarPosts([]);
+        setCalendarLoading(false);
+      });
+  };
+
+  const handleStreamGenerate = async () => {
+    if (!brief.trim() || isStreaming) return;
+    await complete(brief, {
+      body: {
+        tone,
+        platform: "LinkedIn",
+      },
+    });
   };
 
   const handleCopy = () => {
-    if (generatedPosts[activeVariantIdx]) {
-      navigator.clipboard.writeText(generatedPosts[activeVariantIdx].content);
+    const textToCopy = completion || "";
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const currentPost = generatedPosts[activeVariantIdx];
-
-  const mockCalendarSlots = [
-    {
-      id: "slot-1",
-      date: "Today, 15:00 UTC",
-      platform: "LinkedIn",
-      title: "Autonomous Agents in B2B Pipeline Execution",
-      status: "Scheduled",
-    },
-    {
-      id: "slot-2",
-      date: "Tomorrow, 09:30 UTC",
-      platform: "LinkedIn",
-      title: "Why Speed-to-Lead Beats Manual SDR Cadences",
-      status: "Scheduled",
-    },
-    {
-      id: "slot-3",
-      date: "Yesterday, 14:00 UTC",
-      platform: "LinkedIn",
-      title: "Architecture Deep-Dive: PostgreSQL + Hatchet + LiteLLM",
-      status: "Published",
-    },
-  ];
+  const wordCount = completion ? completion.trim().split(/\s+/).length : 0;
+  const charCount = completion ? completion.length : 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-border">
-        <div>
-          <h1 className="text-sm font-semibold text-foreground tracking-tight flex items-center gap-2">
-            <FileEdit className="h-4 w-4 text-foreground" />
-            <span>Content Studio & Publishing Calendar</span>
+    <div className="space-y-10 pb-16">
+      {/* Editorial Header */}
+      <FadeIn>
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl">
+            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+              Vercel AI SDK Engine
+            </span>
+          </div>
+          <h1 className="font-display text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+            Content <span className="text-gradient-cyan">Studio</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Draft channel-optimized marketing posts grounded in vector knowledge docs and scheduled workflows.
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Stream high-conversion social narratives, optimize scroll-stopping hooks, and schedule multi-platform dispatches.
           </p>
         </div>
-      </div>
+      </FadeIn>
 
-      <Tabs defaultValue="creator" className="space-y-4">
-        <TabsList className="h-8">
-          <TabsTrigger value="creator" className="text-xs">Post Creator</TabsTrigger>
-          <TabsTrigger value="calendar" className="text-xs">Publishing Calendar</TabsTrigger>
+      <Tabs
+        defaultValue="creator"
+        className="space-y-8"
+        onValueChange={(v) => {
+          if (v === "calendar") loadCalendarPosts();
+        }}
+      >
+        <TabsList className="h-11 p-1 bg-white/[0.03] border border-white/[0.08] rounded-xl backdrop-blur-xl">
+          <TabsTrigger
+            value="creator"
+            className="rounded-lg px-5 py-2 text-xs font-medium data-[state=active]:bg-white/[0.08] data-[state=active]:text-white transition-all"
+          >
+            Creative Canvas
+          </TabsTrigger>
+          <TabsTrigger
+            value="calendar"
+            className="rounded-lg px-5 py-2 text-xs font-medium data-[state=active]:bg-white/[0.08] data-[state=active]:text-white transition-all"
+          >
+            Dispatch Schedule
+          </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Post Creator (Split-Pane) */}
-        <TabsContent value="creator" className="mt-0">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Left Pane: Form Controls (5 cols) */}
-            <div className="lg:col-span-5 space-y-4">
-              <Card>
-                <CardHeader className="p-4 pb-3 border-b border-border">
-                  <CardTitle className="text-xs font-semibold">Campaign Brief & Parameters</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                  {/* Brief Input with Persistent Label */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="brief" className="text-xs">Campaign Brief & Topic</Label>
-                      <span className="text-[10px] text-muted-foreground font-mono">
-                        {brief.length} chars
-                      </span>
-                    </div>
-                    <Textarea
-                      id="brief"
-                      value={brief}
-                      onChange={(e) => setBrief(e.target.value)}
-                      placeholder="Specify campaign goal, target persona, and core narrative..."
-                      className="min-h-[100px] text-xs"
-                    />
+        {/* Creator View */}
+        <TabsContent value="creator" className="mt-0 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left: Strategic Brief Parameters */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="glass-panel rounded-3xl p-7 border border-white/[0.08] space-y-6">
+                <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
+                  <h3 className="font-display font-bold text-base text-white">Strategic Brief</h3>
+                  <span className="text-[11px] font-mono text-cyan-400 bg-cyan-400/10 px-2.5 py-0.5 rounded-full border border-cyan-400/20">
+                    LinkedIn B2B
+                  </span>
+                </div>
+
+                {/* Brief Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="brief" className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                    Core Thesis & Target Goals
+                  </Label>
+                  <Textarea
+                    id="brief"
+                    value={brief}
+                    onChange={(e) => setBrief(e.target.value)}
+                    placeholder="e.g. Why AI outbound fails without real-time BANT intent qualification. Target Series A founders and VPs of Sales..."
+                    className="min-h-[140px] text-sm bg-black/40 border-white/[0.08] rounded-xl focus:border-cyan-400/50 transition-colors placeholder:text-muted-foreground/50 leading-relaxed"
+                  />
+                </div>
+
+                {/* Tone Pill Selectors */}
+                <div className="space-y-2.5">
+                  <Label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                    Narrative Voice
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {tones.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTone(t.id)}
+                        className={`rounded-xl border p-2.5 text-xs text-left transition-all ${
+                          tone === t.id
+                            ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200 font-medium shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]"
+                            : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04] hover:text-white"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Tone Selector */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Tone & Voice Angle</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {tones.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setTone(t.id)}
-                          className={`rounded-md border p-2 text-left transition-colors ${
-                            tone === t.id
-                              ? "border-primary bg-accent/60 text-accent-foreground font-medium"
-                              : "border-border bg-card text-muted-foreground hover:bg-muted/40"
-                          }`}
-                        >
-                          <div className="text-xs text-foreground font-medium">{t.label}</div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* RAG Grounding & Variants Controls */}
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
-                    <div className="flex items-center justify-between rounded-md border border-border p-2.5">
-                      <div>
-                        <Label className="text-xs block">RAG Grounding</Label>
-                        <span className="text-[10px] text-muted-foreground">pgvector cosine</span>
-                      </div>
-                      <Switch checked={useRAG} onCheckedChange={setUseRAG} />
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-md border border-border p-2.5">
-                      <div>
-                        <Label className="text-xs block">Variants Count</Label>
-                        <span className="text-[10px] text-muted-foreground">Generate options</span>
-                      </div>
-                      <div className="flex gap-1">
-                        {[1, 2, 3].map((num) => (
-                          <button
-                            key={num}
-                            type="button"
-                            onClick={() => setVariantsCount(num)}
-                            className={`h-6 w-6 rounded border text-xs font-mono transition-colors ${
-                              variantsCount === num
-                                ? "border-primary bg-primary text-primary-foreground font-semibold"
-                                : "border-border text-muted-foreground hover:bg-muted"
-                            }`}
-                          >
-                            {num}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Generate Button with explicit loading state */}
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={!brief.trim() || generating}
-                    className="w-full gap-2 h-9 text-xs"
-                  >
-                    {generating ? (
-                      <>
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        <span>Generating {variantsCount} variants with LiteLLM...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-3.5 w-3.5" />
-                        <span>Generate post variants</span>
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
+                {/* Stream Trigger Button */}
+                <Button
+                  onClick={handleStreamGenerate}
+                  disabled={!brief.trim() || isStreaming}
+                  className="w-full h-12 rounded-xl text-sm font-medium bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white shadow-[0_0_25px_-5px_rgba(56,189,248,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+                >
+                  {isStreaming ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Streaming Generation...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Stream Post with AI SDK
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
-            {/* Right Pane: Generated Post Preview (7 cols) */}
-            <div className="lg:col-span-7 space-y-4">
-              {generatedPosts.length === 0 ? (
-                <Card className="h-full min-h-[380px] flex flex-col items-center justify-center p-8 text-center border-dashed">
-                  <FileEdit className="h-8 w-8 text-muted-foreground mb-3" />
-                  <div className="text-sm font-medium text-foreground">No draft generated yet</div>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                    Enter a brief on the left and click &ldquo;Generate post variants&rdquo; to create grounded copy.
-                  </p>
-                </Card>
-              ) : (
-                <Card className="space-y-0">
-                  {/* Variant Tabs Header */}
-                  <CardHeader className="p-3 pb-2 border-b border-border flex flex-row items-center justify-between space-y-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-foreground">Generated Variants</span>
-                      <div className="flex gap-1 ml-2">
-                        {generatedPosts.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setActiveVariantIdx(idx)}
-                            className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
-                              activeVariantIdx === idx
-                                ? "bg-accent text-accent-foreground border border-border"
-                                : "text-muted-foreground hover:bg-muted"
-                            }`}
-                          >
-                            Variant {idx + 1}
-                          </button>
-                        ))}
+            {/* Right: Live Generative Output Canvas */}
+            <div className="lg:col-span-7">
+              <div className="glass-panel rounded-3xl p-7 lg:p-8 border border-white/[0.08] min-h-[480px] flex flex-col justify-between relative overflow-hidden">
+                {/* Header bar */}
+                <div className="flex items-center justify-between border-b border-white/[0.07] pb-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-bold text-base text-white">Live Draft Stream</span>
+                    {isStreaming && <PulseBeacon status="live" />}
+                  </div>
+
+                  {completion && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-[11px] font-mono text-muted-foreground">
+                        {wordCount} words · {charCount} chars
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopy}
+                        className="h-8 px-2.5 rounded-lg text-xs gap-1.5 text-muted-foreground hover:text-white hover:bg-white/[0.06]"
+                      >
+                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                        <span>{copied ? "Copied" : "Copy"}</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Streaming Content Surface */}
+                <div className="flex-1">
+                  {!completion && !isStreaming ? (
+                    <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center space-y-3 p-8">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground/60">
+                        <FileEdit className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-display font-semibold text-white text-sm">Awaiting Strategic Brief</h4>
+                        <p className="text-xs text-muted-foreground max-w-sm">
+                          Enter your thesis and tone in the panel on the left, then trigger the stream to watch the AI craft your dispatch live.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="font-sans text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed space-y-4 font-normal selection:bg-cyan-500/30">
+                      {completion}
+                      {isStreaming && (
+                        <span className="inline-block w-1.5 h-4 ml-1 bg-cyan-400 animate-pulse align-middle" />
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Footer */}
+                {completion && (
+                  <div className="pt-6 border-t border-white/[0.07] flex items-center justify-between mt-6">
+                    <div className="flex items-center gap-2">
+                      <AnimatedCheck size={14} />
+                      <span className="text-xs font-mono text-emerald-400">Stream Complete</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleCopy}
-                        className="h-7 text-xs gap-1"
-                      >
-                        {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                        <span>{copied ? "Copied" : "Copy text"}</span>
-                      </Button>
-                      <Button
-                        size="sm"
                         onClick={() => setScheduleDialogOpen(true)}
-                        className="h-7 text-xs gap-1"
+                        className="rounded-xl h-9 text-xs gap-1.5 border-white/[0.08] hover:bg-white/[0.06] text-muted-foreground hover:text-white"
                       >
-                        <CalendarIcon className="h-3 w-3" />
-                        <span>Schedule post</span>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        Schedule Dispatch
                       </Button>
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="p-4 space-y-4">
-                    {/* Rendered LinkedIn Post Box */}
-                    {currentPost && (
-                      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                        <div className="flex items-center justify-between text-xs pb-2 border-b border-border">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">LinkedIn Corporate Channel</span>
-                            <Badge variant="outline" className="text-[10px] uppercase font-mono py-0 h-4">
-                              {currentPost.tone}
-                            </Badge>
-                          </div>
-                          <span className="text-[10px] font-mono text-muted-foreground">
-                            {currentPost.content.length} chars • ~{Math.ceil(currentPost.content.split(" ").length / 200)} min read
-                          </span>
-                        </div>
-
-                        <div className="whitespace-pre-line text-xs leading-relaxed text-foreground font-sans">
-                          {currentPost.content}
-                        </div>
-
-                        {/* Hashtag List */}
-                        {currentPost.hashtags && currentPost.hashtags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pt-2 border-t border-border">
-                            {currentPost.hashtags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-[10px] py-0 h-4">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {scheduledSuccess && (
-                      <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400 flex items-center gap-2">
-                        <Check className="h-4 w-4" />
-                        <span>Post queued in Hatchet scheduler. Target dispatch at 15:00 UTC.</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </TabsContent>
 
-        {/* Tab 2: Publishing Calendar */}
+        {/* Schedule View */}
         <TabsContent value="calendar" className="mt-0">
-          <Card>
-            <CardHeader className="p-4 pb-3 border-b border-border">
-              <CardTitle className="text-xs font-semibold">Scheduled & Published Queue</CardTitle>
-              <CardDescription className="text-[11px]">
-                Active dispatches managed by Hatchet workflow engine
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
+          <div className="glass-panel rounded-3xl p-7 border border-white/[0.08]">
+            <div className="mb-6">
+              <h3 className="font-display font-bold text-lg text-white">Scheduled Dispatches</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Upcoming social publications verified by operators
+              </p>
+            </div>
+
+            {calendarLoading ? (
+              <div className="py-12 text-center text-xs font-mono text-muted-foreground">
+                Querying dispatch ledger...
+              </div>
+            ) : calendarPosts.length === 0 ? (
+              <div className="py-16 text-center text-xs text-muted-foreground max-w-sm mx-auto space-y-2">
+                <Clock className="h-6 w-6 text-muted-foreground/50 mx-auto" />
+                <p>No dispatches scheduled in the queue.</p>
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[180px]">Scheduled Timestamp</TableHead>
-                    <TableHead>Post Title / Content Hook</TableHead>
-                    <TableHead className="w-[100px]">Channel</TableHead>
-                    <TableHead className="w-[100px] text-right">Status</TableHead>
+                  <TableRow className="border-white/[0.07]">
+                    <TableHead className="text-xs font-mono">Date</TableHead>
+                    <TableHead className="text-xs font-mono">Content Excerpt</TableHead>
+                    <TableHead className="text-xs font-mono">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockCalendarSlots.map((slot) => (
-                    <TableRow key={slot.id}>
-                      <TableCell className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                        {slot.date}
+                  {calendarPosts.map((p) => (
+                    <TableRow key={p.id} className="border-white/[0.05]">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {p.scheduled_at ? formatRelativeTime(p.scheduled_at) : "Draft"}
                       </TableCell>
-                      <TableCell className="font-medium text-foreground text-xs">
-                        {slot.title}
+                      <TableCell className="text-sm text-foreground line-clamp-1">
+                        {p.content}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {slot.platform}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant={slot.status === "Published" ? "success" : "secondary"}
-                          className="text-[10px] py-0 h-4"
-                        >
-                          {slot.status}
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {p.status}
                         </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
-
-      {/* Schedule Confirmation Dialog */}
-      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold">Schedule Post for Dispatch</DialogTitle>
-            <DialogDescription className="text-xs">
-              Confirm target publication time on LinkedIn.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2 text-xs">
-            <div className="space-y-1">
-              <Label className="text-xs">Target Date & Time</Label>
-              <div className="rounded-md border border-border bg-muted/40 p-2.5 font-mono text-xs text-foreground">
-                Today at 15:00 UTC (Optimal engagement window)
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Dispatch Worker</Label>
-              <div className="text-[11px] text-muted-foreground">
-                Hatchet `publish-linkedin-post` workflow with 3 automatic retries.
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setScheduleDialogOpen(false)}
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setScheduleDialogOpen(false);
-                setScheduledSuccess(true);
-              }}
-              className="text-xs"
-            >
-              Confirm and schedule
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
