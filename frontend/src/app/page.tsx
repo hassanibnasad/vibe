@@ -7,31 +7,19 @@ import {
   Users,
   Send,
   ArrowRight,
-  ShieldAlert,
-  ExternalLink,
   RefreshCw,
-  Activity,
   AlertCircle,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
+  Activity,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchDashboardMetrics, DashboardMetrics, Post } from "@/lib/api-client";
-import { formatRelativeTime, formatConfidence } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/utils";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
+import { AnimatedCheck, PulseBeacon } from "@/components/ui/AnimatedCheck";
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -47,7 +35,7 @@ export default function DashboardPage() {
         setLoading(false);
       })
       .catch(() => {
-        setError("Unable to connect to VibeAgent API gateway. Verify backend service is running.");
+        setError("Unable to connect to VibeAgent API backend. Ensure services are running.");
         setLoading(false);
       });
   };
@@ -56,339 +44,282 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
-  const getPostStatusBadge = (status: Post["status"]) => {
+  const getStatusBadge = (status: Post["status"]) => {
     switch (status) {
       case "published":
-        return <Badge variant="published" className="text-[10px] py-0 h-4">Published</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <AnimatedCheck size={12} delay={0.05} />
+            Published
+          </span>
+        );
       case "scheduled":
-        return <Badge variant="scheduled" className="text-[10px] py-0 h-4">Scheduled</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            Scheduled
+          </span>
+        );
       case "failed":
-        return <Badge variant="failed" className="text-[10px] py-0 h-4">Failed</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            Failed
+          </span>
+        );
       default:
-        return <Badge variant="draft" className="text-[10px] py-0 h-4">Draft</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-white/5 text-muted-foreground border border-white/10">
+            Draft
+          </span>
+        );
     }
   };
 
-  // 1. Loading Skeleton State
+  // Loading skeleton state
   if (loading) {
     return (
-      <div className="space-y-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-12">
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-40 rounded-full bg-white/5" />
+          <Skeleton className="h-12 w-80 rounded-2xl bg-white/5" />
+          <Skeleton className="h-4 w-96 rounded-full bg-white/5" />
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4 space-y-3">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-16" />
-                <Skeleton className="h-3 w-32" />
-              </CardContent>
-            </Card>
+            <div key={i} className="glass-panel rounded-2xl p-6 space-y-4">
+              <Skeleton className="h-4 w-28 bg-white/5" />
+              <Skeleton className="h-10 w-20 bg-white/5" />
+            </div>
           ))}
         </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <Skeleton className="h-5 w-40" />
-              </CardHeader>
-              <CardContent className="p-4 space-y-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <Skeleton className="h-5 w-32" />
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+        <div className="glass-panel rounded-2xl p-8 space-y-4">
+          <Skeleton className="h-6 w-48 bg-white/5" />
+          <Skeleton className="h-20 w-full bg-white/5" />
         </div>
       </div>
     );
   }
 
-  // 2. Error State
-  if (error || !metrics) {
-    return (
-      <div className="flex h-96 flex-col items-center justify-center space-y-3 max-w-md mx-auto text-center">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-        <div className="font-semibold text-sm text-foreground">API connection error</div>
-        <p className="text-xs text-muted-foreground">{error || "Failed to load dashboard metrics."}</p>
-        <Button variant="outline" size="sm" onClick={loadData} className="gap-1.5 mt-2">
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>Retry request</span>
-        </Button>
-      </div>
-    );
-  }
+  const activeMetrics: DashboardMetrics = metrics || {
+    total_posts_published: 0,
+    review_queue_pending: 0,
+    total_leads: 0,
+    mql_sql_leads: 0,
+    avg_response_time_sec: 0.0,
+    recent_posts: [],
+  };
 
-  const hasPendingReviews = metrics.review_queue_pending > 0;
-  const avgConfidence = formatConfidence(metrics.avg_reply_confidence, 0.85);
+  const kpis = [
+    {
+      label: "Verified Dispatches",
+      value: activeMetrics.total_posts_published,
+      icon: Send,
+      sub: "Confirmed live on social channels",
+      gradient: "from-cyan-500/10 via-transparent to-transparent",
+    },
+    {
+      label: "Review Gate",
+      value: activeMetrics.review_queue_pending,
+      icon: Inbox,
+      alert: activeMetrics.review_queue_pending > 0,
+      href: "/review-queue",
+      sub: activeMetrics.review_queue_pending > 0 ? "Requires operator authorization" : "All dispatches authorized",
+      gradient: activeMetrics.review_queue_pending > 0 ? "from-amber-500/10 via-transparent to-transparent" : "from-emerald-500/10 via-transparent to-transparent",
+    },
+    {
+      label: "Qualified Leads (MQL/SQL)",
+      value: activeMetrics.mql_sql_leads,
+      icon: Users,
+      sub: `${activeMetrics.total_leads} total prospects indexed`,
+      gradient: "from-indigo-500/10 via-transparent to-transparent",
+    },
+    {
+      label: "Agent Response Latency",
+      value: `${activeMetrics.avg_response_time_sec.toFixed(1)}s`,
+      icon: Activity,
+      sub: "Measured autonomous cycle time",
+      gradient: "from-violet-500/10 via-transparent to-transparent",
+    },
+  ];
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
-      {/* 4 Focused KPI Cards — Review Queue card is the single source of truth for queue count */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* KPI 1: Published Posts */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Published posts</span>
-              <Send className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono tabular-nums text-foreground">
-                {metrics.total_posts_published}
-              </span>
-              <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5">
-                <TrendingUp className="h-3 w-3" />
-                <span>+18% vs 7d</span>
+    <div className="space-y-12 pb-16">
+      {/* Editorial Hero Statement */}
+      <FadeIn>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl">
+              <PulseBeacon status={error ? "idle" : "live"} />
+              <span className="text-[11px] font-mono font-medium tracking-wide uppercase text-muted-foreground">
+                {error ? "Standby / Local Simulation Mode" : "Autonomous Engine Active"}
               </span>
             </div>
-            <div className="mt-2 text-[10px] text-muted-foreground">
-              Channel: LinkedIn corporate
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* KPI 2: Review Queue — Single source of truth with primary action */}
-        <Card className={hasPendingReviews ? "border-amber-500/40 bg-amber-500/[0.02]" : ""}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Review queue</span>
-              <Inbox className="h-3.5 w-3.5 text-muted-foreground" />
+            {error && (
+              <button
+                type="button"
+                onClick={loadData}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-mono hover:bg-amber-500/20 transition-all"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Backend offline · Click to reconnect
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                Command <span className="text-gradient-cyan">Center</span>
+              </h1>
+              <p className="mt-2 text-base text-muted-foreground max-w-2xl leading-relaxed">
+                Real-time operational visibility into autonomous content generation, approval gates, and BANT-qualified prospect funnels.
+              </p>
             </div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono tabular-nums text-foreground">
-                {metrics.review_queue_pending}
-              </span>
-              {hasPendingReviews ? (
-                <Badge variant="review" className="text-[10px] py-0 h-4 font-mono">
-                  Action required
-                </Badge>
-              ) : (
-                <Badge variant="published" className="text-[10px] py-0 h-4">
-                  Queue clear
-                </Badge>
-              )}
+
+            <div className="flex items-center gap-3">
+              <Link href="/studio">
+                <Button
+                  size="lg"
+                  className="rounded-xl px-5 h-11 text-sm font-medium bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white shadow-[0_0_25px_-5px_rgba(56,189,248,0.4)] transition-all hover:scale-[1.02]"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Launch Studio
+                </Button>
+              </Link>
             </div>
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">
-                Operator authorization gate
-              </span>
-              {hasPendingReviews && (
-                <Link href="/review-queue">
-                  <Button size="sm" className="h-6 px-2 text-[11px] gap-1">
-                    <span>Triage ({metrics.review_queue_pending})</span>
-                    <ArrowRight className="h-3 w-3" />
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* Spacious KPI Metric Cards */}
+      <StaggerContainer className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <StaggerItem key={kpi.label}>
+              <div
+                className={`group relative glass-panel glass-panel-hover rounded-2xl p-6 lg:p-7 overflow-hidden border border-white/[0.08] ${
+                  kpi.alert ? "ring-1 ring-amber-500/40" : ""
+                }`}
+              >
+                {/* Subtle top ambient glow */}
+                <div
+                  className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${kpi.gradient} opacity-80`}
+                />
+
+                <div className="relative z-10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground/80">
+                      {kpi.label}
+                    </span>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] text-muted-foreground group-hover:text-white transition-colors">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="font-display text-4xl lg:text-5xl font-extrabold text-white tracking-tight tabular-nums">
+                      {kpi.value}
+                    </div>
+                    <p className="text-xs text-muted-foreground/90 font-sans">{kpi.sub}</p>
+                  </div>
+
+                  {kpi.alert && kpi.href && (
+                    <div className="pt-2">
+                      <Link href={kpi.href}>
+                        <Button
+                          size="sm"
+                          className="w-full h-8 text-xs font-medium rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 gap-1.5 transition-all"
+                        >
+                          Triage Pending ({kpi.value})
+                          <ArrowRight className="h-3 w-3" />
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </StaggerItem>
+          );
+        })}
+      </StaggerContainer>
+
+      {/* Live Dispatches Section */}
+      <FadeIn delay={0.2}>
+        <div className="glass-panel rounded-3xl border border-white/[0.08] overflow-hidden shadow-2xl">
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 lg:px-8 border-b border-white/[0.07] bg-white/[0.01]">
+            <div>
+              <h2 className="font-display text-lg font-bold text-white tracking-tight">
+                Live Content Dispatches
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Authentic dispatches published or scheduled across connected social channels
+              </p>
+            </div>
+            <Link href="/studio">
+              <Button variant="ghost" size="sm" className="text-xs gap-1.5 text-muted-foreground hover:text-white hover:bg-white/[0.06] rounded-xl">
+                Open Studio
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
+
+          {/* Content Body */}
+          <div className="p-0">
+            {activeMetrics.recent_posts.length === 0 ? (
+              <div className="py-16 px-6 text-center space-y-4 max-w-md mx-auto">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] border border-white/[0.08] text-muted-foreground mx-auto">
+                  <Send className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-display font-semibold text-white text-base">No Dispatches Generated Yet</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Your social channels are clean. Feed a campaign brief to Content Studio to let autonomous agents draft your next viral dispatch.
+                  </p>
+                </div>
+                <Link href="/studio">
+                  <Button
+                    size="sm"
+                    className="mt-2 rounded-xl text-xs bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.1] gap-1.5"
+                  >
+                    Draft First Brief
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* KPI 3: Qualified Leads */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Qualified leads</span>
-              <Users className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono tabular-nums text-foreground">
-                {metrics.mql_sql_leads}
-              </span>
-              <Badge variant="sql" className="text-[10px] py-0 h-4 font-mono tabular-nums">
-                2 SQL ready
-              </Badge>
-            </div>
-            <div className="mt-2 text-[10px] text-muted-foreground">
-              Scored via BANT rubric ({metrics.total_leads} total)
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* KPI 4: Median Response Latency */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Median reply latency</span>
-              <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono tabular-nums text-foreground">
-                {metrics.avg_response_time_sec.toFixed(1)}s
-              </span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-[11px] font-medium text-emerald-400 cursor-help">
-                    Target &lt; 5.0s
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <span>Down from 4.2h manual operator baseline</span>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <div className="mt-2 text-[10px] text-muted-foreground">
-              Confidence average: <span className="font-mono">{avgConfidence.percentage}</span> ({avgConfidence.label})
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Grid: Live Stream & Operational Summary */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Left 2 Cols: Recent Dispatches & Table */}
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between border-b border-border space-y-0">
-              <div>
-                <CardTitle className="text-xs font-semibold">Live content stream</CardTitle>
-                <CardDescription className="text-[11px]">
-                  Recent publications and scheduled broadcasts on LinkedIn
-                </CardDescription>
               </div>
-              <Link href="/studio">
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                  <span>Open studio</span>
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[110px]">Time</TableHead>
-                    <TableHead>Excerpt</TableHead>
-                    <TableHead className="w-[100px]">Channel</TableHead>
-                    <TableHead className="w-[90px] text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {metrics.recent_posts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-xs">
-                        No recent dispatches recorded. Create a post in Content studio to begin.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    metrics.recent_posts.map((post) => (
-                      <TableRow key={post.id}>
-                        <TableCell className="font-mono text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
+            ) : (
+              <div className="divide-y divide-white/[0.05]">
+                {metrics.recent_posts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="p-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="space-y-1.5 max-w-3xl">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-muted-foreground/80 tabular-nums">
                           {formatRelativeTime(post.created_at)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium text-foreground line-clamp-1 text-xs">
-                            {post.content.split("\n")[0]}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                            ID: {post.id}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-[11px] font-medium">
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-muted-foreground">
                           LinkedIn
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {getPostStatusBadge(post.status)}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                        </span>
+                      </div>
+                      <p className="font-sans text-sm text-foreground/95 leading-relaxed font-normal">
+                        {post.content.split("\n")[0]}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {getStatusBadge(post.status)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Right 1 Col: Agent Telemetry & Quick Navigation */}
-        <div className="space-y-4">
-          {/* Active Agents Health */}
-          <Card>
-            <CardHeader className="p-4 pb-3 border-b border-border">
-              <CardTitle className="text-xs font-semibold">Automation agents</CardTitle>
-              <CardDescription className="text-[11px]">
-                Autonomous background workflows
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span className="font-medium">Content generator</span>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-mono">Idle</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span className="font-medium">Engagement monitor</span>
-                </div>
-                <span className="text-[11px] text-emerald-400 font-mono">Monitoring</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span className="font-medium">Lead qualifier (BANT)</span>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-mono">Idle</span>
-              </div>
-
-              <div className="pt-2 border-t border-border space-y-1.5">
-                <div className="flex justify-between text-[11px] text-muted-foreground">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">Verification threshold</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <span>Drafts with confidence &lt; 0.85 are routed to Review queue</span>
-                    </TooltipContent>
-                  </Tooltip>
-                  <span className="font-mono text-foreground tabular-nums">85%</span>
-                </div>
-                <Progress value={85} className="h-1" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions Panel */}
-          <Card>
-            <CardHeader className="p-4 pb-3 border-b border-border">
-              <CardTitle className="text-xs font-semibold">Quick actions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-2">
-              <Link href="/studio" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start text-xs h-8">
-                  <Send className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                  <span>Draft campaign brief</span>
-                </Button>
-              </Link>
-              <Link href="/review-queue" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start text-xs h-8">
-                  <Inbox className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                  <span>Triage pending replies</span>
-                </Button>
-              </Link>
-              <Link href="/leads" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start text-xs h-8">
-                  <Users className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                  <span>Inspect lead pipeline</span>
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 }
