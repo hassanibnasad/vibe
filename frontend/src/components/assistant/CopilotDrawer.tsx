@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -11,6 +11,7 @@ import {
 import { AssistantCopilot } from "./AssistantCopilot";
 import { Bot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { fetchHealthStatus, SystemHealth } from "@/lib/api-client";
 
 interface CopilotDrawerProps {
   open: boolean;
@@ -18,6 +19,16 @@ interface CopilotDrawerProps {
 }
 
 export function CopilotDrawer({ open, onOpenChange }: CopilotDrawerProps) {
+  const [health, setHealth] = useState<SystemHealth | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      fetchHealthStatus()
+        .then(setHealth)
+        .catch(() => setHealth(null));
+    }
+  }, [open]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col h-full bg-card">
@@ -31,9 +42,14 @@ export function CopilotDrawer({ open, onOpenChange }: CopilotDrawerProps) {
               </SheetDescription>
             </div>
           </div>
-          <Badge variant="success" className="mr-6 py-0 text-[10px] h-4">
-            LiteLLM Connected
-          </Badge>
+          {health && (
+            <Badge
+              variant={health.llm_gateway === "online" ? "success" : "warning"}
+              className="mr-6 py-0 text-[10px] h-4 font-mono"
+            >
+              {health.llm_gateway === "online" ? `${health.active_model || "LLM"} Connected` : "Gateway Offline"}
+            </Badge>
+          )}
         </SheetHeader>
         <div className="flex-1 overflow-hidden">
           <AssistantCopilot isDrawer />

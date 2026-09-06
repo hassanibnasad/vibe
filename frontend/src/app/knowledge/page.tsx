@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Database,
   Upload,
   Search,
   CheckCircle2,
   RefreshCw,
+  AlertCircle,
+  Database,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -30,324 +32,297 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-interface KnowledgeDocument {
-  id: string;
-  title: string;
-  doc_type: "brand" | "product" | "faq" | "case_study";
-  chunk_count: number;
-  embedding_model: string;
-  similarity_threshold: number;
-  last_indexed: string;
-  size_kb: number;
-}
+import { KnowledgeDoc, fetchKnowledgeDocs, uploadKnowledgeDoc } from "@/lib/api-client";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
 
 export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [chunkInspectorOpen, setChunkInspectorOpen] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<KnowledgeDocument | null>(null);
+  const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Upload Form State
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadType, setUploadType] = useState<KnowledgeDocument["doc_type"]>("brand");
+  // Real upload form state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadType, setUploadType] = useState("brand");
+  const [uploadTags, setUploadTags] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const [docs, setDocs] = useState<KnowledgeDocument[]>([
-    {
-      id: "doc-1",
-      title: "VibeAgent Core Brand & Tone Guidelines",
-      doc_type: "brand",
-      chunk_count: 14,
-      embedding_model: "all-minilm:l6-v2 (384-dim)",
-      similarity_threshold: 0.35,
-      last_indexed: "2 hours ago",
-      size_kb: 48,
-    },
-    {
-      id: "doc-2",
-      title: "Product Architecture & Hatchet Workflow Spec",
-      doc_type: "product",
-      chunk_count: 32,
-      embedding_model: "all-minilm:l6-v2 (384-dim)",
-      similarity_threshold: 0.30,
-      last_indexed: "Yesterday",
-      size_kb: 124,
-    },
-    {
-      id: "doc-3",
-      title: "Enterprise Lead Qualification & BANT Playbook",
-      doc_type: "faq",
-      chunk_count: 18,
-      embedding_model: "all-minilm:l6-v2 (384-dim)",
-      similarity_threshold: 0.40,
-      last_indexed: "3 days ago",
-      size_kb: 64,
-    },
-    {
-      id: "doc-4",
-      title: "Customer Case Study: 4x Inbound Pipeline for SaaS",
-      doc_type: "case_study",
-      chunk_count: 8,
-      embedding_model: "all-minilm:l6-v2 (384-dim)",
-      similarity_threshold: 0.30,
-      last_indexed: "5 days ago",
-      size_kb: 28,
-    },
-  ]);
+  const loadData = () => {
+    setLoading(true);
+    setError(null);
+    fetchKnowledgeDocs()
+      .then((data) => {
+        setDocs(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to load knowledge base. Verify API connection.");
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const filteredDocs = docs.filter((d) =>
     d.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalChunks = docs.reduce((acc, d) => acc + d.chunk_count, 0);
+  // Group docs by title to get unique documents with chunk counts
+  const groupedDocs = filteredDocs.reduce(
+    (acc, doc) => {
+      if (!acc[doc.title]) {
+        acc[doc.title] = { ...doc, chunkCount: 1 };
+      } else {
+        acc[doc.title].chunkCount += 1;
+      }
+      return acc;
+    },
+    {} as Record<string, KnowledgeDoc & { chunkCount: number }>
+  );
+  const uniqueDocs = Object.values(groupedDocs);
 
-  const handleInspectChunks = (doc: KnowledgeDocument) => {
-    setSelectedDoc(doc);
-    setChunkInspectorOpen(true);
+  const getDocTypeBadgeVariant = (type: string) => {
+    const map: Record<string, "default" | "mql" | "warning" | "sql"> = {
+      brand: "default",
+      product: "mql",
+      faq: "warning",
+      case_study: "sql",
+    };
+    return map[type] || "default";
   };
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadTitle.trim()) return;
-
+    if (!selectedFile || isUploading) return;
     setIsUploading(true);
-    setTimeout(() => {
-      const newDoc: KnowledgeDocument = {
-        id: `doc-${Date.now()}`,
-        title: uploadTitle.trim(),
-        doc_type: uploadType,
-        chunk_count: Math.floor(Math.random() * 15) + 5,
-        embedding_model: "all-minilm:l6-v2 (384-dim)",
-        similarity_threshold: 0.35,
-        last_indexed: "Just now",
-        size_kb: 36,
-      };
+    setUploadError(null);
+    setUploadSuccess(null);
 
-      setDocs((prev) => [newDoc, ...prev]);
+    try {
+      const tagsList = uploadTags
+        ? uploadTags.split(",").map((t) => t.trim()).filter(Boolean)
+        : undefined;
+      const res = await uploadKnowledgeDoc(selectedFile, uploadType, tagsList);
       setIsUploading(false);
-      setUploadSuccess(true);
+      setUploadSuccess(res.message || "File uploaded and queued for ingestion.");
       setTimeout(() => {
         setUploadDialogOpen(false);
-        setUploadSuccess(false);
-        setUploadTitle("");
-      }, 1000);
-    }, 800);
-  };
-
-  const getDocTypeBadgeVariant = (type: KnowledgeDocument["doc_type"]) => {
-    switch (type) {
-      case "brand":
-        return "default";
-      case "product":
-        return "mql";
-      case "faq":
-        return "warning";
-      case "case_study":
-        return "sql";
+        setUploadSuccess(null);
+        setSelectedFile(null);
+        setUploadTags("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        loadData();
+      }, 1500);
+    } catch (err) {
+      setIsUploading(false);
+      setUploadError(err instanceof Error ? err.message : "Failed to upload document");
     }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-        <div>
-          <h1 className="text-sm font-semibold text-foreground tracking-tight flex items-center gap-2">
-            <Database className="h-4 w-4 text-foreground" />
-            <span>Brand Knowledge & RAG Index</span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Vector embeddings stored in PostgreSQL pgvector to ground AI generated drafts and replies.
-          </p>
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
         </div>
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={() => setUploadDialogOpen(true)}
-            className="h-8 text-xs gap-1.5"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span>Upload document</span>
+  if (error) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center space-y-4 max-w-md mx-auto text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-semibold text-foreground">Knowledge base error</h3>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <FadeIn>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Knowledge base</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Vector embeddings for grounding AI-generated content.
+            </p>
+          </div>
+          <Button onClick={() => setUploadDialogOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload document
           </Button>
         </div>
-      </div>
+      </FadeIn>
 
-      {/* RAG Telemetry Summary Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-3">
-            <div className="text-[11px] text-muted-foreground">Indexed Documents</div>
-            <div className="text-lg font-bold font-mono text-foreground mt-0.5">{docs.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <div className="text-[11px] text-muted-foreground">Total Vector Chunks</div>
-            <div className="text-lg font-bold font-mono text-foreground mt-0.5">{totalChunks}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <div className="text-[11px] text-muted-foreground">Active Vector Index</div>
-            <div className="text-xs font-mono font-medium text-foreground mt-1">
-              pgvector • 384-dim (Cosine)
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Summary Cards */}
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StaggerItem>
+          <Card>
+            <CardContent className="p-5">
+              <div className="text-sm text-muted-foreground">Documents</div>
+              <div className="text-2xl font-bold font-mono text-foreground mt-1">{uniqueDocs.length}</div>
+            </CardContent>
+          </Card>
+        </StaggerItem>
+        <StaggerItem>
+          <Card>
+            <CardContent className="p-5">
+              <div className="text-sm text-muted-foreground">Total chunks</div>
+              <div className="text-2xl font-bold font-mono text-foreground mt-1">{docs.length}</div>
+            </CardContent>
+          </Card>
+        </StaggerItem>
+      </StaggerContainer>
 
-      {/* Search & Action Bar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+      {/* Search */}
+      <FadeIn delay={0.15}>
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search indexed knowledge documents..."
-            className="pl-8 h-8 text-xs bg-card"
+            placeholder="Search documents..."
+            className="pl-9 h-9 text-sm bg-card"
           />
         </div>
-      </div>
+      </FadeIn>
 
-      {/* Document Data Table */}
-      <Card className="p-0 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Document Title</TableHead>
-              <TableHead className="w-[120px]">Category</TableHead>
-              <TableHead className="w-[100px] text-right">Chunks</TableHead>
-              <TableHead className="w-[180px]">Embedding Model</TableHead>
-              <TableHead className="w-[120px]">Last Indexed</TableHead>
-              <TableHead className="w-[120px] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDocs.length === 0 ? (
+      {/* Table */}
+      <FadeIn delay={0.2}>
+        <Card className="p-0 overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-xs">
-                  No documents found matching search term.
-                </TableCell>
+                <TableHead className="pl-6">Document</TableHead>
+                <TableHead className="w-[120px]">Category</TableHead>
+                <TableHead className="w-[90px] text-right">Chunks</TableHead>
+                <TableHead className="w-[100px] text-right pr-6">Status</TableHead>
               </TableRow>
-            ) : (
-              filteredDocs.map((doc) => (
-                <TableRow key={doc.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="font-semibold text-foreground text-xs">{doc.title}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                      {doc.size_kb} KB • ID: {doc.id}
+            </TableHeader>
+            <TableBody>
+              {uniqueDocs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-16">
+                    <div className="space-y-2">
+                      <Database className="h-8 w-8 text-muted-foreground mx-auto" />
+                      <p className="text-sm text-muted-foreground">
+                        {searchTerm ? "No documents match your search." : "No documents indexed yet."}
+                      </p>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={getDocTypeBadgeVariant(doc.doc_type)} className="text-[10px] uppercase font-mono py-0 h-4">
-                      {doc.doc_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-bold text-xs">
-                    {doc.chunk_count}
-                  </TableCell>
-                  <TableCell className="font-mono text-[11px] text-muted-foreground">
-                    {doc.embedding_model}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {doc.last_indexed}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleInspectChunks(doc)}
-                      className="h-7 text-xs px-2"
-                    >
-                      Inspect Chunks
-                    </Button>
-                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+              ) : (
+                uniqueDocs.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="pl-6">
+                      <div className="text-sm font-medium text-foreground">{doc.title}</div>
+                      {doc.source_file && (
+                        <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                          {doc.source_file}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getDocTypeBadgeVariant(doc.doc_type)} className="uppercase font-mono text-[10px]">
+                        {doc.doc_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold text-sm tabular-nums">
+                      {doc.chunkCount}
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <Badge
+                        variant={doc.ingestion_status === "completed" ? "published" : "scheduled"}
+                        className="text-[10px]"
+                      >
+                        {doc.ingestion_status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </FadeIn>
 
-      {/* Chunk Inspector Dialog */}
-      <Dialog open={chunkInspectorOpen} onOpenChange={setChunkInspectorOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold">
-              Chunk Inspector: {selectedDoc?.title}
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Preview vector embeddings and text chunks indexed in pgvector.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedDoc && (
-            <div className="space-y-3 py-2 text-xs max-h-[350px] overflow-y-auto pr-1">
-              {[1, 2, 3].map((chunkIdx) => (
-                <div key={chunkIdx} className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
-                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
-                    <span>Chunk #{chunkIdx} of {selectedDoc.chunk_count}</span>
-                    <span>Tokens: ~128 • Cosine Threshold: {selectedDoc.similarity_threshold}</span>
-                  </div>
-                  <p className="text-foreground leading-relaxed font-sans text-xs">
-                    &ldquo;Autonomous agents execute bounded responsibilities across LinkedIn inbound events. High-confidence interactions (&gt;= 0.85) trigger automated scheduled publishing; low-confidence threads route to operator review queue.&rdquo;
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setChunkInspectorOpen(false)}
-              className="text-xs"
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Upload Document Dialog */}
+      {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent className="max-w-md">
           <form onSubmit={handleUploadSubmit}>
             <DialogHeader>
-              <DialogTitle className="text-sm font-semibold">Upload Knowledge Document</DialogTitle>
-              <DialogDescription className="text-xs">
-                Upload Markdown, PDF, or text files to chunk and index into pgvector.
+              <DialogTitle className="text-base">Upload document</DialogTitle>
+              <DialogDescription className="text-sm">
+                Upload files to chunk and index into the vector store.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 py-4 text-xs">
-              <div className="space-y-1">
-                <Label htmlFor="doc-title" className="text-xs">Document Title</Label>
-                <Input
-                  id="doc-title"
-                  value={uploadTitle}
-                  onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="e.g., Q3 Product Release Notes & Playbook"
-                  required
-                  className="text-xs"
-                />
+            <div className="space-y-4 py-4">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".md,.txt,.pdf,.docx"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setSelectedFile(f);
+                }}
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground bg-muted/20 cursor-pointer hover:border-primary/50 transition-colors"
+              >
+                <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                {selectedFile ? (
+                  <div>
+                    <span className="font-semibold text-foreground">{selectedFile.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({(selectedFile.size / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div>Click to select a document from your computer</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      .md, .txt, .pdf, .docx — max 20MB
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs">Document Category</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["brand", "product", "faq", "case_study"] as const).map((type) => (
+              <div className="space-y-2">
+                <Label className="text-sm">Category</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["brand", "product", "faq", "case_study", "general"].map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setUploadType(type)}
-                      className={`rounded-md border p-2 text-left uppercase text-[11px] font-mono transition-colors ${
+                      className={`rounded-lg border px-3 py-1.5 text-sm uppercase font-mono transition-colors ${
                         uploadType === type
-                          ? "border-primary bg-accent text-accent-foreground font-semibold"
+                          ? "border-primary bg-accent text-accent-foreground font-medium"
                           : "border-border text-muted-foreground hover:bg-muted"
                       }`}
                     >
@@ -357,17 +332,28 @@ export default function KnowledgeBasePage() {
                 </div>
               </div>
 
-              {/* Mock File Dropzone */}
-              <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground bg-muted/20">
-                <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                <div>Drag file here or click to select (.md, .txt, .pdf)</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">Maximum file size: 10MB</div>
+              <div className="space-y-2">
+                <Label htmlFor="doc-tags" className="text-sm">Tags (optional, comma-separated)</Label>
+                <Input
+                  id="doc-tags"
+                  value={uploadTags}
+                  onChange={(e) => setUploadTags(e.target.value)}
+                  placeholder="e.g., pricing, v2, release-notes"
+                  className="text-sm"
+                />
               </div>
 
+              {uploadError && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
               {uploadSuccess && (
-                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-400 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Document chunked and vector embeddings indexed.</span>
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{uploadSuccess}</span>
                 </div>
               )}
             </div>
@@ -376,25 +362,21 @@ export default function KnowledgeBasePage() {
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setUploadDialogOpen(false)}
-                className="text-xs"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                size="sm"
-                disabled={!uploadTitle.trim() || isUploading || uploadSuccess}
-                className="text-xs"
+                disabled={!selectedFile || isUploading || !!uploadSuccess}
               >
                 {isUploading ? (
                   <>
-                    <RefreshCw className="h-3 w-3 animate-spin mr-1" />
-                    <span>Chunking & Indexing...</span>
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    Uploading...
                   </>
                 ) : (
-                  <span>Index Document</span>
+                  "Upload and index"
                 )}
               </Button>
             </DialogFooter>

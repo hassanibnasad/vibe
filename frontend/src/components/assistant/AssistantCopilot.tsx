@@ -5,6 +5,13 @@ import { Send, Bot, User, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+import {
+  generatePost,
+  fetchLeads,
+  fetchKnowledgeDocs,
+  fetchReviewQueue,
+  fetchHealthStatus,
+} from "@/lib/api-client";
 import { PostDraftTool, PostDraftData } from "./PostDraftTool";
 import { LeadInsightTool, LeadInsightItem } from "./LeadInsightTool";
 
@@ -21,10 +28,10 @@ export interface CopilotMessage {
 }
 
 const quickPrompts = [
-  "Draft a LinkedIn post series on Autonomous Agent latency",
+  "Draft a LinkedIn post on Autonomous Agent workflows",
   "Audit active SQL leads and surface high intent signals",
-  "Summarize key brand positioning points from knowledge base",
-  "Inspect review queue and check for false-positive confidence scores",
+  "Inspect knowledge base indexed documents",
+  "Check review queue for pending incoming interactions",
 ];
 
 export function AssistantCopilot({ isDrawer = false }: { isDrawer?: boolean }) {
@@ -47,7 +54,7 @@ export function AssistantCopilot({ isDrawer = false }: { isDrawer?: boolean }) {
     }
   }, [messages, isProcessing]);
 
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const query = text || input;
     if (!query.trim() || isProcessing) return;
 
@@ -62,44 +69,118 @@ export function AssistantCopilot({ isDrawer = false }: { isDrawer?: boolean }) {
     setInput("");
     setIsProcessing(true);
 
-    setTimeout(() => {
-      let responseText = "Processed query against brand guidelines and active telemetry.";
+    try {
+      const lower = query.toLowerCase();
+      let responseText = "";
       let toolData: CopilotMessage["toolData"] = undefined;
 
-      const lower = query.toLowerCase();
-      if (lower.includes("post") || lower.includes("draft") || lower.includes("series")) {
-        responseText = "Generated LinkedIn draft grounded in RAG architecture spec:";
-        toolData = {
-          type: "post_draft",
-          post: {
-            title: "Autonomous Agents in B2B Pipeline Execution",
-            content:
-              "Why are enterprise growth teams moving away from manual SDR triage?\n\n1. Inbound response time drops from 4 hours to 1.8 seconds\n2. BANT qualification executes automatically across comment threads\n3. Zero qualified prospects slip past the review threshold\n\nSpeed-to-lead remains the primary conversion lever for high-ACV products.",
-            hashtags: ["#EnterpriseAI", "#RevOps", "#B2BMarketing"],
-          },
-        };
-      } else if (lower.includes("lead") || lower.includes("sql") || lower.includes("intent")) {
-        responseText = "Retrieved 2 SQL prospects meeting confidence criteria (score >= 75):";
-        toolData = {
-          type: "lead_insight",
-          leads: [
-            {
-              name: "Sarah Chen",
-              title: "VP Demand Gen @ SaaSScale",
-              score: 92,
-              reason: "Inquired about custom PostgreSQL and Hatchet workflow integration for 50 SDR seats",
-            },
-            {
-              name: "David Miller",
-              title: "Director of RevOps @ CloudCore",
-              score: 78,
-              reason: "Requested demo booking for BANT automation pipeline",
-            },
-          ],
-        };
+      if (
+        lower.includes("post") ||
+        lower.includes("draft") ||
+        lower.includes("series") ||
+        lower.includes("write") ||
+        lower.includes("generate")
+      ) {
+        try {
+          const posts = await generatePost(query, "thought_leadership", "linkedin", 1);
+          if (posts && posts.length > 0) {
+            const firstPost = posts[0];
+            responseText = "Generated LinkedIn draft from your brief grounded in knowledge base:";
+            toolData = {
+              type: "post_draft",
+              post: {
+                title: firstPost.content.split("\n")[0].slice(0, 60),
+                content: firstPost.content,
+                hashtags: firstPost.hashtags || [],
+              },
+            };
+          } else {
+            responseText = "Post generation completed, but no content was returned by the pipeline.";
+          }
+        } catch (err) {
+          responseText = `Failed to generate post: ${err instanceof Error ? err.message : "Backend service unavailable"}`;
+        }
+      } else if (
+        lower.includes("lead") ||
+        lower.includes("sql") ||
+        lower.includes("mql") ||
+        lower.includes("intent") ||
+        lower.includes("pipeline")
+      ) {
+        try {
+          const leads = await fetchLeads();
+          const qualified = leads.filter(
+            (l) => l.lead_score >= 70 || l.lead_stage === "sql" || l.lead_stage === "mql"
+          );
+          if (qualified.length > 0) {
+            responseText = `Retrieved ${qualified.length} qualified lead(s) from your active pipeline:`;
+            toolData = {
+              type: "lead_insight",
+              leads: qualified.slice(0, 5).map((l) => ({
+                name: l.full_name,
+                title:
+                  [l.job_title, l.company].filter(Boolean).join(" @ ") ||
+                  l.headline ||
+                  (l.platform ? `${l.platform} lead` : "Lead"),
+                score: l.lead_score,
+                reason:
+                  l.intent_signals.length > 0
+                    ? l.intent_signals.join(", ")
+                    : l.tags && l.tags.length > 0
+                    ? l.tags.join(", ")
+                    : `Stage: ${l.lead_stage.toUpperCase()}`,
+              })),
+            };
+          } else if (leads.length > 0) {
+            responseText = `No leads currently meet the SQL/MQL score threshold (score >= 70). You have ${leads.length} total lead(s) in early stages.`;
+          } else {
+            responseText =
+              "No leads found in your pipeline yet. Leads will appear automatically when prospects interact on LinkedIn.";
+          }
+        } catch (err) {
+          responseText = `Failed to query leads: ${err instanceof Error ? err.message : "Backend service unavailable"}`;
+        }
+      } else if (
+        lower.includes("knowledge") ||
+        lower.includes("rag") ||
+        lower.includes("doc") ||
+        lower.includes("brand")
+      ) {
+        try {
+          const docs = await fetchKnowledgeDocs();
+          if (docs.length > 0) {
+            const uniqueTitles = Array.from(new Set(docs.map((d) => d.title)));
+            responseText = `Knowledge base contains ${docs.length} indexed chunks across ${uniqueTitles.length} document(s): ${uniqueTitles.slice(0, 5).join(", ")}${uniqueTitles.length > 5 ? " and more" : ""}.`;
+          } else {
+            responseText =
+              "No knowledge base documents indexed yet. You can upload documents in the Knowledge Base section.";
+          }
+        } catch (err) {
+          responseText = `Failed to query knowledge base: ${err instanceof Error ? err.message : "Backend service unavailable"}`;
+        }
+      } else if (
+        lower.includes("review") ||
+        lower.includes("queue") ||
+        lower.includes("confidence")
+      ) {
+        try {
+          const queue = await fetchReviewQueue();
+          if (queue.length > 0) {
+            responseText = `There are currently ${queue.length} incoming interaction(s) requiring review in the queue.`;
+          } else {
+            responseText = "Review queue is clear! All recent automated replies met confidence thresholds.";
+          }
+        } catch (err) {
+          responseText = `Failed to check review queue: ${err instanceof Error ? err.message : "Backend service unavailable"}`;
+        }
       } else {
-        responseText =
-          "Query analyzed. Context synchronized with pgvector embeddings and review queue state. You can view or refine live drafts in Content Studio.";
+        try {
+          const health = await fetchHealthStatus();
+          responseText = `AI Copilot is operational. LLM Gateway is ${health.llm_gateway}, active model is ${health.active_model}. You can ask me to draft a LinkedIn post, audit leads, or inspect the knowledge base.`;
+        } catch {
+          responseText =
+            "AI Copilot is connected. Enter a brief to draft a LinkedIn post, query your lead pipeline, or inspect the knowledge base.";
+        }
       }
 
       const assistantMsg: CopilotMessage = {
@@ -111,8 +192,19 @@ export function AssistantCopilot({ isDrawer = false }: { isDrawer?: boolean }) {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+    } catch (outerErr) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          content: `Error processing request: ${outerErr instanceof Error ? outerErr.message : String(outerErr)}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    } finally {
       setIsProcessing(false);
-    }, 750);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

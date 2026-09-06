@@ -1,17 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Users,
-  Search,
-  ChevronRight,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, ChevronRight, RefreshCw, AlertCircle, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -23,129 +19,66 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Lead } from "@/lib/api-client";
+import { Lead, fetchLeads } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
+
+const stages = [
+  { id: "all", label: "All" },
+  { id: "sql", label: "SQL" },
+  { id: "mql", label: "MQL" },
+  { id: "hot", label: "Hot" },
+  { id: "warm", label: "Warm" },
+  { id: "cold", label: "Cold" },
+];
 
 export default function LeadsPipelinePage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStage, setSelectedStage] = useState<string>("all");
+  const [selectedStage, setSelectedStage] = useState("all");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const mockLeads: Lead[] = [
-    {
-      id: "1",
-      full_name: "Sarah Chen",
-      platform_username: "sarahchen_growth",
-      platform_user_id: "urn:li:person:1",
-      platform: "linkedin",
-      headline: "VP Demand Gen @ SaaSScale",
-      company: "SaaSScale",
-      lead_stage: "sql",
-      lead_score: 92,
-      sentiment: "inquisitive",
-      intent_signals: ["pricing_request", "integration_query", "team_size_50"],
-      interaction_count: 4,
-      last_interaction_at: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      full_name: "David Miller",
-      platform_username: "dmiller_ops",
-      platform_user_id: "urn:li:person:2",
-      platform: "linkedin",
-      headline: "Director of RevOps @ CloudCore",
-      company: "CloudCore",
-      lead_stage: "mql",
-      lead_score: 78,
-      sentiment: "positive",
-      intent_signals: ["booked_demo_inquiry", "budget_approved"],
-      interaction_count: 3,
-      last_interaction_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    },
-    {
-      id: "3",
-      full_name: "Marcus Vance",
-      platform_username: "marcus_vance",
-      platform_user_id: "urn:li:person:3",
-      platform: "linkedin",
-      headline: "Founder & CEO @ NexaGrowth",
-      company: "NexaGrowth",
-      lead_stage: "hot",
-      lead_score: 68,
-      sentiment: "inquisitive",
-      intent_signals: ["multi_turn_convo", "competitor_switch"],
-      interaction_count: 5,
-      last_interaction_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-    },
-    {
-      id: "4",
-      full_name: "Elena Rostova",
-      platform_username: "elena_marketing",
-      platform_user_id: "urn:li:person:4",
-      platform: "linkedin",
-      headline: "Head of Marketing @ FinTechEdge",
-      company: "FinTechEdge",
-      lead_stage: "warm",
-      lead_score: 45,
-      sentiment: "positive",
-      intent_signals: ["post_like", "positive_comment"],
-      interaction_count: 2,
-      last_interaction_at: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: "5",
-      full_name: "Liam O'Connor",
-      platform_username: "liam_tech",
-      platform_user_id: "urn:li:person:5",
-      platform: "linkedin",
-      headline: "Growth Consultant",
-      company: "Freelance",
-      lead_stage: "cold",
-      lead_score: 20,
-      sentiment: "neutral",
-      intent_signals: ["first_touch"],
-      interaction_count: 1,
-      last_interaction_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-    },
-  ];
+  const loadData = () => {
+    setLoading(true);
+    setError(null);
+    fetchLeads({ stage: selectedStage })
+      .then((data) => {
+        setLeads(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to load leads. Verify API connection.");
+        setLoading(false);
+      });
+  };
 
-  const stages = [
-    { id: "all", label: "All Stages" },
-    { id: "sql", label: "SQL (Sales Qualified)" },
-    { id: "mql", label: "MQL (Marketing Qualified)" },
-    { id: "hot", label: "Hot Intent" },
-    { id: "warm", label: "Warm" },
-    { id: "cold", label: "Cold" },
-  ];
+  useEffect(() => {
+    loadData();
+  }, [selectedStage]);
 
-  const filteredLeads = mockLeads.filter((l) => {
-    const matchesSearch =
-      (l.full_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (l.company?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (l.headline?.toLowerCase() || "").includes(searchTerm.toLowerCase());
-    const matchesStage = selectedStage === "all" || l.lead_stage === selectedStage;
-    return matchesSearch && matchesStage;
-
+  const filteredLeads = leads.filter((l) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      (l.full_name?.toLowerCase() || "").includes(term) ||
+      (l.company?.toLowerCase() || "").includes(term) ||
+      (l.headline?.toLowerCase() || "").includes(term)
+    );
   });
 
   const getStageBadgeVariant = (stage: Lead["lead_stage"]) => {
-    switch (stage) {
-      case "sql":
-        return "sql";
-      case "mql":
-        return "mql";
-      case "hot":
-        return "hot";
-      case "warm":
-        return "warning";
-      default:
-        return "secondary";
-    }
+    const map: Record<string, "sql" | "mql" | "hot" | "warning" | "secondary"> = {
+      sql: "sql",
+      mql: "mql",
+      hot: "hot",
+      warm: "warning",
+    };
+    return map[stage] || "secondary";
   };
 
   const handleRowClick = (lead: Lead) => {
@@ -153,202 +86,231 @@ export default function LeadsPipelinePage() {
     setDrawerOpen(true);
   };
 
+  // Compute counts from live data
+  const stageCounts = leads.reduce(
+    (acc, l) => {
+      acc[l.lead_stage] = (acc[l.lead_stage] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-full" />
+        <Card className="p-0">
+          <div className="p-6 space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center space-y-4 max-w-md mx-auto text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-semibold text-foreground">Pipeline error</h3>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-        <div>
-          <h1 className="text-sm font-semibold text-foreground tracking-tight flex items-center gap-2">
-            <Users className="h-4 w-4 text-foreground" />
-            <span>Lead Qualification & Pipeline</span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            BANT scoring and intent signal tracking derived from LinkedIn inbound commentary and DMs.
-          </p>
+      <FadeIn>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Lead pipeline</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              BANT scoring and intent tracking from LinkedIn engagement.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {Object.entries(stageCounts).map(([stage, count]) => (
+              <Badge key={stage} variant={getStageBadgeVariant(stage as Lead["lead_stage"])} className="font-mono text-xs uppercase">
+                {count} {stage}
+              </Badge>
+            ))}
+          </div>
         </div>
+      </FadeIn>
 
-        {/* Pipeline Quick Counts */}
-        <div className="flex items-center gap-2">
-          <Badge variant="sql" className="font-mono text-[10px] h-5">
-            2 SQL Ready
-          </Badge>
-          <Badge variant="mql" className="font-mono text-[10px] h-5">
-            1 MQL
-          </Badge>
-          <Badge variant="outline" className="font-mono text-[10px] h-5">
-            5 Total
-          </Badge>
+      {/* Filters */}
+      <FadeIn delay={0.1}>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search leads..."
+              className="pl-9 h-9 text-sm bg-card"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {stages.map((st) => (
+              <button
+                key={st.id}
+                onClick={() => setSelectedStage(st.id)}
+                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  selectedStage === st.id
+                    ? "bg-accent text-accent-foreground border border-border font-medium"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </FadeIn>
 
-      {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search leads by name, title, or company..."
-            className="pl-8 h-8 text-xs bg-card"
-          />
-        </div>
-
-        {/* Stage Filter Buttons */}
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-          {stages.map((st) => (
-            <button
-              key={st.id}
-              onClick={() => setSelectedStage(st.id)}
-              className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs transition-colors ${
-                selectedStage === st.id
-                  ? "bg-accent text-accent-foreground border border-border font-medium"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {st.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Enterprise Data Table */}
-      <Card className="p-0 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[240px]">Lead Name & Title</TableHead>
-              <TableHead className="w-[140px]">Company</TableHead>
-              <TableHead className="w-[100px]">Stage</TableHead>
-              <TableHead className="w-[90px] text-right">Lead Score</TableHead>
-              <TableHead>Intent Signals</TableHead>
-              <TableHead className="w-[120px]">Last Active</TableHead>
-              <TableHead className="w-[60px] text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredLeads.length === 0 ? (
+      {/* Table */}
+      <FadeIn delay={0.15}>
+        <Card className="p-0 overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
-                  No leads match the selected filter criteria.
-                </TableCell>
+                <TableHead className="pl-6">Name</TableHead>
+                <TableHead className="w-[100px]">Stage</TableHead>
+                <TableHead className="w-[90px] text-right">Score</TableHead>
+                <TableHead className="w-[120px]">Last Active</TableHead>
+                <TableHead className="w-[50px] text-right pr-6" />
               </TableRow>
-            ) : (
-              filteredLeads.map((lead) => (
-                <TableRow
-                  key={lead.id}
-                  onClick={() => handleRowClick(lead)}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <TableCell>
-                    <div className="font-semibold text-foreground text-xs">{lead.full_name}</div>
-                    <div className="text-[11px] text-muted-foreground line-clamp-1">{lead.headline}</div>
-                  </TableCell>
-                  <TableCell className="text-xs text-foreground font-medium">
-                    {lead.company}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStageBadgeVariant(lead.lead_stage)} className="text-[10px] uppercase font-mono py-0 h-4">
-                      {lead.lead_stage}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-bold text-xs">
-                    {lead.lead_score}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {lead.intent_signals.map((sig) => (
-                        <span
-                          key={sig}
-                          className="rounded border border-border bg-muted/40 px-1.5 py-0.2 text-[10px] font-mono text-muted-foreground"
-                        >
-                          {sig}
-                        </span>
-                      ))}
+            </TableHeader>
+            <TableBody>
+              {filteredLeads.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-16">
+                    <div className="space-y-2">
+                      <Users className="h-8 w-8 text-muted-foreground mx-auto" />
+                      <p className="text-sm text-muted-foreground">No leads match your filters.</p>
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground whitespace-nowrap">
-                    {formatRelativeTime(lead.last_interaction_at)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground inline" />
-                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+              ) : (
+                filteredLeads.map((lead) => (
+                  <TableRow
+                    key={lead.id}
+                    onClick={() => handleRowClick(lead)}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
+                    <TableCell className="pl-6">
+                      <div className="text-sm font-medium text-foreground">{lead.full_name}</div>
+                      {lead.headline && (
+                        <div className="text-xs text-muted-foreground mt-0.5">{lead.headline}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStageBadgeVariant(lead.lead_stage)} className="uppercase font-mono text-[10px]">
+                        {lead.lead_stage}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold text-sm tabular-nums">
+                      {lead.lead_score}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      {formatRelativeTime(lead.last_interaction_at)}
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <ChevronRight className="h-4 w-4 text-muted-foreground inline" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </FadeIn>
 
-      {/* Slide-over Lead Detail Drawer */}
+      {/* Lead Detail Drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md bg-card p-6 flex flex-col justify-between">
+        <SheetContent side="right" className="w-full sm:max-w-md bg-card p-0 flex flex-col">
           {selectedLead && (
             <>
-              <SheetHeader className="pb-4 border-b border-border">
+              <SheetHeader className="p-6 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <Badge variant={getStageBadgeVariant(selectedLead.lead_stage)} className="uppercase font-mono text-[10px]">
+                  <Badge variant={getStageBadgeVariant(selectedLead.lead_stage)} className="uppercase font-mono text-xs">
                     {selectedLead.lead_stage}
                   </Badge>
-                  <span className="font-mono text-xs font-bold">
-                    Score: {selectedLead.lead_score}/100
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {selectedLead.lead_score}/100
                   </span>
                 </div>
-                <SheetTitle className="text-base font-semibold mt-2">{selectedLead.full_name}</SheetTitle>
-                <SheetDescription className="text-xs">{selectedLead.headline}</SheetDescription>
+                <SheetTitle className="text-lg mt-2">{selectedLead.full_name}</SheetTitle>
+                {selectedLead.headline && (
+                  <p className="text-sm text-muted-foreground">{selectedLead.headline}</p>
+                )}
               </SheetHeader>
 
-              <div className="space-y-4 py-4 overflow-y-auto flex-1 text-xs">
-                {/* Company & Profile Info */}
-                <div className="space-y-2 rounded-md border border-border p-3 bg-muted/20">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Company</span>
-                    <span className="font-medium text-foreground">{selectedLead.company}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Platform Handle</span>
-                    <span className="font-mono text-foreground">{selectedLead.platform_username}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Total Touchpoints</span>
-                    <span className="font-mono text-foreground">{selectedLead.interaction_count}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Sentiment</span>
-                    <span className="capitalize text-foreground font-medium">{selectedLead.sentiment}</span>
-                  </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {/* Info */}
+                <div className="rounded-lg border border-border p-4 space-y-3">
+                  {[
+                    { label: "Company", value: selectedLead.company || "—" },
+                    {
+                      label: "Platform",
+                      value: selectedLead.platform_username
+                        ? `@${selectedLead.platform_username}`
+                        : selectedLead.platform,
+                    },
+                    { label: "Email", value: selectedLead.email || "—" },
+                    {
+                      label: "Interactions",
+                      value:
+                        selectedLead.interaction_count !== null &&
+                        selectedLead.interaction_count !== undefined
+                          ? selectedLead.interaction_count
+                          : "—",
+                    },
+                  ].map((row) => (
+                    <div key={row.label} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{row.label}</span>
+                      <span className="text-foreground font-medium">{row.value}</span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* BANT Intent Signals Breakdown */}
-                <div className="space-y-2">
-                  <div className="font-semibold text-foreground text-xs">BANT Intent Signals</div>
-                  <div className="space-y-1.5">
-                    {selectedLead.intent_signals.map((signal) => (
-                      <div
-                        key={signal}
-                        className="rounded-md border border-border bg-background p-2 font-mono text-[11px] text-muted-foreground"
-                      >
-                        ✓ {signal.replace(/_/g, " ")}
-                      </div>
-                    ))}
+                {/* Intent Signals */}
+                {selectedLead.intent_signals.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground">Intent signals</h4>
+                    <div className="space-y-1.5">
+                      {selectedLead.intent_signals.map((signal) => (
+                        <div
+                          key={signal}
+                          className="rounded-lg border border-border bg-background p-3 text-sm text-muted-foreground font-mono"
+                        >
+                          {signal.replace(/_/g, " ")}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                {/* Recommended SDR Action */}
-                <div className="rounded-md border border-indigo-500/30 bg-indigo-500/10 p-3 space-y-1 text-indigo-300">
-                  <div className="font-semibold text-xs">Recommended Action</div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Lead meets criteria for direct SDR handoff. Schedule meeting link or export contact to HubSpot.
-                  </p>
-                </div>
+                )}
               </div>
 
-              {/* Drawer Actions */}
-              <div className="pt-4 border-t border-border flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 text-xs">
+              {/* Actions */}
+              <div className="p-6 border-t border-border flex gap-3">
+                <Button variant="outline" size="sm" className="flex-1">
                   Export to CRM
                 </Button>
-                <Button size="sm" className="flex-1 text-xs">
-                  Draft DM Reply
+                <Button size="sm" className="flex-1">
+                  Draft reply
                 </Button>
               </div>
             </>
