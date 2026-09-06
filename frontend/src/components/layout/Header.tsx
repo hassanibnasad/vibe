@@ -1,27 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ChevronRight,
-  Search,
-  Bot,
-  Plus,
-  SlidersHorizontal,
-  Check,
-} from "lucide-react";
+import { ChevronRight, Search, Sparkles, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HeaderProps {
   onOpenCommandDialog?: () => void;
@@ -29,110 +12,64 @@ interface HeaderProps {
 }
 
 const pageTitles: Record<string, { group: string; title: string }> = {
-  "/": { group: "Operate", title: "Command center" },
-  "/review-queue": { group: "Operate", title: "Review queue" },
-  "/studio": { group: "Operate", title: "Content studio" },
-  "/leads": { group: "Intelligence", title: "Lead pipeline" },
-  "/knowledge": { group: "Intelligence", title: "Knowledge base" },
-  "/assistant": { group: "Intelligence", title: "AI copilot" },
+  "/": { group: "Operate", title: "Command Center" },
+  "/review-queue": { group: "Operate", title: "Review Queue" },
+  "/studio": { group: "Operate", title: "Content Studio" },
+  "/leads": { group: "Intelligence", title: "Lead Pipeline" },
+  "/knowledge": { group: "Intelligence", title: "Knowledge Base" },
+  "/assistant": { group: "Intelligence", title: "AI Copilot" },
 };
-
-const models = [
-  { id: "groq/llama-3.3-70b", name: "Groq Llama 3.3 70B", tier: "Cloud fast (500 t/s)" },
-  { id: "gemini/gemini-2.0-flash", name: "Gemini 2.0 Flash", tier: "Cloud free tier" },
-  { id: "deepseek/deepseek-chat", name: "DeepSeek V3", tier: "Cloud economy" },
-  { id: "ollama/llama3.1:8b", name: "Local Ollama 8B", tier: "Self-hosted" },
-];
 
 export function Header({ onOpenCommandDialog, onOpenCopilotDrawer }: HeaderProps) {
   const pathname = usePathname();
-  const [selectedModel, setSelectedModel] = useState("groq/llama-3.3-70b");
   const current = pageTitles[pathname] || { group: "Operate", title: "Overview" };
 
   return (
-    <header className="sticky top-0 z-30 flex h-12 w-full items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur-xs">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">{current.group}</span>
-        <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
-        <span className="font-semibold text-foreground">{current.title}</span>
-        <Badge variant="published" className="ml-2 py-0 text-[10px] h-4">
-          LinkedIn live
-        </Badge>
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/[0.07] bg-[#07080b]/70 px-8 backdrop-blur-2xl">
+      {/* Editorial Breadcrumbs */}
+      <div className="flex items-center gap-2.5 text-sm">
+        <span className="text-muted-foreground/80 font-medium font-sans text-xs tracking-wider uppercase">
+          {current.group}
+        </span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+        <span className="font-display font-semibold text-white tracking-tight text-sm">
+          {current.title}
+        </span>
       </div>
 
-      {/* Action Controls */}
-      <div className="flex items-center gap-2">
-        {/* Quick Search Shortcut */}
-        <Button
-          variant="outline"
-          size="sm"
+      {/* Action Suite */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
           onClick={onOpenCommandDialog}
-          className="h-7 px-2.5 text-xs text-muted-foreground gap-2 font-normal hidden sm:inline-flex"
+          className="h-9 px-3.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] transition-all text-xs text-muted-foreground flex items-center gap-2.5 shadow-sm"
         >
-          <Search className="h-3 w-3" />
-          <span>Quick find...</span>
-          <kbd className="pointer-events-none ml-2 rounded border border-border bg-muted px-1.5 py-0 text-[9px] font-mono text-muted-foreground">
+          <Search className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Quick command...</span>
+          <kbd className="pointer-events-none rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground/80">
             Ctrl+K
           </kbd>
-        </Button>
+        </button>
 
-        {/* Quiet Model Settings Selector */}
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  <span className="sr-only">Model settings</span>
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <span>Model router: {models.find((m) => m.id === selectedModel)?.name}</span>
-            </TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase">
-              Active LLM engine
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {models.map((model) => (
-              <DropdownMenuItem
-                key={model.id}
-                onClick={() => setSelectedModel(model.id)}
-                className="flex items-center justify-between text-xs cursor-pointer py-1.5"
-              >
-                <div>
-                  <div className="font-medium text-foreground">{model.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{model.tier}</div>
-                </div>
-                {selectedModel === model.id && (
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Global Copilot Drawer Trigger */}
         {pathname !== "/assistant" && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onOpenCopilotDrawer}
-            className="h-7 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+            className="h-9 px-3.5 rounded-xl text-xs gap-2 text-muted-foreground hover:text-white hover:bg-white/[0.06] transition-all"
           >
-            <Bot className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">Copilot</span>
+            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="hidden md:inline font-sans">Copilot</span>
           </Button>
         )}
 
-        {/* Secondary Header Action (Outlined to avoid competing with screen primary button) */}
         <Link href="/studio">
-          <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs gap-1">
+          <Button
+            size="sm"
+            className="h-9 px-4 rounded-xl text-xs gap-1.5 font-medium bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white shadow-[0_0_20px_-3px_rgba(56,189,248,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
             <Plus className="h-3.5 w-3.5" />
-            <span>New brief</span>
+            <span>New Brief</span>
           </Button>
         </Link>
       </div>
