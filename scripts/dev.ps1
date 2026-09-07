@@ -189,7 +189,9 @@ if ($startBackend) {
         Write-Info "Syncing backend dependencies with uv..."
         Push-Location $backendDir
         if (-not (Test-Path $venvPath)) { uv venv }
-        uv sync
+        $staleLock = Join-Path $venvPath ".lock"
+        if (Test-Path $staleLock) { Remove-Item $staleLock -Force -ErrorAction SilentlyContinue }
+        uv sync --extra dev
         Pop-Location
     }
 
@@ -247,24 +249,27 @@ if ($startFrontend) {
 
     $frontendDir = Join-Path $ROOT "frontend"
 
-    # Check node_modules exists or rebuild
-    $nodeModules = Join-Path $frontendDir "node_modules"
-    if ($Build -or -not (Test-Path $nodeModules)) {
-        Write-Info "Installing npm dependencies & building Next.js..."
-        Push-Location $frontendDir
-        npm install
-        npm run build
-        Pop-Location
-    }
+    if (-not (Test-Path $frontendDir)) {
+        Write-Warn "Frontend directory not found at $frontendDir"
+    } else {
+        # Check node_modules exists or rebuild
+        $nodeModules = Join-Path $frontendDir "node_modules"
+        if ($Build -or -not (Test-Path $nodeModules)) {
+            Write-Info "Installing npm dependencies..."
+            Push-Location $frontendDir
+            npm install
+            Pop-Location
+        }
 
-    Write-Info "Next.js dev on http://localhost:3000"
-    $frontendJob = Start-Job -Name "frontend-dev" -ScriptBlock {
-        param($dir)
-        Set-Location $dir
-        npm run dev
-    } -ArgumentList $frontendDir
-    $script:childJobs += $frontendJob
-    Write-Ok "Frontend started (job: $($frontendJob.Id))"
+        Write-Info "Next.js dev on http://localhost:3000"
+        $frontendJob = Start-Job -Name "frontend-dev" -ScriptBlock {
+            param($dir)
+            Set-Location $dir
+            npm run dev
+        } -ArgumentList $frontendDir
+        $script:childJobs += $frontendJob
+        Write-Ok "Frontend started (job: $($frontendJob.Id))"
+    }
 }
 
 # -- 5. Summary --------------------------------------------------------------
