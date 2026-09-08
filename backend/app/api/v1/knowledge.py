@@ -79,41 +79,44 @@ def _assert_supported_extension(filename: str) -> None:
         )
 
 
+from pathlib import Path
+
+_LOCAL_STAGE_DIR = Path(".scratch/uploads")
+
+
 async def _stage_to_rustfs(content: bytes, object_key: str) -> None:
-    """Upload raw bytes to RustFS.  No-op if RUSTFS_ENDPOINT is not configured."""
+    """Stage raw bytes locally and optionally replicate to RustFS/S3 if configured."""
+    # Always stage locally for fast in-process/local-worker ingestion
+    try:
+        local_path = _LOCAL_STAGE_DIR / object_key
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_bytes(content)
+    except Exception as e:
+        logger.warning("local_staging_failed", error=str(e), object_key=object_key)
+
     if not settings.RUSTFS_ENDPOINT:
-        logger.warning("rustfs_not_configured_skipping_stage", object_key=object_key)
+        logger.debug("rustfs_not_configured_using_local_stage", object_key=object_key)
         return
 
     try:
-        import aioboto3  # noqa: PLC0415
-
-        session = aioboto3.Session()
-        async with session.client(
-            "s3",
-            endpoint_url=settings.RUSTFS_ENDPOINT,
-            aws_access_key_id=settings.RUSTFS_ACCESS_KEY,
-            aws_secret_access_key=settings.RUSTFS_SECRET_KEY,
-        ) as s3:
-            await s3.put_object(
-                Bucket=settings.RUSTFS_BUCKET,
-                Key=object_key,
-                Body=content,
-            )
-    except ImportError:
-        import asyncio  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
         import boto3  # noqa: PLC0415
 
         def _sync_put() -> None:
+            cfg = Config(connect_timeout=2, read_timeout=5, retries={"max_attempts": 1})
             s3 = boto3.client(
                 "s3",
                 endpoint_url=settings.RUSTFS_ENDPOINT,
                 aws_access_key_id=settings.RUSTFS_ACCESS_KEY,
                 aws_secret_access_key=settings.RUSTFS_SECRET_KEY,
+                config=cfg,
             )
             s3.put_object(Bucket=settings.RUSTFS_BUCKET, Key=object_key, Body=content)
 
+        import asyncio  # noqa: PLC0415
         await asyncio.get_event_loop().run_in_executor(None, _sync_put)
+    except Exception as exc:
+        logger.warning("rustfs_stage_failed_using_local_fallback", error=str(exc), object_key=object_key)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -135,10 +138,10 @@ async def upload_knowledge_doc(
     current_user: dict = Depends(get_current_user),
 ) -> UploadAcceptedResponse:
     """
-    Stage the file to RustFS then dispatch a Hatchet ``knowledge-ingestion``
-    background task.  Returns ``202 Accepted`` immediately.
+    Stage the file to RustFS/local-storage then dispatch a Hatchet ``knowledge-ingestion``
+    background task. Returns ``202 Accepted`` immediately.
 
-    The Hatchet job handles chunking, embedding, and DB upsert asynchronously.
+    The background job handles chunking, embedding, and DB upsert asynchronously.
     """
     filename = file.filename or "upload.md"
     _assert_supported_extension(filename)
@@ -150,7 +153,7 @@ async def upload_knowledge_doc(
             detail=f"File exceeds the {settings.INGESTION_MAX_FILE_SIZE_MB} MB limit.",
         )
 
-    # Stage to RustFS for durable access by the Hatchet worker.
+    # Stage locally / to RustFS for durable access by the worker.
     stage_id = uuid.uuid4()
     object_key = f"knowledge/{DEFAULT_TENANT_ID}/{stage_id}/{filename}"
     await _stage_to_rustfs(content, object_key)
@@ -158,13 +161,13 @@ async def upload_knowledge_doc(
     # Parse tags from comma-separated form field.
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
-    # Dispatch Hatchet task.
+    # Dispatch Hatchet task non-blocking so client receives 202 immediately.
     from app.workflows.ingestion_workflow import (  # noqa: PLC0415
         IngestionTaskInput,
         knowledge_ingestion_task,
     )
 
-    job_ref = await knowledge_ingestion_task.aio_run(
+    job_ref = await knowledge_ingestion_task.aio_run_no_wait(
         IngestionTaskInput(
             object_key=object_key,
             filename=filename,

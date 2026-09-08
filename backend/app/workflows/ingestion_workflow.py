@@ -39,6 +39,11 @@ class IngestionTaskInput(BaseModel):
     tags: list[str] = []
 
 
+from pathlib import Path
+
+_LOCAL_STAGE_DIR = Path(".scratch/uploads")
+
+
 @hatchet.task(
     name="knowledge-ingestion",
     input_validator=IngestionTaskInput,
@@ -50,7 +55,7 @@ async def knowledge_ingestion_task(
     ctx: Context,
 ) -> dict:
     """
-    1. Download staged file bytes from RustFS.
+    1. Fetch staged file bytes from local staging or RustFS.
     2. Call KnowledgeIngestionService.ingest_bytes().
     3. Commit and return an IngestionResult summary.
     """
@@ -61,90 +66,110 @@ async def knowledge_ingestion_task(
 
     tenant_id = uuid.UUID(input.tenant_id)
 
-    # ── Step 1: Fetch file bytes from RustFS ──────────────────────────────────
-    content = await _fetch_from_rustfs(input.object_key)
+    try:
+        # ── Step 1: Fetch file bytes ─────────────────────────────────────────
+        content = await _fetch_from_rustfs(input.object_key)
 
-    # ── Step 2: Ingest ────────────────────────────────────────────────────────
-    session_factory = get_sessionmaker()
-    async with session_factory() as session:
-        repo = KnowledgeRepository(session)
-        llm_client = LLMClient()
-        svc = KnowledgeIngestionService(knowledge_repo=repo, llm_client=llm_client)
+        # ── Step 2: Ingest ───────────────────────────────────────────────────
+        session_factory = get_sessionmaker()
+        async with session_factory() as session:
+            repo = KnowledgeRepository(session)
+            llm_client = LLMClient()
+            svc = KnowledgeIngestionService(knowledge_repo=repo, llm_client=llm_client)
 
-        result = await svc.ingest_bytes(
-            content=content,
-            filename=input.filename,
-            doc_type=input.doc_type,
-            tenant_id=tenant_id,
-            metadata=input.metadata,
-            tags=input.tags,
+            result = await svc.ingest_bytes(
+                content=content,
+                filename=input.filename,
+                doc_type=input.doc_type,
+                tenant_id=tenant_id,
+                metadata=input.metadata,
+                tags=input.tags,
+            )
+
+            await session.commit()
+
+        # Clean up local staged file if present
+        local_path = _LOCAL_STAGE_DIR / input.object_key
+        if local_path.is_file():
+            try:
+                local_path.unlink()
+            except Exception:
+                pass
+
+        logger.info(
+            "knowledge_ingestion_task.complete",
+            source_file=result.source_file,
+            chunks_total=result.chunks_total,
+            chunks_written=result.chunks_written,
+            chunks_skipped=result.chunks_skipped,
+            chunks_failed=result.chunks_failed,
         )
 
-        await session.commit()
-
-    logger.info(
-        "knowledge_ingestion_task.complete",
-        source_file=result.source_file,
-        chunks_total=result.chunks_total,
-        chunks_written=result.chunks_written,
-        chunks_skipped=result.chunks_skipped,
-        chunks_failed=result.chunks_failed,
-    )
-
-    return {
-        "source_file": result.source_file,
-        "parent_doc_id": str(result.parent_doc_id),
-        "chunks_total": result.chunks_total,
-        "chunks_written": result.chunks_written,
-        "chunks_skipped": result.chunks_skipped,
-        "chunks_failed": result.chunks_failed,
-        "failed_chunk_indices": result.failed_chunk_indices,
-        "status": "failed" if result.chunks_failed > 0 and result.chunks_written == 0 else "ok",
-    }
+        return {
+            "source_file": result.source_file,
+            "parent_doc_id": str(result.parent_doc_id),
+            "chunks_total": result.chunks_total,
+            "chunks_written": result.chunks_written,
+            "chunks_skipped": result.chunks_skipped,
+            "chunks_failed": result.chunks_failed,
+            "failed_chunk_indices": result.failed_chunk_indices,
+            "status": "failed" if result.chunks_failed > 0 and result.chunks_written == 0 else "ok",
+        }
+    except Exception as exc:
+        logger.error(
+            "knowledge_ingestion_task.error",
+            filename=input.filename,
+            object_key=input.object_key,
+            error=str(exc),
+        )
+        return {
+            "source_file": input.filename,
+            "parent_doc_id": "",
+            "chunks_total": 0,
+            "chunks_written": 0,
+            "chunks_skipped": 0,
+            "chunks_failed": 1,
+            "failed_chunk_indices": [0],
+            "status": "failed",
+            "error": str(exc),
+        }
 
 
 async def _fetch_from_rustfs(object_key: str) -> bytes:
     """
-    Download a file from RustFS / S3-compatible object storage.
-
-    Uses boto3 (aioboto3) if available, falls back to httpx for simplicity.
-    Raises ``RuntimeError`` if the object cannot be retrieved.
+    Download a file from local staging or RustFS / S3-compatible object storage.
     """
+    # 1. First check local staging directory
+    local_path = _LOCAL_STAGE_DIR / object_key
+    if local_path.is_file():
+        logger.debug("fetching_from_local_stage", path=str(local_path))
+        return local_path.read_bytes()
+
+    # 2. Check RustFS if configured
     from app.config import settings  # noqa: PLC0415
 
     if not settings.RUSTFS_ENDPOINT:
         raise RuntimeError(
-            "RUSTFS_ENDPOINT is not configured. "
-            "Set it in .env before using the knowledge upload API."
+            f"Staged file not found locally ({local_path}) and RUSTFS_ENDPOINT is not configured."
         )
 
     try:
-        import aioboto3  # noqa: PLC0415
-
-        aws_session = aioboto3.Session()
-        async with aws_session.client(
-            "s3",
-            endpoint_url=settings.RUSTFS_ENDPOINT,
-            aws_access_key_id=settings.RUSTFS_ACCESS_KEY,
-            aws_secret_access_key=settings.RUSTFS_SECRET_KEY,
-        ) as s3:
-            response = await s3.get_object(Bucket=settings.RUSTFS_BUCKET, Key=object_key)
-            body = await response["Body"].read()
-            return body
-
-    except ImportError:
-        # Fallback: synchronous boto3 in a thread executor
-        import asyncio  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
         import boto3  # noqa: PLC0415
 
         def _sync_fetch() -> bytes:
+            cfg = Config(connect_timeout=2, read_timeout=5, retries={"max_attempts": 1})
             s3 = boto3.client(
                 "s3",
                 endpoint_url=settings.RUSTFS_ENDPOINT,
                 aws_access_key_id=settings.RUSTFS_ACCESS_KEY,
                 aws_secret_access_key=settings.RUSTFS_SECRET_KEY,
+                config=cfg,
             )
             response = s3.get_object(Bucket=settings.RUSTFS_BUCKET, Key=object_key)
             return response["Body"].read()
 
+        import asyncio  # noqa: PLC0415
         return await asyncio.get_event_loop().run_in_executor(None, _sync_fetch)
+    except Exception as exc:
+        raise RuntimeError(f"Failed to fetch staged file from RustFS ({object_key}): {exc}") from exc
