@@ -16,11 +16,13 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from app.api.deps import get_knowledge_ingestion_service, get_knowledge_repo
 from app.config import settings
 from app.dependencies import DEFAULT_TENANT_ID
 from app.middleware.auth import get_current_user
+from app.models.knowledge_doc import KnowledgeDoc
 from app.repositories.knowledge_repo import KnowledgeRepository
 from app.services.knowledge import KnowledgeIngestionService
 from app.services.knowledge.parsers import SUPPORTED_EXTENSIONS
@@ -41,6 +43,7 @@ class KnowledgeDocResponse(BaseModel):
     char_count: int | None
     ingestion_status: str
     tags: list[str]
+    embedding_model: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -55,6 +58,12 @@ class UploadAcceptedResponse(BaseModel):
     object_key: str
     filename: str
     status: str = "queued"
+    message: str
+
+
+class ReembedResponse(BaseModel):
+    model_name: str
+    total_reembedded: int
     message: str
 
 
@@ -203,21 +212,21 @@ async def upload_knowledge_doc(
 )
 async def list_knowledge_docs(
     doc_type: str | None = Query(None, description="Filter by doc_type"),
+    model_name: str | None = Query(None, description="Filter by embedding_model"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     knowledge_repo: KnowledgeRepository = Depends(get_knowledge_repo),
     current_user: dict = Depends(get_current_user),
 ) -> KnowledgeListResponse:
     """Paginated list of all KnowledgeDocs for the current tenant."""
-    from sqlalchemy import select  # noqa: PLC0415
-    from app.models.knowledge_doc import KnowledgeDoc  # noqa: PLC0415
-
     skip = (page - 1) * limit
     stmt = select(KnowledgeDoc).offset(skip).limit(limit).order_by(
         KnowledgeDoc.doc_type.asc(), KnowledgeDoc.chunk_index.asc()
     )
     if doc_type:
         stmt = stmt.where(KnowledgeDoc.doc_type == doc_type)
+    if model_name:
+        stmt = stmt.where(KnowledgeDoc.embedding_model == model_name)
 
     result = await knowledge_repo.session.execute(stmt)
     docs = list(result.scalars().all())
@@ -226,6 +235,54 @@ async def list_knowledge_docs(
     return KnowledgeListResponse(
         data=[KnowledgeDocResponse.model_validate(d) for d in docs],
         pagination={"page": page, "limit": limit, "total": total},
+    )
+
+
+@router.post(
+    "/re-embed",
+    response_model=ReembedResponse,
+    summary="Re-embed outdated knowledge document chunks",
+)
+async def reembed_outdated(
+    target_model: str | None = Query(
+        None,
+        description="Target model name; defaults to active EmbeddingService model",
+    ),
+    batch_size: int = Query(50, ge=1, le=200),
+    ingestion_service: KnowledgeIngestionService = Depends(
+        get_knowledge_ingestion_service
+    ),
+    current_user: dict = Depends(get_current_user),
+) -> ReembedResponse:
+    """
+    Re-embed chunks in knowledge_docs where embedding_model does not match target_model
+    (or is NULL), scoped to the authenticated tenant.
+    """
+    raw_tenant_id = (
+        current_user.get("tenant_id")
+        if isinstance(current_user, dict)
+        else getattr(current_user, "tenant_id", DEFAULT_TENANT_ID)
+    )
+    tenant_id: uuid.UUID
+    if isinstance(raw_tenant_id, uuid.UUID):
+        tenant_id = raw_tenant_id
+    elif isinstance(raw_tenant_id, str):
+        tenant_id = uuid.UUID(raw_tenant_id)
+    else:
+        tenant_id = DEFAULT_TENANT_ID
+
+    result = await ingestion_service.reembed_outdated_chunks(
+        target_model=target_model,
+        batch_size=batch_size,
+        tenant_id=tenant_id,
+    )
+    return ReembedResponse(
+        model_name=result["model_name"],
+        total_reembedded=result["total_reembedded"],
+        message=(
+            f"Successfully re-embedded {result['total_reembedded']} chunk(s) "
+            f"using {result['model_name']}."
+        ),
     )
 
 
