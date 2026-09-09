@@ -105,6 +105,19 @@ class Settings(BaseSettings):
     # Set to False on latency-sensitive paths (e.g. real-time streaming replies).
     RAG_RERANK_ENABLED: bool = True
 
+    # ── Embedding Service ────────────────────────────────────────────────────
+    # Backend strategy: "fastembed" (in-process ONNX, $0) or "litellm" (external).
+    EMBEDDING_BACKEND: str = "fastembed"
+    # Model identifier for the FastEmbed backend (ignored when EMBEDDING_BACKEND=litellm).
+    EMBEDDING_MODEL: str = "BAAI/bge-large-en-v1.5"
+    # Vector dimensionality.  MUST match the Vector(N) column in knowledge_docs.
+    EMBEDDING_DIMENSIONS: int = 1024
+    # Maximum texts per embed_many() batch sent to the backend.
+    EMBEDDING_BATCH_SIZE: int = 32
+    # Redis embedding cache: deduplicate embeddings across queries and ingestion.
+    EMBEDDING_CACHE_ENABLED: bool = True
+    # Embedding cache TTL in seconds (default: 7 days).
+    EMBEDDING_CACHE_TTL: int = 604800
 
 
 @lru_cache

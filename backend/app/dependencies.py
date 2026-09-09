@@ -89,3 +89,22 @@ def get_redis_client() -> aioredis.Redis:
             socket_timeout=2.0,
         )
     return _redis
+
+
+# ── Embedding Service (singleton) ────────────────────────────────────────────
+
+_embedding_service: "EmbeddingService | None" = None
+
+
+def get_embedding_service() -> "EmbeddingService":
+    """Return the application-wide EmbeddingService singleton.
+
+    Lazily constructed on first call using the backend configured in
+    ``settings.EMBEDDING_BACKEND``.
+    """
+    global _embedding_service
+    if _embedding_service is None:
+        from app.services.embedding_service import EmbeddingService  # noqa: PLC0415
+
+        _embedding_service = EmbeddingService()
+    return _embedding_service

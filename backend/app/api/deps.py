@@ -88,11 +88,16 @@ async def get_knowledge_ingestion_service(
     knowledge_repo: KnowledgeRepository = Depends(get_knowledge_repo),
 ) -> KnowledgeIngestionService:
     """
-    Construct a ``KnowledgeIngestionService`` with a live DB session and a
-    fresh ``LLMClient`` (uses settings from ``app.config``).
+    Construct a ``KnowledgeIngestionService`` with a live DB session and the
+    application-wide ``EmbeddingService`` singleton.
     """
-    llm_client = LLMClient()
-    return KnowledgeIngestionService(knowledge_repo=knowledge_repo, llm_client=llm_client)
+    from app.dependencies import get_embedding_service  # noqa: PLC0415
+
+    embedding_service = get_embedding_service()
+    return KnowledgeIngestionService(
+        knowledge_repo=knowledge_repo,
+        embedding_service=embedding_service,
+    )
 
 
 
