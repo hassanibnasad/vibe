@@ -32,7 +32,9 @@ This document establishes the **shared domain vocabulary** for VibeAgent. All co
 ### Knowledge & RAG
 - **KnowledgeDoc**: A chunked document (e.g., brand guidelines, product specs, case studies, FAQs) stored with vector embeddings for semantic retrieval.
 - **RAG Context**: Grounding snippets retrieved via pgvector cosine distance search to ensure LLM outputs reflect verified brand knowledge.
-- **Embedding**: High-dimensional vector representation (e.g., 384-dim from `all-MiniLM-L6-v2`) used for similarity search.
+- **Embedding**: High-dimensional vector representation used for similarity search.  Generated exclusively by the ``EmbeddingService``.
+- **EmbeddingService**: Centralised, in-process service class (``app.services.embedding_service``) through which all embedding requests flow.  Enforces model/dimension consistency, task-specific prefixing, and native batch embedding.  Backed by a pluggable ``EmbeddingBackend`` (FastEmbed or LiteLLM).
+- **EmbedTask**: Enum (``SEARCH_DOCUMENT`` | ``SEARCH_QUERY``) controlling the instruction prefix prepended to text before embedding.  Modern models (BGE, Nomic) require different prefixes for indexing vs. retrieval.
 
 ### Execution & Agent Architecture
 - **Agent**: An autonomous, task-specific AI module executing a bounded responsibility (e.g., `ContentGeneratorAgent`, `EngagementAgent`, `LeadQualifierAgent`).
