@@ -2,11 +2,11 @@
 KnowledgeIngestionService — orchestrates parse → chunk → embed → upsert.
 
 Key design properties:
-- **Async-native**: all I/O uses asyncio (embed via LLMClient, DB via SQLAlchemy async).
+- **Async-native**: all I/O uses asyncio (embed via EmbeddingService, DB via SQLAlchemy async).
 - **Idempotent**: chunks are skipped when their SHA-256 checksum matches an existing row
   (``find_by_checksum``), so re-running on unchanged files is a no-op.
-- **Bounded concurrency**: embed calls are batched with ``asyncio.gather`` capped at
-  ``INGESTION_EMBED_CONCURRENCY`` (default 10) to avoid overwhelming the model server.
+- **Batch embedding**: new chunks are embedded via ``EmbeddingService.embed_many()`` in
+  batches of ``EMBEDDING_BATCH_SIZE``, replacing the old per-chunk concurrent calls.
 - **Partial failure tolerance**: a failed embed/upsert for one chunk logs an error and
   marks that chunk ``ingestion_status=failed`` but does not abort the whole document.
 """
@@ -17,7 +17,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -25,7 +25,10 @@ from app.config import settings
 from app.repositories.knowledge_repo import KnowledgeRepository
 from app.services.knowledge.chunker import Chunk, MarkdownAwareChunker
 from app.services.knowledge.parsers import DocumentParser
-from app.tools.ai.llm_client import LLMClient
+
+if TYPE_CHECKING:
+    from app.services.embedding_service import EmbeddingService
+    from app.tools.ai.llm_client import LLMClient
 
 logger = structlog.get_logger()
 
@@ -64,17 +67,41 @@ class KnowledgeIngestionService:
     ----------
     knowledge_repo:
         Repository for all ``knowledge_docs`` DB operations.
+    embedding_service:
+        Centralised embedding service.  All vector generation goes through
+        this service (replaces the old ``LLMClient.embed()`` calls).
     llm_client:
-        Used exclusively for ``embed()`` calls.  No generation happens here.
+        **Deprecated**.  Accepted for backward compatibility but ignored when
+        ``embedding_service`` is provided.  Will be removed in a future release.
     """
 
     def __init__(
         self,
         knowledge_repo: KnowledgeRepository,
-        llm_client: LLMClient,
+        embedding_service: EmbeddingService | None = None,
+        llm_client: LLMClient | None = None,
     ) -> None:
         self._repo = knowledge_repo
-        self._llm = llm_client
+
+        if embedding_service is not None:
+            self._embedding = embedding_service
+        elif llm_client is not None:
+            # Backward compat: wrap old LLMClient in a thin adapter.
+            import warnings  # noqa: PLC0415
+
+            warnings.warn(
+                "Passing llm_client to KnowledgeIngestionService is deprecated. "
+                "Pass embedding_service instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self._embedding = _LLMClientAdapter(llm_client)
+        else:
+            # Auto-construct from global singleton.
+            from app.dependencies import get_embedding_service  # noqa: PLC0415
+
+            self._embedding = get_embedding_service()
+
         self._parser = DocumentParser()
         self._chunker = MarkdownAwareChunker(
             max_tokens=settings.INGESTION_CHUNK_SIZE,
@@ -264,38 +291,84 @@ class KnowledgeIngestionService:
         skipped = 0
         failed_indices: list[int] = []
 
-        # Process in batches of INGESTION_EMBED_CONCURRENCY to avoid OOM on
-        # the model server.
-        concurrency = settings.INGESTION_EMBED_CONCURRENCY
-        for batch_start in range(0, len(chunks), concurrency):
-            batch = chunks[batch_start : batch_start + concurrency]
-            tasks = [
-                self._process_chunk(
-                    chunk=c,
-                    source_file=source_file,
-                    doc_type=doc_type,
-                    tenant_id=tenant_id,
-                    parent_doc_id=parent_doc_id,
-                    metadata=metadata,
-                    tags=tags,
-                )
-                for c in batch
-            ]
-            batch_results: list[str] = await asyncio.gather(*tasks, return_exceptions=True)
+        # Process in batches: checksum-filter → batch-embed → upsert.
+        batch_size = settings.EMBEDDING_BATCH_SIZE
+        for batch_start in range(0, len(chunks), batch_size):
+            batch = chunks[batch_start : batch_start + batch_size]
 
-            for chunk, result in zip(batch, batch_results):
-                if isinstance(result, Exception):
-                    logger.error(
-                        "ingestion.chunk_failed",
+            # Phase 1: Checksum gate — filter out unchanged chunks.
+            new_chunks: list[Chunk] = []
+            for chunk in batch:
+                existing = await self._repo.find_by_checksum(
+                    source_file=source_file,
+                    chunk_index=chunk.chunk_index,
+                    checksum=chunk.checksum,
+                )
+                if existing is not None:
+                    logger.debug(
+                        "ingestion.chunk_skipped_unchanged",
                         chunk_index=chunk.chunk_index,
                         source_file=source_file,
-                        error=str(result),
                     )
-                    failed_indices.append(chunk.chunk_index)
-                elif result == "skipped":
                     skipped += 1
                 else:
+                    new_chunks.append(chunk)
+
+            if not new_chunks:
+                continue
+
+            # Phase 2: Batch embed all new chunks in one call.
+            from app.services.embedding_service import EmbedTask  # noqa: PLC0415
+
+            try:
+                embeddings = await self._embedding.embed_many(
+                    [c.content for c in new_chunks],
+                    task=EmbedTask.SEARCH_DOCUMENT,
+                )
+            except Exception as exc:
+                logger.error(
+                    "ingestion.batch_embed_failed",
+                    source_file=source_file,
+                    batch_start=batch_start,
+                    batch_size=len(new_chunks),
+                    error=str(exc),
+                )
+                failed_indices.extend(c.chunk_index for c in new_chunks)
+                continue
+
+            # Phase 3: Upsert each embedded chunk.
+            for chunk, embedding in zip(new_chunks, embeddings):
+                try:
+                    await self._repo.upsert_chunk(
+                        tenant_id=tenant_id,
+                        title=chunk.title,
+                        content=chunk.content,
+                        doc_type=doc_type,
+                        embedding=embedding,
+                        embedding_model=self._embedding.model_name,
+                        source_file=source_file,
+                        metadata_=metadata,
+                        chunk_index=chunk.chunk_index,
+                        parent_doc_id=parent_doc_id,
+                        checksum=chunk.checksum,
+                        char_count=chunk.char_count,
+                        ingestion_status="embedded",
+                        tags=tags,
+                    )
                     written += 1
+                    logger.debug(
+                        "ingestion.chunk_written",
+                        chunk_index=chunk.chunk_index,
+                        source_file=source_file,
+                    )
+                except Exception as exc:
+                    logger.error(
+                        "ingestion.chunk_upsert_failed",
+                        chunk_index=chunk.chunk_index,
+                        source_file=source_file,
+                        error=str(exc),
+                    )
+                    failed_indices.append(chunk.chunk_index)
 
         return IngestionResult(
             source_file=source_file,
@@ -307,60 +380,84 @@ class KnowledgeIngestionService:
             failed_chunk_indices=failed_indices,
         )
 
-    async def _process_chunk(
+    async def reembed_outdated_chunks(
         self,
-        chunk: Chunk,
-        source_file: str,
-        doc_type: str,
-        tenant_id: uuid.UUID,
-        parent_doc_id: uuid.UUID,
-        metadata: dict[str, Any],
-        tags: list[str],
-    ) -> str:
+        target_model: str | None = None,
+        batch_size: int = 50,
+        tenant_id: UUID | None = None,
+    ) -> dict[str, Any]:
         """
-        Process a single chunk: checksum gate → embed → upsert.
+        Re-embed chunks where embedding_model does not match target_model
+        (defaults to current EmbeddingService model), or where embedding is NULL.
 
-        Returns ``"skipped"`` if the chunk is unchanged, ``"written"``
-        if upserted successfully.  Raises on unrecoverable errors so the
-        caller can mark the chunk as failed.
+        Enables selective re-embedding using a WHERE clause on embedding_model.
         """
-        # Idempotency gate — skip if content hasn't changed.
-        existing = await self._repo.find_by_checksum(
-            source_file=source_file,
-            chunk_index=chunk.chunk_index,
-            checksum=chunk.checksum,
-        )
-        if existing is not None:
-            logger.debug(
-                "ingestion.chunk_skipped_unchanged",
-                chunk_index=chunk.chunk_index,
-                source_file=source_file,
+        model_name = target_model or self._embedding.model_name
+        from app.services.embedding_service import EmbedTask  # noqa: PLC0415
+
+        total_reembedded = 0
+        while True:
+            chunks = await self._repo.get_chunks_needing_reembedding(
+                target_model=model_name, limit=batch_size, tenant_id=tenant_id
             )
-            return "skipped"
+            if not chunks:
+                break
 
-        # Embed
-        embedding = await self._llm.embed(chunk.content)
+            texts = [c.content for c in chunks]
+            embeddings = await self._embedding.embed_many(
+                texts, task=EmbedTask.SEARCH_DOCUMENT
+            )
 
-        # Upsert
-        await self._repo.upsert_chunk(
-            tenant_id=tenant_id,
-            title=chunk.title,
-            content=chunk.content,
-            doc_type=doc_type,
-            embedding=embedding,
-            source_file=source_file,
-            metadata_=metadata,
-            chunk_index=chunk.chunk_index,
-            parent_doc_id=parent_doc_id,
-            checksum=chunk.checksum,
-            char_count=chunk.char_count,
-            ingestion_status="embedded",
-            tags=tags,
+            for doc, emb in zip(chunks, embeddings):
+                await self._repo.update_chunk_embedding(
+                    doc_id=doc.id, embedding=emb, model_name=model_name
+                )
+                total_reembedded += 1
+
+            await self._repo.session.commit()
+
+        logger.info(
+            "ingestion.reembed_outdated_completed",
+            target_model=model_name,
+            total_reembedded=total_reembedded,
         )
+        return {
+            "model_name": model_name,
+            "total_reembedded": total_reembedded,
+        }
 
-        logger.debug(
-            "ingestion.chunk_written",
-            chunk_index=chunk.chunk_index,
-            source_file=source_file,
-        )
-        return "written"
+
+# ── Backward-compat adapter ──────────────────────────────────────────────────
+
+
+class _LLMClientAdapter:
+    """Thin adapter wrapping old LLMClient.embed() to satisfy EmbeddingService API.
+
+    Used only during the deprecation transition when callers still pass
+    ``llm_client=`` to ``KnowledgeIngestionService``.
+    """
+
+    def __init__(self, llm_client: LLMClient) -> None:
+        self._llm = llm_client
+
+    async def embed(self, text: str, *, task: Any = None) -> list[float]:
+        return await self._llm.embed(text)
+
+    async def embed_many(
+        self, texts: list[str], *, task: Any = None, batch_size: int | None = None
+    ) -> list[list[float]]:
+        concurrency = settings.INGESTION_EMBED_CONCURRENCY
+        all_embeddings: list[list[float]] = []
+        for i in range(0, len(texts), concurrency):
+            batch = texts[i : i + concurrency]
+            results = await asyncio.gather(*(self._llm.embed(t) for t in batch))
+            all_embeddings.extend(results)
+        return all_embeddings
+
+    @property
+    def dimensions(self) -> int:
+        return settings.EMBEDDING_DIMENSIONS
+
+    @property
+    def model_name(self) -> str:
+        return settings.LLM_EMBED_MODEL

@@ -162,7 +162,19 @@ class LLMClient:
             raise LLMError(f"Failed to parse structured response into {schema.__name__}: {exc}") from exc
 
     async def embed(self, text: str, model: str | None = None) -> list[float]:
-        """Generate vector embedding using LiteLLM."""
+        """Generate vector embedding using LiteLLM.
+
+        .. deprecated::
+            Use ``EmbeddingService.embed()`` instead.  This method will be
+            removed in a future release.
+        """
+        import warnings  # noqa: PLC0415
+
+        warnings.warn(
+            "LLMClient.embed() is deprecated. Use EmbeddingService.embed() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         target_model = self._resolve_model_name(model or "embed")
         kwargs: dict[str, Any] = {
             "model": target_model,

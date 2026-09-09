@@ -101,5 +101,25 @@ async def test_llm_client_embedding():
 
     with patch("litellm.aembedding", new=AsyncMock(return_value=mock_emb_resp)):
         client = LLMClient()
-        emb = await client.embed("test text chunk")
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            emb = await client.embed("test text chunk")
         assert emb == [0.1, 0.2, 0.3, 0.4]
+
+
+@pytest.mark.asyncio
+async def test_llm_client_embed_deprecation_warning():
+    mock_emb_resp = SimpleNamespace(
+        data=[{"embedding": [0.1, 0.2, 0.3, 0.4]}]
+    )
+
+    with patch("litellm.aembedding", new=AsyncMock(return_value=mock_emb_resp)):
+        client = LLMClient()
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            await client.embed("test text chunk")
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "EmbeddingService" in str(w[0].message)

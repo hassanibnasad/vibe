@@ -22,13 +22,16 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
 from app.config import settings
 from app.repositories.knowledge_repo import KnowledgeRepository
 from app.tools.ai.llm_client import LLMClient
+
+if TYPE_CHECKING:
+    from app.services.embedding_service import EmbeddingService
 
 logger = structlog.get_logger()
 
@@ -262,11 +265,24 @@ class RAGTool:
     3. Context assembly with token-budget enforcement
     """
 
-    def __init__(self, knowledge_repo: KnowledgeRepository, llm_client: LLMClient) -> None:
+    def __init__(
+        self,
+        knowledge_repo: KnowledgeRepository,
+        llm_client: LLMClient,
+        embedding_service: EmbeddingService | None = None,
+    ) -> None:
         self.repo = knowledge_repo
         self.llm = llm_client
         self._reranker = CrossEncoderReranker(llm_client)
         self._assembler = ContextAssembler(max_tokens=settings.RAG_MAX_CONTEXT_TOKENS)
+
+        if embedding_service is not None:
+            self._embedding = embedding_service
+        else:
+            # Auto-construct from global singleton.
+            from app.dependencies import get_embedding_service  # noqa: PLC0415
+
+            self._embedding = get_embedding_service()
 
     async def search(
         self,
@@ -310,7 +326,9 @@ class RAGTool:
         _max_tokens = max_tokens if max_tokens is not None else settings.RAG_MAX_CONTEXT_TOKENS
 
         # Phase 1 — Vector candidate retrieval
-        query_embedding = await self.llm.embed(query)
+        from app.services.embedding_service import EmbedTask  # noqa: PLC0415
+
+        query_embedding = await self._embedding.embed(query, task=EmbedTask.SEARCH_QUERY)
         candidates = await self.repo.vector_search(
             query_embedding=query_embedding,
             doc_types=doc_types,

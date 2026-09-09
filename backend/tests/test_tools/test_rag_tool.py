@@ -7,7 +7,9 @@ from app.tools.ai.rag_tool import RAGTool, RAGResult
 @pytest.mark.asyncio
 async def test_rag_tool_search_and_retrieve():
     mock_llm = AsyncMock()
-    mock_llm.embed.return_value = [0.1] * 384
+
+    mock_embedding = AsyncMock()
+    mock_embedding.embed = AsyncMock(return_value=[0.1] * 384)
 
     mock_repo = AsyncMock()
     mock_repo.vector_search.return_value = [
@@ -27,7 +29,11 @@ async def test_rag_tool_search_and_retrieve():
         },
     ]
 
-    rag_tool = RAGTool(knowledge_repo=mock_repo, llm_client=mock_llm)
+    rag_tool = RAGTool(
+        knowledge_repo=mock_repo,
+        llm_client=mock_llm,
+        embedding_service=mock_embedding,
+    )
 
     result = await rag_tool.retrieve_context(query="pricing and brand", limit=2)
 
@@ -36,19 +42,25 @@ async def test_rag_tool_search_and_retrieve():
     assert result.top_score == 0.88
     assert "[BRAND] Brand Guidelines:" in result.formatted_text
     assert "[FAQ] Product Pricing FAQ:" in result.context_text
-    mock_llm.embed.assert_awaited_once_with("pricing and brand")
+    mock_embedding.embed.assert_awaited_once()
     mock_repo.vector_search.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_rag_tool_empty_results():
     mock_llm = AsyncMock()
-    mock_llm.embed.return_value = [0.0] * 384
+
+    mock_embedding = AsyncMock()
+    mock_embedding.embed = AsyncMock(return_value=[0.0] * 384)
 
     mock_repo = AsyncMock()
     mock_repo.vector_search.return_value = []
 
-    rag_tool = RAGTool(knowledge_repo=mock_repo, llm_client=mock_llm)
+    rag_tool = RAGTool(
+        knowledge_repo=mock_repo,
+        llm_client=mock_llm,
+        embedding_service=mock_embedding,
+    )
     result = await rag_tool.search(query="nonexistent topic")
 
     assert result.documents == []

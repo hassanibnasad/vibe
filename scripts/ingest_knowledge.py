@@ -111,18 +111,19 @@ async def _run(args: argparse.Namespace) -> None:
             print(f"\nTotal chunks that would be written: {total_chunks}")
             return
 
-    from app.dependencies import get_sessionmaker  # noqa: PLC0415
+    from app.dependencies import get_sessionmaker, get_embedding_service  # noqa: PLC0415
     from app.repositories.knowledge_repo import KnowledgeRepository  # noqa: PLC0415
     from app.services.knowledge.ingestion_service import KnowledgeIngestionService  # noqa: PLC0415
-    from app.tools.ai.llm_client import LLMClient  # noqa: PLC0415
 
     tenant_id = uuid.UUID("00000000-0000-0000-0000-000000000001")  # default tenant
     session_factory = get_sessionmaker()
 
     async with session_factory() as session:
         repo = KnowledgeRepository(session)
-        llm_client = LLMClient()
-        svc = KnowledgeIngestionService(knowledge_repo=repo, llm_client=llm_client)
+        embedding_service = get_embedding_service()
+        svc = KnowledgeIngestionService(
+            knowledge_repo=repo, embedding_service=embedding_service
+        )
 
         # ── Single file ────────────────────────────────────────────────────────
         if args.file:
