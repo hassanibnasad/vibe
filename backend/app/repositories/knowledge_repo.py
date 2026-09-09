@@ -18,9 +18,11 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
         doc_types: list[str] | None = None,
         limit: int = 5,
         similarity_threshold: float = 0.3,
+        model_name: str | None = None,
     ) -> list[dict[str, Any]]:
         sql = """
             SELECT id, title, content, doc_type, source_file, chunk_index, char_count,
+                   embedding_model,
                    1 - (embedding <=> :embedding::vector) AS similarity
             FROM knowledge_docs
             WHERE embedding IS NOT NULL
@@ -37,6 +39,10 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
             sql += " AND doc_type = ANY(:doc_types)"
             params["doc_types"] = doc_types
 
+        if model_name:
+            sql += " AND (embedding_model = :model_name OR embedding_model IS NULL)"
+            params["model_name"] = model_name
+
         sql += " ORDER BY similarity DESC LIMIT :limit"
 
         result = await self.session.execute(text(sql), params)
@@ -51,6 +57,7 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
                 "source_file": row.source_file,
                 "chunk_index": row.chunk_index,
                 "char_count": row.char_count,
+                "embedding_model": getattr(row, "embedding_model", None),
                 "similarity": round(row.similarity, 4),
             }
             for row in rows
@@ -66,16 +73,17 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
         # Build the column list dynamically from kwargs so new optional columns
         # (tags, checksum, etc.) work without changing this method signature.
         embedding = kwargs.pop("embedding", None)
+        embedding_model = kwargs.pop("embedding_model", None)
 
         sql = text(
             """
             INSERT INTO knowledge_docs
-                (id, tenant_id, title, content, doc_type, embedding,
+                (id, tenant_id, title, content, doc_type, embedding, embedding_model,
                  source_file, metadata, chunk_index, parent_doc_id,
                  checksum, char_count, ingestion_status, tags,
                  created_at, updated_at)
             VALUES
-                (gen_random_uuid(), :tenant_id, :title, :content, :doc_type, :embedding::vector,
+                (gen_random_uuid(), :tenant_id, :title, :content, :doc_type, :embedding::vector, :embedding_model,
                  :source_file, :metadata_::jsonb, :chunk_index, :parent_doc_id,
                  :checksum, :char_count, :ingestion_status, :tags::jsonb,
                  now(), now())
@@ -86,6 +94,7 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
                 content           = EXCLUDED.content,
                 doc_type          = EXCLUDED.doc_type,
                 embedding         = EXCLUDED.embedding,
+                embedding_model   = EXCLUDED.embedding_model,
                 metadata          = EXCLUDED.metadata,
                 parent_doc_id     = EXCLUDED.parent_doc_id,
                 checksum          = EXCLUDED.checksum,
@@ -103,8 +112,56 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
             {
                 **kwargs,
                 "embedding": str(embedding) if embedding is not None else None,
+                "embedding_model": embedding_model,
                 "metadata_": json.dumps(kwargs.get("metadata_", {})),
                 "tags": json.dumps(kwargs.get("tags", [])),
+            },
+        )
+        await self.session.flush()
+
+    async def get_chunks_needing_reembedding(
+        self, target_model: str, limit: int = 100, tenant_id: UUID | None = None
+    ) -> list[KnowledgeDoc]:
+        """
+        Return chunks where the stored embedding_model does not match target_model,
+        or where embedding is NULL.
+        Enables WHERE clause targeted re-embedding.
+        """
+        from sqlalchemy import or_, select  # noqa: PLC0415
+
+        stmt = select(KnowledgeDoc).where(
+            or_(
+                KnowledgeDoc.embedding_model.is_(None),
+                KnowledgeDoc.embedding_model != target_model,
+                KnowledgeDoc.embedding.is_(None),
+            )
+        )
+        if tenant_id is not None:
+            stmt = stmt.where(KnowledgeDoc.tenant_id == tenant_id)
+        stmt = stmt.order_by(KnowledgeDoc.created_at.asc()).limit(limit)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def update_chunk_embedding(
+        self, doc_id: UUID, embedding: list[float], model_name: str
+    ) -> None:
+        """Update an existing chunk's embedding vector and model_name."""
+        sql = text(
+            """
+            UPDATE knowledge_docs
+            SET embedding = :embedding::vector,
+                embedding_model = :model_name,
+                ingestion_status = 'embedded',
+                updated_at = now()
+            WHERE id = :doc_id
+            """
+        )
+        await self.session.execute(
+            sql,
+            {
+                "doc_id": doc_id,
+                "embedding": str(embedding),
+                "model_name": model_name,
             },
         )
         await self.session.flush()

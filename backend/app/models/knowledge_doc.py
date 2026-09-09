@@ -21,8 +21,8 @@ class KnowledgeDoc(BaseModel):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     doc_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
-    # 384 dimensions for all-MiniLM-L6-v2 embeddings
-    embedding = mapped_column(Vector(384), nullable=True)
+    # 1024 dimensions for BAAI/bge-large-en-v1.5 embeddings
+    embedding = mapped_column(Vector(1024), nullable=True)
 
     source_file: Mapped[str | None] = mapped_column(String(500))
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
@@ -42,3 +42,10 @@ class KnowledgeDoc(BaseModel):
     )
     # Free-form string tags for structured filtering (e.g. ["pricing", "tier-1"]).
     tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
+    # ── Added in migration 003 ────────────────────────────────────────────────
+    # Model identifier (e.g. "BAAI/bge-large-en-v1.5") used to produce the embedding.
+    # Enables targeted re-embedding via: WHERE embedding_model != :current_model
+    embedding_model: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, index=True
+    )
