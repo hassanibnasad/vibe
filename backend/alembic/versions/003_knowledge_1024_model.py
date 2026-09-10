@@ -1,6 +1,6 @@
 """003 Knowledge doc 1024 dims and embedding model
 
-Revision ID: 003_knowledge_doc_1024_dims_and_model
+Revision ID: 003_knowledge_1024_model
 Revises: 002_knowledge_doc_improvements
 Create Date: 2026-09-09 00:00:00.000000
 
@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic
-revision = "003_knowledge_doc_1024_dims_and_model"
+revision = "003_knowledge_1024_model"
 down_revision = "002_knowledge_doc_improvements"
 branch_labels = None
 depends_on = None
