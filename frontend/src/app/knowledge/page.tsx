@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Upload,
   Search,
@@ -8,6 +8,7 @@ import {
   RefreshCw,
   AlertCircle,
   Database,
+  FileText,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,71 +36,166 @@ import {
 import { KnowledgeDoc, fetchKnowledgeDocs, uploadKnowledgeDoc } from "@/lib/api-client";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
 
+interface GroupedKnowledgeDoc {
+  id: string;
+  title: string;
+  doc_type: string;
+  source_file: string | null;
+  chunkCount: number;
+  charCount: number;
+  ingestion_status: string;
+  tags: string[];
+}
+
 export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Real upload form state
+  // Background ingestion tracking
+  const [pendingFile, setPendingFile] = useState<string | null>(null);
+
+  // Upload form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadType, setUploadType] = useState("brand");
+  const [uploadType, setUploadType] = useState("general");
   const [uploadTags, setUploadTags] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadData = () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (silent) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
-    fetchKnowledgeDocs()
-      .then((data) => {
-        setDocs(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load knowledge base. Verify API connection.");
-        setLoading(false);
-      });
-  };
+
+    try {
+      const data = await fetchKnowledgeDocs();
+      setDocs(data);
+      return data;
+    } catch {
+      setError("Failed to load knowledge base. Verify API connection.");
+      return [];
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
-  const filteredDocs = docs.filter((d) =>
-    d.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Polling effect while a document is being ingested in background
+  useEffect(() => {
+    if (!pendingFile) return;
 
-  // Group docs by title to get unique documents with chunk counts
-  const groupedDocs = filteredDocs.reduce(
+    let pollCount = 0;
+    const maxPolls = 15; // 30 seconds total (15 * 2s)
+
+    const interval = setInterval(async () => {
+      pollCount++;
+      const currentDocs = await loadData(true);
+
+      const found = currentDocs.some(
+        (d) =>
+          (d.source_file === pendingFile || d.title.toLowerCase() === pendingFile.toLowerCase()) &&
+          (d.ingestion_status === "embedded" || d.ingestion_status === "completed")
+      );
+
+      if (found || pollCount >= maxPolls) {
+        clearInterval(interval);
+        setPendingFile(null);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [pendingFile, loadData]);
+
+  // Group chunks by source_file (or title as fallback) to represent logical documents
+  const groupedDocsMap = docs.reduce(
     (acc, doc) => {
-      if (!acc[doc.title]) {
-        acc[doc.title] = { ...doc, chunkCount: 1 };
+      const key = doc.source_file || doc.title;
+      if (!acc[key]) {
+        acc[key] = {
+          id: doc.id,
+          title: doc.title,
+          doc_type: doc.doc_type,
+          source_file: doc.source_file,
+          chunkCount: 1,
+          charCount: doc.char_count || 0,
+          ingestion_status: doc.ingestion_status,
+          tags: [...(doc.tags || [])],
+        };
       } else {
-        acc[doc.title].chunkCount += 1;
+        acc[key].chunkCount += 1;
+        acc[key].charCount += doc.char_count || 0;
+        doc.tags?.forEach((t) => {
+          if (!acc[key].tags.includes(t)) {
+            acc[key].tags.push(t);
+          }
+        });
+        // If any chunk failed, elevate to failed status
+        if (doc.ingestion_status === "failed") {
+          acc[key].ingestion_status = "failed";
+        }
       }
       return acc;
     },
-    {} as Record<string, KnowledgeDoc & { chunkCount: number }>
+    {} as Record<string, GroupedKnowledgeDoc>
   );
-  const uniqueDocs = Object.values(groupedDocs);
+
+  const uniqueDocs = Object.values(groupedDocsMap);
+
+  // Search across title, source_file, doc_type, and tags
+  const filteredDocs = uniqueDocs.filter((doc) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      doc.title.toLowerCase().includes(term) ||
+      (doc.source_file && doc.source_file.toLowerCase().includes(term)) ||
+      doc.doc_type.toLowerCase().includes(term) ||
+      doc.tags.some((t) => t.toLowerCase().includes(term))
+    );
+  });
 
   const getDocTypeBadgeVariant = (type: string) => {
-    const map: Record<string, "default" | "mql" | "warning" | "sql"> = {
+    const map: Record<string, "default" | "mql" | "warning" | "sql" | "secondary"> = {
       brand: "default",
       product: "mql",
       faq: "warning",
       case_study: "sql",
+      general: "secondary",
     };
-    return map[type] || "default";
+    return map[type.toLowerCase()] || "secondary";
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "embedded":
+      case "completed":
+        return "published";
+      case "failed":
+        return "failed";
+      case "processing":
+      case "queued":
+      case "pending":
+        return "scheduled";
+      default:
+        return "outline";
+    }
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile || isUploading) return;
+    const fileName = selectedFile.name;
     setIsUploading(true);
     setUploadError(null);
     setUploadSuccess(null);
@@ -110,15 +206,17 @@ export default function KnowledgeBasePage() {
         : undefined;
       const res = await uploadKnowledgeDoc(selectedFile, uploadType, tagsList);
       setIsUploading(false);
-      setUploadSuccess(res.message || "File uploaded and queued for ingestion.");
+      setUploadSuccess(res.message || "File uploaded. Ingestion in progress...");
+      setPendingFile(fileName);
+
       setTimeout(() => {
         setUploadDialogOpen(false);
         setUploadSuccess(null);
         setSelectedFile(null);
         setUploadTags("");
         if (fileInputRef.current) fileInputRef.current.value = "";
-        loadData();
-      }, 1500);
+        loadData(true);
+      }, 1200);
     } catch (err) {
       setIsUploading(false);
       setUploadError(err instanceof Error ? err.message : "Failed to upload document");
@@ -129,8 +227,8 @@ export default function KnowledgeBasePage() {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
             <Skeleton key={i} className="h-20" />
           ))}
         </div>
@@ -149,7 +247,7 @@ export default function KnowledgeBasePage() {
           <h3 className="font-semibold text-foreground">Knowledge base error</h3>
           <p className="text-sm text-muted-foreground">{error}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
+        <Button variant="outline" size="sm" onClick={() => loadData()} className="gap-2">
           <RefreshCw className="h-4 w-4" />
           Retry
         </Button>
@@ -168,10 +266,23 @@ export default function KnowledgeBasePage() {
               Vector embeddings for grounding AI-generated content.
             </p>
           </div>
-          <Button onClick={() => setUploadDialogOpen(true)} className="gap-2">
-            <Upload className="h-4 w-4" />
-            Upload document
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadData(true)}
+              disabled={isRefreshing}
+              className="gap-1.5 text-xs h-9"
+              title="Refresh knowledge base"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button onClick={() => setUploadDialogOpen(true)} className="gap-2 h-9 text-xs">
+              <Upload className="h-4 w-4" />
+              Upload document
+            </Button>
+          </div>
         </div>
       </FadeIn>
 
@@ -195,6 +306,23 @@ export default function KnowledgeBasePage() {
         </StaggerItem>
       </StaggerContainer>
 
+      {/* Active Ingestion Progress Banner */}
+      {pendingFile && (
+        <FadeIn>
+          <div className="flex items-center justify-between rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-300">
+            <div className="flex items-center gap-2.5">
+              <RefreshCw className="h-4 w-4 animate-spin text-sky-400" />
+              <span>
+                Ingesting <strong className="text-foreground">{pendingFile}</strong> — chunking and vector embeddings in progress...
+              </span>
+            </div>
+            <Badge variant="scheduled" className="text-[10px] uppercase font-mono">
+              Processing
+            </Badge>
+          </div>
+        </FadeIn>
+      )}
+
       {/* Search */}
       <FadeIn delay={0.15}>
         <div className="relative">
@@ -202,7 +330,7 @@ export default function KnowledgeBasePage() {
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search documents..."
+            placeholder="Search documents by name, filename, category, or tags..."
             className="pl-9 h-9 text-sm bg-card"
           />
         </div>
@@ -217,11 +345,11 @@ export default function KnowledgeBasePage() {
                 <TableHead className="pl-6">Document</TableHead>
                 <TableHead className="w-[120px]">Category</TableHead>
                 <TableHead className="w-[90px] text-right">Chunks</TableHead>
-                <TableHead className="w-[100px] text-right pr-6">Status</TableHead>
+                <TableHead className="w-[110px] text-right pr-6">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {uniqueDocs.length === 0 ? (
+              {filteredDocs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-16">
                     <div className="space-y-2">
@@ -233,15 +361,32 @@ export default function KnowledgeBasePage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                uniqueDocs.map((doc) => (
+                filteredDocs.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="pl-6">
-                      <div className="text-sm font-medium text-foreground">{doc.title}</div>
-                      {doc.source_file && (
-                        <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                          {doc.source_file}
+                      <div className="flex items-start gap-2.5">
+                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-foreground">{doc.title}</div>
+                          {doc.source_file && (
+                            <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                              {doc.source_file}
+                            </div>
+                          )}
+                          {doc.tags && doc.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {doc.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={getDocTypeBadgeVariant(doc.doc_type)} className="uppercase font-mono text-[10px]">
@@ -253,8 +398,8 @@ export default function KnowledgeBasePage() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <Badge
-                        variant={doc.ingestion_status === "completed" ? "published" : "scheduled"}
-                        className="text-[10px]"
+                        variant={getStatusBadgeVariant(doc.ingestion_status)}
+                        className="text-[10px] uppercase font-mono"
                       >
                         {doc.ingestion_status}
                       </Badge>
@@ -315,7 +460,7 @@ export default function KnowledgeBasePage() {
               <div className="space-y-2">
                 <Label className="text-sm">Category</Label>
                 <div className="flex flex-wrap gap-2">
-                  {["brand", "product", "faq", "case_study", "general"].map((type) => (
+                  {["general", "brand", "product", "faq", "case_study"].map((type) => (
                     <button
                       key={type}
                       type="button"
