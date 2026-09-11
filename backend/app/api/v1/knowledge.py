@@ -35,7 +35,7 @@ router = APIRouter(prefix="/knowledge", tags=["Knowledge"])
 
 
 class KnowledgeDocResponse(BaseModel):
-    id: str
+    id: uuid.UUID | str
     title: str
     doc_type: str
     source_file: str | None
