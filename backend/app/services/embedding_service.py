@@ -25,7 +25,12 @@ import enum
 import structlog
 
 from app.config import settings
-from app.services.embedding_backends import EmbeddingBackend, FastEmbedBackend, LiteLLMBackend
+from app.services.embedding_backends import (
+    EmbeddingBackend,
+    FastEmbedBackend,
+    LiteLLMBackend,
+    SentenceTransformerBackend,
+)
 from app.services.embedding_cache import EmbeddingCache
 
 logger = structlog.get_logger()
@@ -97,7 +102,7 @@ class EmbeddingService:
 
         if cache is not None:
             self._cache: EmbeddingCache | None = cache
-        elif getattr(settings, "EMBEDDING_CACHE_ENABLED", True):
+        elif getattr(settings, "EMBEDDING_CACHE_ENABLED", True) is True:
             self._cache = EmbeddingCache()
         else:
             self._cache = None
@@ -237,6 +242,9 @@ class EmbeddingService:
         if backend_type == "fastembed":
             return FastEmbedBackend(model_name=settings.EMBEDDING_MODEL)
 
+        if backend_type in ("sentence_transformers", "sentence-transformers"):
+            return SentenceTransformerBackend(model_name=settings.EMBEDDING_MODEL)
+
         if backend_type == "litellm":
             return LiteLLMBackend(
                 model=settings.LLM_EMBED_MODEL,
@@ -245,5 +253,5 @@ class EmbeddingService:
 
         raise ValueError(
             f"Unknown EMBEDDING_BACKEND: '{settings.EMBEDDING_BACKEND}'. "
-            f"Supported values: 'fastembed', 'litellm'."
+            f"Supported values: 'fastembed', 'sentence_transformers', 'litellm'."
         )

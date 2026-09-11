@@ -69,6 +69,7 @@ class TestEmbeddingService:
     async def test_embed_single_text(self, mock_settings):
         mock_settings.EMBEDDING_DIMENSIONS = 384
         mock_settings.EMBEDDING_BATCH_SIZE = 32
+        mock_settings.EMBEDDING_CACHE_ENABLED = False
         backend = _make_mock_backend()
         svc = EmbeddingService(backend=backend, validate_dimensions=True)
 

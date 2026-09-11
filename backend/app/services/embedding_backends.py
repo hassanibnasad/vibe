@@ -43,18 +43,24 @@ class EmbeddingBackend(Protocol):
         ...
 
 
-# ── FastEmbed (in-process ONNX) ──────────────────────────────────────────────
+_KNOWN_DIMS: dict[str, int] = {
+    "BAAI/bge-small-en-v1.5": 384,
+    "BAAI/bge-base-en-v1.5": 768,
+    "BAAI/bge-large-en-v1.5": 1024,
+    "BAAI/bge-m3": 1024,
+    "nomic-ai/nomic-embed-text-v1.5": 768,
+    "sentence-transformers/all-MiniLM-L6-v2": 384,
+}
 
 
-class FastEmbedBackend:
+# ── SentenceTransformers (in-process PyTorch) ────────────────────────────────
+
+
+class SentenceTransformerBackend:
     """
-    In-process ONNX inference via the ``fastembed`` library (maintained by Qdrant).
+    In-process PyTorch inference via ``sentence-transformers``.
 
-    Runs quantized models on CPU with ~20-40ms latency per chunk.  No external
-    network calls, no API keys, $0 cost.
-
-    The underlying ``TextEmbedding`` model is lazily initialised on first call
-    to avoid blocking import time.
+    Reliable on all platforms including Windows (no ONNX/Rust symlink or memory allocation issues).
     """
 
     def __init__(self, model_name: str | None = None) -> None:
@@ -65,29 +71,121 @@ class FastEmbedBackend:
 
     def _get_model(self) -> Any:
         if self._model is None:
-            from fastembed import TextEmbedding  # noqa: PLC0415
+            from sentence_transformers import SentenceTransformer  # noqa: PLC0415
 
-            self._model = TextEmbedding(model_name=self._model_name)
+            try:
+                self._model = SentenceTransformer(self._model_name, local_files_only=True)
+            except Exception:
+                self._model = SentenceTransformer(self._model_name)
+
             logger.info(
-                "fastembed_backend.model_loaded",
+                "sentence_transformers_backend.model_loaded",
                 model=self._model_name,
             )
         return self._model
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        """Embed texts using in-process ONNX inference.
-
-        ``fastembed`` is synchronous, so we run it in the default executor
-        to avoid blocking the event loop.
-        """
         loop = asyncio.get_running_loop()
-        model = self._get_model()
+
+        def _sync_embed() -> list[list[float]]:
+            model = self._get_model()
+            vecs = model.encode(texts, normalize_embeddings=True)
+            return [v.tolist() for v in vecs]
+
+        return await loop.run_in_executor(None, _sync_embed)
+
+    @property
+    def dimensions(self) -> int:
+        if self._model_name in _KNOWN_DIMS:
+            return _KNOWN_DIMS[self._model_name]
+
+        from app.config import settings  # noqa: PLC0415
+
+        return getattr(settings, "EMBEDDING_DIMENSIONS", 1024)
+
+    @property
+    def model_name(self) -> str:
+        return self._model_name
+
+
+# ── FastEmbed (in-process ONNX) ──────────────────────────────────────────────
+
+
+class FastEmbedBackend:
+    """
+    In-process ONNX inference via the ``fastembed`` library (maintained by Qdrant).
+
+    Runs quantized models on CPU with ~20-40ms latency per chunk.  No external
+    network calls, no API keys, $0 cost.
+
+    Falls back gracefully to ``SentenceTransformerBackend`` if ONNX runtime or
+    fastembed is unavailable or encounters OS limitations (e.g. Windows symlink privileges).
+    """
+
+    def __init__(self, model_name: str | None = None) -> None:
+        from app.config import settings  # noqa: PLC0415
+
+        self._model_name = model_name or settings.EMBEDDING_MODEL
+        self._model: Any = None
+        self._fallback: SentenceTransformerBackend | None = None
+
+    def _get_model(self) -> Any:
+        if self._fallback is not None:
+            return self._fallback
+
+        if self._model is None:
+            import os
+
+            # On Windows without developer mode/admin rights, fastembed/HF ONNX downloads fail
+            # with [WinError 1314] symlink errors or Rust bad_allocation. Fall back to SentenceTransformer.
+            if os.name == "nt":
+                logger.info(
+                    "fastembed_windows_detected_using_sentence_transformers",
+                    model=self._model_name,
+                )
+                self._fallback = SentenceTransformerBackend(model_name=self._model_name)
+                return self._fallback
+
+            try:
+                from fastembed import TextEmbedding  # noqa: PLC0415
+
+                self._model = TextEmbedding(model_name=self._model_name)
+                logger.info(
+                    "fastembed_backend.model_loaded",
+                    model=self._model_name,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "fastembed_init_failed_falling_back",
+                    error=str(exc),
+                    model=self._model_name,
+                )
+                self._fallback = SentenceTransformerBackend(model_name=self._model_name)
+                return self._fallback
+
+        return self._model
+
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        """Embed texts using in-process inference."""
+        target = self._get_model()
+        if self._fallback is not None:
+            return await self._fallback.embed(texts)
+
+        loop = asyncio.get_running_loop()
 
         def _sync_embed() -> list[list[float]]:
             # fastembed returns a generator; materialise into lists.
-            return [vec.tolist() for vec in model.embed(texts)]
+            return [vec.tolist() for vec in target.embed(texts)]
 
-        return await loop.run_in_executor(None, _sync_embed)
+        try:
+            return await loop.run_in_executor(None, _sync_embed)
+        except Exception as exc:
+            logger.warning(
+                "fastembed_runtime_failed_switching_to_fallback",
+                error=str(exc),
+            )
+            self._fallback = SentenceTransformerBackend(model_name=self._model_name)
+            return await self._fallback.embed(texts)
 
     @property
     def dimensions(self) -> int:
