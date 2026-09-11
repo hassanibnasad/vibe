@@ -70,8 +70,15 @@ async def knowledge_ingestion_task(
         content = await _fetch_from_rustfs(input.object_key)
 
         # ── Step 2: Ingest ───────────────────────────────────────────────────
+        from sqlalchemy import text  # noqa: PLC0415
+
         session_factory = get_sessionmaker()
         async with session_factory() as session:
+            if session.bind and session.bind.dialect.name == "postgresql":
+                await session.execute(
+                    text("SELECT set_config('app.current_tenant', :tenant, true)"),
+                    {"tenant": str(tenant_id)},
+                )
             repo = KnowledgeRepository(session)
             embedding_service = get_embedding_service()
             svc = KnowledgeIngestionService(

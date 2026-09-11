@@ -23,11 +23,11 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
         sql = """
             SELECT id, title, content, doc_type, source_file, chunk_index, char_count,
                    embedding_model,
-                   1 - (embedding <=> :embedding::vector) AS similarity
+                   1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
             FROM knowledge_docs
             WHERE embedding IS NOT NULL
               AND ingestion_status = 'embedded'
-              AND 1 - (embedding <=> :embedding::vector) > :threshold
+              AND 1 - (embedding <=> CAST(:embedding AS vector)) > :threshold
         """
         params: dict[str, Any] = {
             "embedding": str(query_embedding),
@@ -83,9 +83,9 @@ class KnowledgeRepository(BaseRepository[KnowledgeDoc]):
                  checksum, char_count, ingestion_status, tags,
                  created_at, updated_at)
             VALUES
-                (gen_random_uuid(), :tenant_id, :title, :content, :doc_type, :embedding::vector, :embedding_model,
-                 :source_file, :metadata_::jsonb, :chunk_index, :parent_doc_id,
-                 :checksum, :char_count, :ingestion_status, :tags::jsonb,
+                (gen_random_uuid(), :tenant_id, :title, :content, :doc_type, CAST(:embedding AS vector), :embedding_model,
+                 :source_file, CAST(:metadata_ AS jsonb), :chunk_index, :parent_doc_id,
+                 :checksum, :char_count, :ingestion_status, CAST(:tags AS jsonb),
                  now(), now())
             ON CONFLICT (tenant_id, source_file, chunk_index)
             WHERE source_file IS NOT NULL
