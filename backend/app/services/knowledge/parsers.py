@@ -80,7 +80,11 @@ class PDFParser:
             raw_text = "\n\n".join(pages)
 
             info = reader.metadata or {}
-            title = str(info.get("/Title", "")).strip() or Path(filename).stem.replace("-", " ").title()
+            clean_file_title = Path(filename).stem.replace("-", " ").replace("_", " ").title() if filename else ""
+            meta_title = str(info.get("/Title", "")).strip()
+            # Prioritize filename over PDF metadata /Title because templates (Canva, Word, InDesign)
+            # frequently leave behind stale /Title metadata like 'Black and White Minimalist Resume'.
+            title = clean_file_title or meta_title or "Document"
 
             return ParsedDocument(
                 title=title,

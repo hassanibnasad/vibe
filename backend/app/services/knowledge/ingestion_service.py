@@ -334,6 +334,27 @@ class KnowledgeIngestionService:
                     error=str(exc),
                 )
                 failed_indices.extend(c.chunk_index for c in new_chunks)
+                # Persist chunks with 'failed' status so documents are visible in UI and can be retried
+                for chunk in new_chunks:
+                    try:
+                        await self._repo.upsert_chunk(
+                            tenant_id=tenant_id,
+                            title=chunk.title,
+                            content=chunk.content,
+                            doc_type=doc_type,
+                            embedding=None,
+                            embedding_model=self._embedding.model_name,
+                            source_file=source_file,
+                            metadata_={**metadata, "ingestion_error": str(exc)},
+                            chunk_index=chunk.chunk_index,
+                            parent_doc_id=parent_doc_id,
+                            checksum=chunk.checksum,
+                            char_count=chunk.char_count,
+                            ingestion_status="failed",
+                            tags=tags,
+                        )
+                    except Exception:
+                        pass
                 continue
 
             # Phase 3: Upsert each embedded chunk.
