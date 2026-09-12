@@ -75,3 +75,26 @@ class PostRepository(BaseRepository[Post]):
         res = await self.session.execute(stmt)
         return list(res.scalars().all())
 
+    async def update_conversion_score(self, post_id: UUID, score: float) -> None:
+        """Update the denormalized conversion score on a post."""
+        from sqlalchemy import update  # noqa: PLC0415
+        stmt = update(Post).where(Post.id == post_id).values(conversion_score=score)
+        await self.session.execute(stmt)
+        await self.session.flush()
+
+    async def get_recent_published_ids(self, tenant_id: UUID, cutoff: datetime) -> list[UUID]:
+        """Return IDs of posts published since a cutoff datetime for a tenant."""
+        stmt = select(Post.id).where(
+            Post.tenant_id == tenant_id,
+            Post.status == "published",
+            Post.published_at >= cutoff,
+        )
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+
+    async def get_all_published_tenant_ids(self) -> list[UUID]:
+        """Return distinct tenant IDs that have published posts."""
+        stmt = select(Post.tenant_id).where(Post.status == "published").distinct()
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all() if row[0] is not None]
+

@@ -1,8 +1,10 @@
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import LeadStage
 from app.models.lead import Lead
 from app.repositories.base import BaseRepository
 
@@ -77,4 +79,16 @@ class LeadRepository(BaseRepository[Lead]):
         total_res = await self.session.execute(total_stmt)
         qual_res = await self.session.execute(qual_stmt)
         return (total_res.scalar_one() or 0, qual_res.scalar_one() or 0)
+
+    async def get_post_lead_counts(self, post_id: UUID) -> tuple[int, int]:
+        """Return (total_leads_attributed, qualified_leads_attributed) for a specific post."""
+        total_stmt = select(func.count(Lead.id)).where(Lead.source_post_id == post_id)
+        qual_stmt = select(func.count(Lead.id)).where(
+            Lead.source_post_id == post_id,
+            Lead.lead_stage.in_([LeadStage.MQL.value, LeadStage.SQL.value]),
+        )
+        total_res = await self.session.execute(total_stmt)
+        qual_res = await self.session.execute(qual_stmt)
+        return (total_res.scalar_one() or 0, qual_res.scalar_one() or 0)
+
 

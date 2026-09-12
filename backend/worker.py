@@ -25,9 +25,18 @@ from app.hatchet_client import hatchet
 from app.workflows.content_workflow import content_pipeline_task
 from app.workflows.engagement_workflow import engagement_pipeline_task
 from app.workflows.ingestion_workflow import knowledge_ingestion_task
+from app.workflows.onboarding_workflow import tenant_onboarding_task
+from app.workflows.reflection_workflow import (
+    run_reflection_task,
+    weekly_reflection_cron_workflow,
+)
 from app.workflows.scheduled_publish import (
     publish_single_post_task,
     scheduled_publish_cron_workflow,
+)
+from app.workflows.telemetry_sync_workflow import (
+    telemetry_sync_cron_workflow,
+    telemetry_sync_task,
 )
 
 logger = structlog.get_logger()
@@ -39,14 +48,18 @@ def main() -> None:
     worker = hatchet.worker(
         "vibeagent-worker",
         # Register all workflows / standalone tasks.
-        # The cron workflow (scheduled_publish_cron_workflow) registers its own
-        # cron schedule with Hatchet when the worker starts.
+        # Cron workflows register their own cron schedule with Hatchet when the worker starts.
         workflows=[
             content_pipeline_task,            # standalone task → Hatchet wraps it internally
             engagement_pipeline_task,         # standalone task
             knowledge_ingestion_task,         # standalone task — chunk/embed/upsert in background
+            tenant_onboarding_task,            # standalone task — website scrape + brand synthesis
             scheduled_publish_cron_workflow,  # cron workflow (runs every minute)
             publish_single_post_task,         # standalone task
+            telemetry_sync_cron_workflow,     # cron workflow (runs daily at 3:00 AM UTC)
+            telemetry_sync_task,              # standalone task (on-demand telemetry sync)
+            weekly_reflection_cron_workflow,  # cron workflow (runs weekly Sunday 2:00 AM UTC)
+            run_reflection_task,              # standalone task (on-demand reflection analysis)
         ],
         # Allow up to 20 concurrent task slots per worker instance.
         # Adjust based on available CPU / memory; LLM-heavy tasks can each be
