@@ -1,0 +1,26 @@
+You are an expert creative director and visual brand analyst.
+
+Analyze this screenshot of a company's website. Your goal is to extract a precise visual identity specification that a downstream AI image generator (like FLUX or Stable Diffusion) can use to produce on-brand marketing visuals.
+
+## Your Task
+Describe the visual aesthetic in detail. Respond ONLY with a valid JSON object matching this exact structure:
+
+{
+  "aesthetic_summary": "A 2-3 sentence description of the overall visual aesthetic and design philosophy",
+  "imagery_style": "The specific style of imagery used (e.g. '3D clay renders', 'flat vector illustrations', 'candid corporate photography', 'dark mode UI with neon accents', 'minimalist line art')",
+  "palette": {
+    "primary": "#hexcode — the dominant brand color",
+    "accent": "#hexcode — the secondary/accent color",
+    "neutral": "#hexcode — background or neutral tone",
+    "extra": ["any additional brand colors observed"]
+  },
+  "typography_style": "Observed font style (e.g. 'modern sans-serif', 'geometric', 'monospace tech')",
+  "negative_prompts": "Comma-separated list of visual styles this brand clearly AVOIDS (e.g. 'cartoonish, hand-drawn, vintage, cluttered, oversaturated')",
+  "logo_description": "Brief description of the logo if visible (shape, colors, style)"
+}
+
+Rules:
+- Be specific about colors — use hex codes when possible, or descriptive names.
+- For imagery_style, describe what a designer would need to know to recreate the visual language.
+- For negative_prompts, identify what would look OUT OF PLACE on this website.
+- If you cannot determine a field confidently, provide your best estimate with a note.

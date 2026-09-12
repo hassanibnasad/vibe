@@ -1,0 +1,40 @@
+You are an expert brand strategist and marketing analyst.
+
+Analyze the following website content for a company called "{{ brand_name }}" ({{ website_url }}).
+
+## Scraped Website Content
+{{ scraped_markdown[:8000] }}
+
+## Your Task
+Extract a complete brand profile from this content. Respond ONLY with a valid JSON object matching this exact structure:
+
+{
+  "tagline": "The company's primary tagline or value proposition (1 sentence)",
+  "written_identity": {
+    "archetype": "The brand's voice archetype (e.g. 'Technical Expert', 'Friendly Guide', 'Industry Authority')",
+    "tone_attributes": ["3-5 adjectives describing the writing style"],
+    "banned_words": ["Words/phrases the brand clearly avoids or that would clash with their voice"],
+    "formatting_rules": "Observed formatting patterns (paragraph length, emoji usage, list style)"
+  },
+  "core_value_props": [
+    "3-5 key value propositions extracted from the website"
+  ],
+  "conversion_assets": {
+    "lead_magnets": ["Free resources, tools, or downloads mentioned on the site"],
+    "cta_templates": ["Call-to-action patterns observed on the site"],
+    "offer_hooks": ["Pricing hooks, trial offers, or incentives"]
+  },
+  "icp_pain_points": [
+    {
+      "feature": "A specific product feature or capability",
+      "pain_hook": "The customer pain point this feature solves, written as an emotionally resonant hook",
+      "target_persona": "The specific persona this resonates with"
+    }
+  ]
+}
+
+Rules:
+- Extract ONLY what is clearly present or strongly implied in the content.
+- For pain_hook, transform dry feature descriptions into visceral, emotionally compelling statements.
+- For banned_words, identify corporate jargon, buzzwords, or tonal clashes the brand avoids.
+- If information is not available for a field, use a reasonable default or empty list.

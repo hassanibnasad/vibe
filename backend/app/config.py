@@ -119,6 +119,15 @@ class Settings(BaseSettings):
     # Embedding cache TTL in seconds (default: 7 days).
     EMBEDDING_CACHE_TTL: int = 604800
 
+    # ── Brand Extraction ─────────────────────────────────────────────────────
+    # Vision-capable LLM model for screenshot analysis (empty = skip vision step).
+    # Examples: "gemini/gemini-2.0-flash", "openai/gpt-4o", "together_ai/meta-llama/Llama-Vision-Free"
+    VISION_LLM_MODEL: str = ""
+    # Crawl4AI browser timeout in seconds.
+    SCRAPER_TIMEOUT_SECONDS: int = 30
+    # Playwright wait condition: "networkidle", "domcontentloaded", or "load".
+    SCRAPER_WAIT_UNTIL: str = "networkidle"
+
 
 @lru_cache
 def get_settings() -> Settings:
