@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.services.embedding_service import EmbedTask, EmbeddingService, _detect_prefix_family
-
+from app.services.embedding_service import EmbeddingService, EmbedTask, _detect_prefix_family
 
 # ── Prefix detection ─────────────────────────────────────────────────────────
 
@@ -274,8 +273,9 @@ class TestLiteLLMBackend:
     @pytest.mark.asyncio
     @patch("app.config.settings")
     async def test_embed_delegates_to_litellm(self, mock_settings):
-        from app.services.embedding_backends import LiteLLMBackend
         from types import SimpleNamespace
+
+        from app.services.embedding_backends import LiteLLMBackend
 
         mock_settings.LLM_EMBED_MODEL = "ollama/all-minilm:l6-v2"
         mock_settings.LITELLM_PROXY_URL = ""

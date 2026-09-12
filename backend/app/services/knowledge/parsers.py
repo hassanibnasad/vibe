@@ -95,11 +95,11 @@ class PDFParser:
                     "pdf_author": str(info.get("/Author", "")),
                 },
             )
-        except ImportError:
+        except ImportError as exc:
             logger.warning("pypdf_not_installed", hint="pip install pypdf to enable PDF ingestion")
             raise RuntimeError(
                 "pypdf is required for PDF ingestion. Install it with: pip install pypdf"
-            )
+            ) from exc
 
 
 class DocxParser:
@@ -126,11 +126,11 @@ class DocxParser:
                 raw_text=raw_text,
                 metadata={"filename": filename},
             )
-        except ImportError:
+        except ImportError as exc:
             logger.warning("python-docx_not_installed", hint="pip install python-docx to enable DOCX ingestion")
             raise RuntimeError(
                 "python-docx is required for DOCX ingestion. Install it with: pip install python-docx"
-            )
+            ) from exc
 
 
 # ── MIME → parser routing ────────────────────────────────────────────────────

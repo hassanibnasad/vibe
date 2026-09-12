@@ -19,7 +19,6 @@ import hashlib
 import re
 from dataclasses import dataclass
 
-
 # 1 token ≈ 4 characters — conservative approximation, no tokeniser dep.
 _CHARS_PER_TOKEN = 4
 

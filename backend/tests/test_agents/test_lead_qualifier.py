@@ -1,6 +1,6 @@
 import json
 from unittest.mock import AsyncMock
-import uuid
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,10 +8,7 @@ from app.agents.lead_qualifier import (
     BantExtraction,
     LeadQualifierAgent,
     calculate_stage,
-    compute_bant_score,
 )
-from app.models.lead import Lead
-from app.models.lead_field_history import LeadFieldHistory
 from app.repositories.lead_repo import LeadRepository
 from app.tools.ai.llm_client import LLMResponse
 

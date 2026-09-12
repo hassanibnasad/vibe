@@ -11,6 +11,7 @@ Endpoints:
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 from typing import Annotated
 
 import structlog
@@ -88,8 +89,6 @@ def _assert_supported_extension(filename: str) -> None:
         )
 
 
-from pathlib import Path
-
 _LOCAL_STAGE_DIR = Path(".scratch/uploads")
 
 
@@ -108,8 +107,8 @@ async def _stage_to_rustfs(content: bytes, object_key: str) -> None:
         return
 
     try:
-        from botocore.config import Config  # noqa: PLC0415
         import boto3  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
 
         def _sync_put() -> None:
             cfg = Config(connect_timeout=2, read_timeout=5, retries={"max_attempts": 1})

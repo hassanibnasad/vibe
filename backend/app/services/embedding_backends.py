@@ -190,7 +190,7 @@ class FastEmbedBackend:
     @property
     def dimensions(self) -> int:
         # Resolve from the model metadata; fall back to known defaults or config.
-        _KNOWN_DIMS: dict[str, int] = {
+        known_dims: dict[str, int] = {
             "BAAI/bge-small-en-v1.5": 384,
             "BAAI/bge-base-en-v1.5": 768,
             "BAAI/bge-large-en-v1.5": 1024,
@@ -198,8 +198,8 @@ class FastEmbedBackend:
             "nomic-ai/nomic-embed-text-v1.5": 768,
             "sentence-transformers/all-MiniLM-L6-v2": 384,
         }
-        if self._model_name in _KNOWN_DIMS:
-            return _KNOWN_DIMS[self._model_name]
+        if self._model_name in known_dims:
+            return known_dims[self._model_name]
 
         from app.config import settings  # noqa: PLC0415
 

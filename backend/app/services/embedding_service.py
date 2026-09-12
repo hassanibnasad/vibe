@@ -39,7 +39,7 @@ logger = structlog.get_logger()
 # ── Task enum ─────────────────────────────────────────────────────────────────
 
 
-class EmbedTask(str, enum.Enum):
+class EmbedTask(enum.StrEnum):
     """Controls instruction-prefix prepended to input text."""
 
     SEARCH_DOCUMENT = "search_document"
@@ -205,7 +205,7 @@ class EmbeddingService:
                 computed_embeddings.extend(batch_result)
 
             new_cache_items: list[tuple[str, list[float]]] = []
-            for idx, emb in zip(miss_indices, computed_embeddings):
+            for idx, emb in zip(miss_indices, computed_embeddings, strict=False):
                 cached_results[idx] = emb
                 new_cache_items.append((prefixed[idx], emb))
 

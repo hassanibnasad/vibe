@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from pathlib import Path
 
 import structlog
 from hatchet_sdk import Context
@@ -39,8 +40,6 @@ class IngestionTaskInput(BaseModel):
     tags: list[str] = []
 
 
-from pathlib import Path
-
 _LOCAL_STAGE_DIR = Path(".scratch/uploads")
 
 
@@ -59,7 +58,7 @@ async def knowledge_ingestion_task(
     2. Call KnowledgeIngestionService.ingest_bytes().
     3. Commit and return an IngestionResult summary.
     """
-    from app.dependencies import get_sessionmaker, get_embedding_service  # noqa: PLC0415
+    from app.dependencies import get_embedding_service, get_sessionmaker  # noqa: PLC0415
     from app.repositories.knowledge_repo import KnowledgeRepository  # noqa: PLC0415
     from app.services.knowledge.ingestion_service import KnowledgeIngestionService  # noqa: PLC0415
 
@@ -162,8 +161,8 @@ async def _fetch_from_rustfs(object_key: str) -> bytes:
         )
 
     try:
-        from botocore.config import Config  # noqa: PLC0415
         import boto3  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
 
         def _sync_fetch() -> bytes:
             cfg = Config(connect_timeout=2, read_timeout=5, retries={"max_attempts": 1})

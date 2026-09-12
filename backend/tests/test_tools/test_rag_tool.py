@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock
+
 import pytest
 
-from app.tools.ai.rag_tool import RAGTool, RAGResult
+from app.tools.ai.rag_tool import RAGResult, RAGTool
 
 
 @pytest.mark.asyncio

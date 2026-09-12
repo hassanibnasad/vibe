@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
-from app.exceptions import PlatformAPIError, RateLimitExceededError
+from app.exceptions import RateLimitExceededError
 from app.tools.platform.linkedin_tool import LinkedInTool
 from app.tools.utils.rate_limiter import SlidingWindowRateLimiter
 

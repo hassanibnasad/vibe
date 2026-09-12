@@ -1,10 +1,10 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+
 import pytest
 from pydantic import BaseModel
 
 from app.config import settings
-from app.exceptions import LLMError
 from app.tools.ai.llm_client import LLMClient, LLMResponse
 
 

@@ -18,6 +18,7 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 import structlog
 
@@ -194,7 +195,9 @@ class KnowledgeIngestionService:
         results: dict[str, IngestionResult] = {}
 
         files = sorted(
-            p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
+            p
+            for p in root.rglob("*")  # noqa: ASYNC240
+            if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
         )
 
         logger.info(
@@ -358,7 +361,7 @@ class KnowledgeIngestionService:
                 continue
 
             # Phase 3: Upsert each embedded chunk.
-            for chunk, embedding in zip(new_chunks, embeddings):
+            for chunk, embedding in zip(new_chunks, embeddings, strict=False):
                 try:
                     await self._repo.upsert_chunk(
                         tenant_id=tenant_id,
@@ -429,7 +432,7 @@ class KnowledgeIngestionService:
                 texts, task=EmbedTask.SEARCH_DOCUMENT
             )
 
-            for doc, emb in zip(chunks, embeddings):
+            for doc, emb in zip(chunks, embeddings, strict=False):
                 await self._repo.update_chunk_embedding(
                     doc_id=doc.id, embedding=emb, model_name=model_name
                 )

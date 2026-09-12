@@ -1,7 +1,6 @@
 import pytest
 
 from app.exceptions import ValidationError
-from app.models.enums import PlatformType
 from app.tools.platform.linkedin_tool import LinkedInTool
 from app.tools.platform.registry import PlatformRegistry
 

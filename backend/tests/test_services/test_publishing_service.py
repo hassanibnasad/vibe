@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +8,6 @@ from app.agents.publisher import PublisherAgent
 from app.exceptions import ValidationError
 from app.repositories.post_repo import PostRepository
 from app.services.publishing_service import PublishingService
-from app.tools.platform.base import PublishResult
 
 
 @pytest.mark.asyncio

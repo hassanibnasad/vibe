@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import contextvars
 import uuid
 from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import redis.asyncio as aioredis
 from sqlalchemy import text
@@ -12,6 +15,9 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.config import settings
+
+if TYPE_CHECKING:
+    from app.services.embedding_service import EmbeddingService
 
 # Global ContextVar for tenant isolation
 DEFAULT_TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -93,10 +99,10 @@ def get_redis_client() -> aioredis.Redis:
 
 # ── Embedding Service (singleton) ────────────────────────────────────────────
 
-_embedding_service: "EmbeddingService | None" = None
+_embedding_service: EmbeddingService | None = None
 
 
-def get_embedding_service() -> "EmbeddingService":
+def get_embedding_service() -> EmbeddingService:
     """Return the application-wide EmbeddingService singleton.
 
     Lazily constructed on first call using the backend configured in

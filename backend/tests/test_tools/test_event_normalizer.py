@@ -1,4 +1,3 @@
-import pytest
 from app.tools.utils.event_normalizer import EventNormalizer
 
 
