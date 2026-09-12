@@ -38,6 +38,13 @@ class MessageDirection(StrEnum):
     OUTBOUND = "outbound"
 
 
+class ExtractionStatus(StrEnum):
+    PENDING = "pending"
+    EXTRACTING = "extracting"
+    COMPLETE = "complete"
+    FAILED = "failed"
+
+
 def calculate_lead_stage(score: int) -> str:
     """Standard CRM BANT Lead Funnel Stage mapping (Single Source of Truth)."""
     if score >= 90:

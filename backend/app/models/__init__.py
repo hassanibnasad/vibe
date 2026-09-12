@@ -1,7 +1,10 @@
 from app.models.base import Base, BaseModel, TimestampMixin
+from app.models.brand_profile import BrandProfile
 from app.models.campaign import Campaign
+from app.models.content_performance import ContentPerformance
 from app.models.conversation import Conversation
 from app.models.enums import (
+    ExtractionStatus,
     LeadStage,
     MessageDirection,
     PlatformType,
@@ -22,7 +25,9 @@ __all__ = [
     "Base",
     "BaseModel",
     "TimestampMixin",
+    "BrandProfile",
     "Campaign",
+    "ContentPerformance",
     "Conversation",
     "KnowledgeDoc",
     "Lead",
@@ -32,6 +37,7 @@ __all__ = [
     "Platform",
     "Post",
     "WebhookEvent",
+    "ExtractionStatus",
     "LeadStage",
     "PostStatus",
     "PlatformType",

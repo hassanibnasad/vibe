@@ -50,6 +50,10 @@ class Post(BaseModel):
     variant_group: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     variant_label: Mapped[str | None] = mapped_column(String(10))
 
+    # Denormalized composite conversion score from content_performance.
+    # Enables fast ORDER BY without joining; kept in sync by TelemetryService.
+    conversion_score: Mapped[float] = mapped_column(Float, default=0.0, index=True)
+
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
 
