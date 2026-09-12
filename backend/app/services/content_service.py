@@ -102,9 +102,12 @@ class ContentService:
         campaign_id: UUID | None = None,
         campaign_context: str | None = None,
         model: str | None = None,
+        tenant_id: UUID | None = None,
     ) -> Post:
         """Generate and stage an AI-authored post draft."""
-        logger.info("content_service_generate_draft", platform=platform_type, tone=tone)
+        logger.info("content_service_generate_draft", platform=platform_type, tone=tone, tenant_id=str(tenant_id) if tenant_id else None)
+
+        brand_profile, top_exemplars = await self._resolve_brand_and_exemplars(tenant_id, platform_type)
 
         agent_result = await self.generator_agent.generate_post(
             brief=brief,
@@ -112,12 +115,16 @@ class ContentService:
             tone=tone,
             campaign_context=campaign_context,
             model=model,
+            tenant_id=tenant_id,
+            brand_profile=brand_profile,
+            top_performing_posts=top_exemplars,
         )
 
         content = agent_result.data.get("content", "")
         hashtags = agent_result.data.get("hashtags", [])
         cta = agent_result.data.get("cta", "")
         rag_sources = agent_result.data.get("rag_sources", [])
+        conversion_asset_used = agent_result.data.get("conversion_asset_used")
 
         post = await self.post_repo.create(
             platform_id=platform_id,
@@ -136,6 +143,9 @@ class ContentService:
                 "tokens_used": agent_result.data.get("tokens_used", 0),
                 "latency_ms": agent_result.data.get("latency_ms", 0),
                 "model_used": agent_result.data.get("model_used"),
+                "brand_profile_used": agent_result.data.get("brand_profile_used", False),
+                "few_shot_count": agent_result.data.get("few_shot_count", 0),
+                "conversion_asset_used": conversion_asset_used,
             },
         )
 
@@ -157,9 +167,12 @@ class ContentService:
         campaign_context: str | None = None,
         variants_count: int = 3,
         model: str | None = None,
+        tenant_id: UUID | None = None,
     ) -> list[Post]:
         """Generate and save multiple copy variants for A/B testing."""
-        logger.info("content_service_generate_variants", platform=platform_type, count=variants_count)
+        logger.info("content_service_generate_variants", platform=platform_type, count=variants_count, tenant_id=str(tenant_id) if tenant_id else None)
+
+        brand_profile, top_exemplars = await self._resolve_brand_and_exemplars(tenant_id, platform_type)
 
         agent_results = await self.generator_agent.generate_variants(
             brief=brief,
@@ -168,6 +181,9 @@ class ContentService:
             campaign_context=campaign_context,
             variants_count=variants_count,
             model=model,
+            tenant_id=tenant_id,
+            brand_profile=brand_profile,
+            top_performing_posts=top_exemplars,
         )
 
         posts: list[Post] = []
@@ -199,11 +215,63 @@ class ContentService:
                     "tokens_used": result.data.get("tokens_used", 0),
                     "latency_ms": result.data.get("latency_ms", 0),
                     "model_used": result.data.get("model_used"),
+                    "brand_profile_used": result.data.get("brand_profile_used", False),
+                    "few_shot_count": result.data.get("few_shot_count", 0),
+                    "conversion_asset_used": result.data.get("conversion_asset_used"),
                 },
             )
             posts.append(post)
 
         return posts
+
+    async def _resolve_brand_and_exemplars(
+        self, tenant_id: UUID | None, platform: str
+    ) -> tuple[dict | None, list[dict]]:
+        """Pre-fetch brand profile and top-performing exemplars via repositories."""
+        if not tenant_id:
+            return None, []
+
+        from datetime import timedelta  # noqa: PLC0415
+
+        from app.repositories.brand_profile_repo import BrandProfileRepository  # noqa: PLC0415
+        from app.repositories.performance_repo import PerformanceRepository  # noqa: PLC0415
+
+        brand_profile = None
+        top_exemplars = []
+
+        try:
+            bp_repo = BrandProfileRepository(self.post_repo.session)
+            profile = await bp_repo.get_by_tenant(tenant_id)
+            if profile and profile.extraction_status == "complete":
+                brand_profile = {
+                    "brand_name": profile.brand_name,
+                    "tagline": profile.tagline,
+                    "visual_identity": profile.visual_identity or {},
+                    "written_identity": profile.written_identity or {},
+                    "core_value_props": profile.core_value_props or [],
+                    "conversion_assets": profile.conversion_assets or {},
+                    "icp_pain_points": profile.icp_pain_points or [],
+                }
+        except Exception as exc:
+            logger.warning("content_service.brand_profile_fetch_failed", error=str(exc))
+
+        try:
+            perf_repo = PerformanceRepository(self.post_repo.session)
+            top_records = await perf_repo.get_top_performers(
+                tenant_id=tenant_id, limit=3, since=timedelta(days=30)
+            )
+            for perf in top_records:
+                p = await self.post_repo.get_by_id(perf.post_id)
+                if p and p.content:
+                    top_exemplars.append({
+                        "content": p.content,
+                        "conversion_score": round(perf.conversion_score, 1),
+                        "platform": getattr(p, "platform", platform),
+                    })
+        except Exception as exc:
+            logger.warning("content_service.top_performers_fetch_failed", error=str(exc))
+
+        return brand_profile, top_exemplars
 
     async def approve_post(self, post_id: UUID) -> Post:
         """Approve a draft post for scheduling or immediate publishing."""

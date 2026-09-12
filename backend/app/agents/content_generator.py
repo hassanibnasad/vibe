@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -42,7 +43,13 @@ VARIANT_ANGLES = [
 
 
 class ContentGeneratorAgent(BaseAgent):
-    """Generates channel-tailored marketing posts grounded in brand knowledge."""
+    """Generates channel-tailored marketing posts grounded in brand knowledge.
+
+    Enhanced to use the tenant's ``BrandProfile`` for deterministic voice/tone
+    injection rather than searching vector chunks for style cues.  Factual RAG
+    is still used for product knowledge, but only for ``faq``, ``product``,
+    and ``case_study`` doc_types.
+    """
 
     def __init__(
         self,
@@ -67,15 +74,33 @@ class ContentGeneratorAgent(BaseAgent):
         angle_guideline: str | None = None,
         variant_label: str | None = None,
         variant_group: UUID | None = None,
+        tenant_id: UUID | None = None,
+        brand_profile: dict | None = None,
+        top_performing_posts: list[dict] | None = None,
     ) -> AgentResult:
         self.logger.info("generating_post", platform=platform, tone=tone, brief_len=len(brief))
 
-        # Retrieve RAG context if RAG tool is available
+        # ── Load Brand Profile if not passed directly ─────────────────────────
+        if brand_profile is None and tenant_id:
+            brand_profile = await self._load_brand_profile(tenant_id)
+
+        # ── Load Top Performing Posts (Few-Shot) if not passed directly ───────
+        if top_performing_posts is None and tenant_id:
+            top_performing_posts = await self._load_top_performers(
+                tenant_id, platform=platform, limit=3
+            )
+        top_posts = top_performing_posts or []
+
+        # ── Retrieve factual RAG context (product facts, not brand style) ─────
         brand_context = ""
         rag_sources: list[str] = []
         if self.rag:
             try:
-                retrieval = await self.rag.retrieve_context(query=brief, limit=3)
+                retrieval = await self.rag.retrieve_context(
+                    query=brief,
+                    doc_types=["faq", "product", "case_study"],
+                    limit=3,
+                )
                 brand_context = retrieval.context_text
                 rag_sources = [f"doc_{doc.get('id', 'unknown')}" for doc in retrieval.documents]
             except Exception as e:
@@ -96,6 +121,8 @@ class ContentGeneratorAgent(BaseAgent):
             tone=tone,
             campaign_context=campaign_context,
             brand_context=brand_context,
+            brand_profile=brand_profile,
+            top_performing_posts=top_posts,
         )
 
         try:
@@ -118,9 +145,10 @@ class ContentGeneratorAgent(BaseAgent):
             content = parsed.get("content", raw_text)
             hashtags = parsed.get("hashtags", [])
             cta = parsed.get("cta", "")
+            conversion_asset_used = parsed.get("conversion_asset_used")
 
-            # Confidence scoring heuristic
-            confidence = 0.90 if brand_context else 0.85
+            # Confidence scoring — higher when BrandProfile is available
+            confidence = 0.92 if brand_profile else (0.90 if brand_context else 0.85)
             if len(content) < 50:
                 confidence -= 0.30
 
@@ -134,6 +162,7 @@ class ContentGeneratorAgent(BaseAgent):
                     "content": content,
                     "hashtags": hashtags,
                     "cta": cta,
+                    "conversion_asset_used": conversion_asset_used,
                     "platform": platform,
                     "tone": tone,
                     "tokens_used": llm_response.tokens_used,
@@ -142,8 +171,12 @@ class ContentGeneratorAgent(BaseAgent):
                     "variant_label": variant_label,
                     "variant_group": str(variant_group) if variant_group else None,
                     "model_used": llm_response.model,
+                    "brand_profile_used": brand_profile is not None,
+                    "few_shot_count": len(top_posts),
                 },
-                reasoning="Generated using Jinja2 prompt and RAG context."
+                reasoning="Generated using BrandProfile + factual RAG + few-shot exemplars."
+                if brand_profile
+                else "Generated using Jinja2 prompt and RAG context.",
             )
         except json.JSONDecodeError:
             # Fallback if raw text wasn't valid JSON
@@ -178,6 +211,9 @@ class ContentGeneratorAgent(BaseAgent):
         campaign_context: str | None = None,
         variants_count: int = 3,
         model: str | None = None,
+        tenant_id: UUID | None = None,
+        brand_profile: dict | None = None,
+        top_performing_posts: list[dict] | None = None,
     ) -> list[AgentResult]:
         """Generate multiple distinct copy variants for A/B testing."""
         group_id = uuid4()
@@ -196,7 +232,77 @@ class ContentGeneratorAgent(BaseAgent):
                 angle_guideline=angle,
                 variant_label=label,
                 variant_group=group_id,
+                tenant_id=tenant_id,
+                brand_profile=brand_profile,
+                top_performing_posts=top_performing_posts,
             )
             results.append(res)
 
         return results
+
+    # ── Private helpers ───────────────────────────────────────────────────────
+
+    async def _load_brand_profile(self, tenant_id: UUID) -> dict | None:
+        """Load the BrandProfile for a tenant as a plain dict for template rendering."""
+        try:
+            from app.dependencies import get_sessionmaker  # noqa: PLC0415
+            from app.repositories.brand_profile_repo import BrandProfileRepository  # noqa: PLC0415
+
+            session_factory = get_sessionmaker()
+            async with session_factory() as session:
+                repo = BrandProfileRepository(session)
+                profile = await repo.get_by_tenant(tenant_id)
+
+            if profile is None or profile.extraction_status != "complete":
+                return None
+
+            return {
+                "brand_name": profile.brand_name,
+                "tagline": profile.tagline,
+                "visual_identity": profile.visual_identity or {},
+                "written_identity": profile.written_identity or {},
+                "core_value_props": profile.core_value_props or [],
+                "conversion_assets": profile.conversion_assets or {},
+                "icp_pain_points": profile.icp_pain_points or [],
+            }
+        except Exception as exc:
+            self.logger.warning("brand_profile_load_failed", error=str(exc))
+            return None
+
+    async def _load_top_performers(
+        self, tenant_id: UUID, platform: str = "linkedin", limit: int = 3
+    ) -> list[dict]:
+        """Load the top-performing posts for a tenant as few-shot exemplars."""
+        try:
+            from app.dependencies import get_sessionmaker  # noqa: PLC0415
+            from app.repositories.performance_repo import PerformanceRepository  # noqa: PLC0415
+            from app.repositories.post_repo import PostRepository  # noqa: PLC0415
+
+            session_factory = get_sessionmaker()
+            async with session_factory() as session:
+                perf_repo = PerformanceRepository(session)
+                top = await perf_repo.get_top_performers(
+                    tenant_id=tenant_id,
+                    limit=limit,
+                    since=timedelta(days=30),
+                )
+
+                if not top:
+                    return []
+
+                # Load the actual post content for each top performer
+                post_repo = PostRepository(session)
+                exemplars: list[dict] = []
+                for perf in top:
+                    post = await post_repo.get_by_id(perf.post_id)
+                    if post and post.content:
+                        exemplars.append({
+                            "content": post.content,
+                            "conversion_score": round(perf.conversion_score, 1),
+                            "platform": getattr(post, "platform", platform),
+                        })
+
+                return exemplars
+        except Exception as exc:
+            self.logger.warning("top_performers_load_failed", error=str(exc))
+            return []

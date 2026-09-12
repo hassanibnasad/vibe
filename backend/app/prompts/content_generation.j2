@@ -1,4 +1,4 @@
-You are an expert social media marketer. Generate a high-performing marketing post based on the brief below.
+You are an expert social media marketer generating high-performing marketing posts.
 
 ## Brief
 {{ brief }}
@@ -13,15 +13,65 @@ You are an expert social media marketer. Generate a high-performing marketing po
 {{ campaign_context }}
 {% endif %}
 
+{% if brand_profile %}
+## Brand Voice & Identity
+Archetype: {{ brand_profile.written_identity.archetype | default("Professional") }}
+Tone Attributes: {{ brand_profile.written_identity.tone_attributes | default([]) | join(", ") }}
+{% if brand_profile.written_identity.banned_words %}
+NEVER use these words: {{ brand_profile.written_identity.banned_words | join(", ") }}
+{% endif %}
+{% if brand_profile.written_identity.formatting_rules %}
+Formatting Rules: {{ brand_profile.written_identity.formatting_rules }}
+{% endif %}
+
+## Core Value Propositions
+{% for prop in brand_profile.core_value_props | default([]) %}
+- {{ prop }}
+{% endfor %}
+
+## Conversion Assets (Pick ONE Per Post)
+{% if brand_profile.conversion_assets.lead_magnets %}
+Lead Magnets: {{ brand_profile.conversion_assets.lead_magnets | join(" | ") }}
+{% endif %}
+{% if brand_profile.conversion_assets.cta_templates %}
+CTA Templates: {{ brand_profile.conversion_assets.cta_templates | join(" | ") }}
+{% endif %}
+{% if brand_profile.conversion_assets.offer_hooks %}
+Offer Hooks: {{ brand_profile.conversion_assets.offer_hooks | join(" | ") }}
+{% endif %}
+
+## Pain Points to Leverage (Choose the Most Relevant)
+{% for point in brand_profile.icp_pain_points | default([]) %}
+- Feature: {{ point.feature }} → Hook: "{{ point.pain_hook }}" (Target: {{ point.target_persona | default("General") }})
+{% endfor %}
+
+{% if brand_profile.visual_identity.imagery_style %}
+## Visual Style (For Image Generation Reference)
+Style: {{ brand_profile.visual_identity.imagery_style }}
+Colors: {{ brand_profile.visual_identity.palette | default({}) | tojson }}
+Avoid: {{ brand_profile.visual_identity.negative_prompts | default("") }}
+{% endif %}
+{% endif %}
+
+{% if top_performing_posts %}
+## Historical Winners — Imitate These Patterns
+{% for post in top_performing_posts %}
+### Example {{ loop.index }} (Conversion Score: {{ post.conversion_score }})
+{{ post.content }}
+---
+{% endfor %}
+{% endif %}
+
 {% if brand_context %}
-## Brand Knowledge & Guidelines
+## Factual Product Knowledge (RAG)
 {{ brand_context }}
 {% endif %}
 
 ## Output Format
 Respond ONLY with a valid JSON object matching this structure:
 {
-  "content": "The full post text formatted with hooks and paragraphs",
+  "content": "The full post text formatted with hooks, short paragraphs, and clear structure",
   "hashtags": ["#tag1", "#tag2", "#tag3"],
-  "cta": "Call to action text"
+  "cta": "Call to action text incorporating a conversion asset",
+  "conversion_asset_used": "Name or hook of the conversion asset used (or null if none)"
 }
