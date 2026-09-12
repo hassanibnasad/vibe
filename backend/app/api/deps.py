@@ -2,10 +2,12 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db_session
+from app.repositories.brand_profile_repo import BrandProfileRepository
 from app.repositories.conversation_repo import ConversationRepository
 from app.repositories.knowledge_repo import KnowledgeRepository
 from app.repositories.lead_repo import LeadRepository
 from app.repositories.message_repo import MessageRepository
+from app.repositories.performance_repo import PerformanceRepository
 from app.repositories.post_repo import PostRepository
 from app.repositories.score_event_repo import ScoreEventRepository
 from app.services.content_service import ContentService
@@ -14,7 +16,6 @@ from app.services.knowledge import KnowledgeIngestionService
 from app.services.lead_service import LeadService
 from app.services.publishing_service import PublishingService
 from app.services.scoring_service import ScoringService
-from app.tools.ai.llm_client import LLMClient
 
 
 # Repositories
@@ -99,6 +100,19 @@ async def get_knowledge_ingestion_service(
         embedding_service=embedding_service,
     )
 
+
+async def get_brand_profile_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> BrandProfileRepository:
+    """Construct a ``BrandProfileRepository`` with a live DB session."""
+    return BrandProfileRepository(session)
+
+
+async def get_performance_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> PerformanceRepository:
+    """Construct a ``PerformanceRepository`` with a live DB session."""
+    return PerformanceRepository(session)
 
 
 
