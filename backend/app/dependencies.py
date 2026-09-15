@@ -36,7 +36,7 @@ def get_engine() -> AsyncEngine:
         _engine = create_async_engine(
             settings.DATABASE_URL,
             pool_size=settings.DATABASE_POOL_SIZE,
-            echo=settings.APP_DEBUG,
+            echo=settings.DATABASE_ECHO,
         )
     return _engine
 

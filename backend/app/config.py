@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # ── Database ──
     DATABASE_URL: str = "postgresql+asyncpg://vibeagent:vibeagent@localhost:5432/vibeagent"
     DATABASE_POOL_SIZE: int = 20
+    DATABASE_ECHO: bool = False
 
     # ── Redis ──
     REDIS_URL: str = "redis://localhost:6379/0"
