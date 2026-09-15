@@ -73,6 +73,11 @@ class SentenceTransformerBackend:
         if self._model is None:
             from sentence_transformers import SentenceTransformer  # noqa: PLC0415
 
+            logger.info(
+                "sentence_transformers_backend.model_loading",
+                model=self._model_name,
+                message="Initializing embedding model (may take ~30s on first download)...",
+            )
             try:
                 self._model = SentenceTransformer(self._model_name, local_files_only=True)
             except Exception:
