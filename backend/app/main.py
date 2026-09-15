@@ -8,9 +8,11 @@ from app.api.v1.router import api_v1_router
 from app.config import settings
 from app.dependencies import close_db, init_db
 from app.exceptions import register_exception_handlers
+from app.log_config import configure_logging
 from app.middleware.logging import StructuredLoggingMiddleware
 from app.middleware.tenant import TenantMiddleware
 
+configure_logging()
 logger = structlog.get_logger()
 
 

@@ -20,6 +20,7 @@ Workers are kept separate from the FastAPI process so that:
 import structlog
 
 from app.hatchet_client import hatchet
+from app.log_config import configure_logging
 
 # Import all Hatchet workflow / task objects so the worker knows what to register.
 from app.workflows.content_workflow import content_pipeline_task
@@ -43,6 +44,7 @@ logger = structlog.get_logger()
 
 
 def main() -> None:
+    configure_logging()
     logger.info("starting_hatchet_worker", service="vibeagent-worker")
 
     worker = hatchet.worker(
