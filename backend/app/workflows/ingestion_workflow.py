@@ -64,9 +64,21 @@ async def knowledge_ingestion_task(
 
     tenant_id = uuid.UUID(input.tenant_id)
 
+    logger.info(
+        "knowledge_ingestion_task.started",
+        filename=input.filename,
+        doc_type=input.doc_type,
+        object_key=input.object_key,
+    )
+
     try:
         # ── Step 1: Fetch file bytes ─────────────────────────────────────────
         content = await _fetch_from_rustfs(input.object_key)
+        logger.info(
+            "knowledge_ingestion_task.file_fetched",
+            filename=input.filename,
+            size_bytes=len(content),
+        )
 
         # ── Step 2: Ingest ───────────────────────────────────────────────────
         from sqlalchemy import text  # noqa: PLC0415

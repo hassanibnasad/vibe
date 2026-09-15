@@ -14,6 +14,7 @@ Key design properties:
 from __future__ import annotations
 
 import asyncio
+import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -164,6 +165,12 @@ class KnowledgeIngestionService:
         still fires for repeat uploads of the same filename.
         """
         parsed = self._parser.parse_bytes(content, filename=filename, mime_type=mime_type)
+        logger.info(
+            "ingestion.document_parsed",
+            filename=filename,
+            title=parsed.title,
+            char_count=len(parsed.raw_text),
+        )
         merged_meta = {**parsed.metadata, **(metadata or {})}
         return await self._ingest_parsed(
             raw_text=parsed.raw_text,
@@ -323,10 +330,23 @@ class KnowledgeIngestionService:
             # Phase 2: Batch embed all new chunks in one call.
             from app.services.embedding_service import EmbedTask  # noqa: PLC0415
 
+            logger.info(
+                "ingestion.embedding_batch_start",
+                source_file=source_file,
+                batch_chunks=len(new_chunks),
+                model=self._embedding.model_name,
+            )
+            t_embed_start = time.monotonic()
             try:
                 embeddings = await self._embedding.embed_many(
                     [c.content for c in new_chunks],
                     task=EmbedTask.SEARCH_DOCUMENT,
+                )
+                logger.info(
+                    "ingestion.embedding_batch_complete",
+                    source_file=source_file,
+                    batch_chunks=len(new_chunks),
+                    duration_sec=round(time.monotonic() - t_embed_start, 2),
                 )
             except Exception as exc:
                 logger.error(
@@ -380,10 +400,12 @@ class KnowledgeIngestionService:
                         tags=tags,
                     )
                     written += 1
-                    logger.debug(
+                    logger.info(
                         "ingestion.chunk_written",
                         chunk_index=chunk.chunk_index,
                         source_file=source_file,
+                        title=chunk.title,
+                        char_count=chunk.char_count,
                     )
                 except Exception as exc:
                     logger.error(
