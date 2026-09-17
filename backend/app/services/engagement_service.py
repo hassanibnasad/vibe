@@ -65,8 +65,29 @@ class EngagementService:
     async def get_review_queue(self, limit: int = 50) -> list[Message]:
         return await self.msg_repo.get_review_queue(limit=limit)
 
-    async def approve_reply(self, message_id: UUID) -> Message:
-        """Approve a staged AI reply and dispatch to social platform."""
+    async def dispatch_to_platform(self, message_id: UUID) -> bool:
+        """Dispatch a message to its conversation platform thread."""
+        message = await self.msg_repo.get_by_id(message_id)
+        if not message or not message.conversation_id:
+            return False
+
+        conv = await self.conv_repo.get_by_id(message.conversation_id)
+        if conv and conv.platform_thread_id:
+            try:
+                tool = self.platform_registry.get(message.platform or "linkedin")
+                await tool.send_reply(
+                    thread_id=conv.platform_thread_id,
+                    content=message.content,
+                )
+                logger.info("approved_reply_dispatched", message_id=str(message_id))
+                return True
+            except Exception as exc:
+                logger.warning("approved_reply_dispatch_error", error=str(exc))
+                raise
+        return False
+
+    async def approve_reply(self, message_id: UUID, dispatch_now: bool = True) -> Message:
+        """Approve a staged AI reply and optionally dispatch to social platform."""
         message = await self.msg_repo.get_by_id(message_id)
         if not message:
             raise NotFoundError(f"Message {message_id} not found")
@@ -77,19 +98,13 @@ class EngagementService:
             requires_review=False,
         )
 
-        # Dispatch to platform if conversation exists
-        if message.conversation_id:
-            conv = await self.conv_repo.get_by_id(message.conversation_id)
-            if conv and conv.platform_thread_id:
-                try:
-                    tool = self.platform_registry.get(message.platform or "linkedin")
-                    await tool.send_reply(
-                        thread_id=conv.platform_thread_id,
-                        content=message.content,
-                    )
-                    logger.info("approved_reply_dispatched", message_id=str(message_id))
-                except Exception as exc:
-                    logger.warning("approved_reply_dispatch_error", error=str(exc))
+        # Dispatch to platform if requested
+        if dispatch_now:
+            try:
+                await self.dispatch_to_platform(message_id)
+            except Exception:
+                # Direct invocation logs error but preserves approval state
+                pass
 
         return updated  # type: ignore[return-value]
 

@@ -24,7 +24,10 @@ from app.log_config import configure_logging
 
 # Import all Hatchet workflow / task objects so the worker knows what to register.
 from app.workflows.content_workflow import content_pipeline_task
-from app.workflows.engagement_workflow import engagement_pipeline_task
+from app.workflows.engagement_workflow import (
+    dispatch_approved_reply_task,
+    engagement_pipeline_task,
+)
 from app.workflows.ingestion_workflow import knowledge_ingestion_task
 from app.workflows.onboarding_workflow import tenant_onboarding_task
 from app.workflows.reflection_workflow import (
@@ -53,7 +56,8 @@ def main() -> None:
         # Cron workflows register their own cron schedule with Hatchet when the worker starts.
         workflows=[
             content_pipeline_task,            # standalone task → Hatchet wraps it internally
-            engagement_pipeline_task,         # standalone task
+            engagement_pipeline_task,         # standalone task (inbound webhook processing)
+            dispatch_approved_reply_task,     # standalone task (HITL review queue approved dispatch)
             knowledge_ingestion_task,         # standalone task — chunk/embed/upsert in background
             tenant_onboarding_task,            # standalone task — website scrape + brand synthesis
             scheduled_publish_cron_workflow,  # cron workflow (runs every minute)

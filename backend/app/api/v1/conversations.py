@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_engagement_service
+from app.hatchet_client import is_hatchet_configured
 from app.middleware.auth import get_current_user
 from app.schemas.conversation import (
     ConversationResponse,
@@ -13,6 +14,10 @@ from app.schemas.conversation import (
     ReviewItemResponse,
 )
 from app.services.engagement_service import EngagementService
+from app.workflows.engagement_workflow import (
+    DispatchApprovedReplyInput,
+    dispatch_approved_reply_task,
+)
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
@@ -70,7 +75,17 @@ async def approve_reply(
             message_id=message_id,
             alternative_reply=data.reply or data.alternative_reply,
         )
-    await engagement_service.approve_reply(message_id)
+
+    if is_hatchet_configured():
+        # Mark approved in DB immediately, then dispatch platform delivery via Hatchet worker
+        await engagement_service.approve_reply(message_id, dispatch_now=False)
+        await dispatch_approved_reply_task.aio_run_no_wait(
+            DispatchApprovedReplyInput(message_id=str(message_id))
+        )
+    else:
+        # Direct execution fallback mode
+        await engagement_service.approve_reply(message_id, dispatch_now=True)
+
     return ReviewActionResponse(status="approved", message_id=str(message_id))
 
 

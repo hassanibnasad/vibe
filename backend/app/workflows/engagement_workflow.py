@@ -65,3 +65,67 @@ async def engagement_pipeline_task(
 
     logger.info("engagement_pipeline_completed", platform=input.platform, result_keys=list(result.keys()))
     return result
+
+
+class DispatchApprovedReplyInput(BaseModel):
+    """Input schema for dispatching an operator-approved reply to social platform."""
+
+    message_id: str
+    custom_reply: str | None = None
+
+
+@hatchet.task(
+    name="dispatch-approved-reply",
+    input_validator=DispatchApprovedReplyInput,
+    retries=3,
+    execution_timeout=datetime.timedelta(minutes=2),
+)
+async def dispatch_approved_reply_task(
+    input: DispatchApprovedReplyInput,
+    ctx: Context,
+) -> dict[str, Any]:
+    """Durable worker task to dispatch an approved/edited message to the platform connector with retries."""
+    from uuid import UUID  # noqa: PLC0415
+
+    from app.dependencies import get_sessionmaker  # noqa: PLC0415
+    from app.repositories.conversation_repo import ConversationRepository  # noqa: PLC0415
+    from app.repositories.lead_repo import LeadRepository  # noqa: PLC0415
+    from app.repositories.message_repo import MessageRepository  # noqa: PLC0415
+    from app.services.engagement_service import EngagementService  # noqa: PLC0415
+    from app.tools.platform.registry import PlatformRegistry  # noqa: PLC0415
+
+    message_uuid = UUID(input.message_id)
+    session_factory = get_sessionmaker()
+    async with session_factory() as session:
+        lead_repo = LeadRepository(session)
+        conv_repo = ConversationRepository(session)
+        msg_repo = MessageRepository(session)
+        registry = PlatformRegistry()
+
+        engagement_service = EngagementService(
+            lead_repo=lead_repo,
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            platform_registry=registry,
+        )
+
+        if input.custom_reply:
+            await engagement_service.reject_or_edit_reply(
+                message_id=message_uuid,
+                alternative_reply=input.custom_reply,
+            )
+
+        updated_message = await engagement_service.approve_reply(message_uuid, dispatch_now=False)
+        await engagement_service.dispatch_to_platform(message_uuid)
+        await session.commit()
+
+    logger.info(
+        "dispatch_approved_reply_completed",
+        message_id=input.message_id,
+        review_status=updated_message.review_status,
+    )
+    return {
+        "status": "success",
+        "message_id": input.message_id,
+        "review_status": updated_message.review_status,
+    }
