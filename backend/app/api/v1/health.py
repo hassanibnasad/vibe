@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.dependencies import get_db_session, get_redis_client
+from app.hatchet_client import check_health as check_hatchet_health
 
 logger = structlog.get_logger()
 
@@ -20,6 +21,7 @@ async def health_check(session: AsyncSession = Depends(get_db_session)) -> dict:
         "api": "up",
         "database": "down",
         "redis": "down",
+        "hatchet": "fallback",
     }
 
     # Test Postgres connectivity
@@ -39,13 +41,23 @@ async def health_check(session: AsyncSession = Depends(get_db_session)) -> dict:
         logger.warning("redis_health_check_failed", error=str(e))
         services["redis"] = "down"
 
-    all_healthy = all(status == "up" for status in services.values())
+    # Test Hatchet connectivity / fallback mode
+    hatchet_status = check_hatchet_health()
+    if hatchet_status["configured"] and hatchet_status["status"] == "connected":
+        services["hatchet"] = "up"
+    elif hatchet_status["status"] == "degraded":
+        services["hatchet"] = "degraded"
+    else:
+        services["hatchet"] = "fallback"
+
+    all_healthy = services["database"] == "up" and services["redis"] == "up"
 
     return {
         "status": "ok" if all_healthy else "degraded",
         "environment": settings.APP_ENV,
         "database": "connected" if services["database"] == "up" else "disconnected",
         "redis": "connected" if services["redis"] == "up" else "disconnected",
+        "hatchet": hatchet_status,
         "llm_gateway": "online",
         "active_model": settings.LLM_MODEL_PRIMARY,
         "version": "1.0.0",

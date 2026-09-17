@@ -113,8 +113,44 @@ class _WorkflowWrapper:
         return decorator
 
 
+class _EventProxy:
+    """Safe proxy for Hatchet event publishing with direct fallback."""
+
+    async def aio_push(self, event_key: str, data: dict[str, Any]) -> None:
+        if is_hatchet_configured():
+            try:
+                client = get_hatchet()
+                if hasattr(client, "event") and hasattr(client.event, "aio_push"):
+                    await client.event.aio_push(event_key, data)
+                    return
+                elif hasattr(client, "event") and hasattr(client.event, "push"):
+                    client.event.push(event_key, data)
+                    return
+            except Exception as exc:
+                logger.warning("hatchet_event_push_failed", event=event_key, error=str(exc))
+        logger.debug("hatchet_event_push_fallback", event=event_key, payload=data)
+
+    def push(self, event_key: str, data: dict[str, Any]) -> None:
+        if is_hatchet_configured():
+            try:
+                client = get_hatchet()
+                if hasattr(client, "event") and hasattr(client.event, "push"):
+                    client.event.push(event_key, data)
+                    return
+            except Exception as exc:
+                logger.warning("hatchet_event_push_failed", event=event_key, error=str(exc))
+        logger.debug("hatchet_event_push_fallback", event=event_key, payload=data)
+
+
 class _LazyHatchet:
     """Transparent proxy that defers Hatchet initialisation until execution."""
+
+    def __init__(self) -> None:
+        self._event_proxy = _EventProxy()
+
+    @property
+    def event(self) -> _EventProxy:
+        return self._event_proxy
 
     def task(self, **kwargs: Any) -> Callable:
         def decorator(fn: Callable) -> _TaskWrapper:
@@ -129,6 +165,36 @@ class _LazyHatchet:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(get_hatchet(), name)
+
+
+def check_health() -> dict[str, Any]:
+    """Check Hatchet engine configuration and connectivity status."""
+    from app.config import settings  # noqa: PLC0415
+
+    if not settings.HATCHET_CLIENT_TOKEN:
+        return {
+            "status": "fallback",
+            "configured": False,
+            "mode": "direct_execution",
+            "message": "HATCHET_CLIENT_TOKEN is not set; running in direct async execution fallback mode.",
+        }
+
+    try:
+        # Validate client instantiation
+        get_hatchet()
+        return {
+            "status": "connected",
+            "configured": True,
+            "mode": "orchestrated",
+            "host": settings.HATCHET_HOST or "cloud.hatchet.run",
+        }
+    except Exception as exc:
+        return {
+            "status": "degraded",
+            "configured": True,
+            "mode": "fallback",
+            "error": str(exc),
+        }
 
 
 hatchet: Hatchet = _LazyHatchet()  # type: ignore[assignment]
