@@ -56,6 +56,21 @@ services:
     depends_on:
       - ollama
 
+  hatchet-engine:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest
+    container_name: vibeagent-hatchet-engine
+    restart: unless-stopped
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://vibeagent:vibeagent@postgres:5432/vibeagent
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - hatchet
+
 volumes:
   pgdata:
   redisdata:
