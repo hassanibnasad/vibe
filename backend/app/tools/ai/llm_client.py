@@ -49,6 +49,8 @@ class LLMClient:
             return settings.LLM_MODEL_FAST
         if norm in ("embed", "embedding"):
             return settings.LLM_EMBED_MODEL
+        if norm in ("muse-glimmer", "meta/muse-glimmer-30b", "muse-glimmer-30b"):
+            return "openai/meta/muse-glimmer-30b"
         # If user passes bare model name without provider prefix, default to ollama
         if "/" not in model:
             return f"ollama/{model}"
@@ -59,6 +61,10 @@ class LLMClient:
             return self.proxy_url
         if model.startswith("ollama/"):
             return self.ollama_base_url
+        if model.startswith("openai/") and settings.OPENAI_BASE_URL:
+            return settings.OPENAI_BASE_URL
+        if model.startswith("nvidia_nim/") and getattr(settings, "NVIDIA_BASE_URL", None):
+            return settings.NVIDIA_BASE_URL
         return None
 
     async def generate(
@@ -100,6 +106,10 @@ class LLMClient:
             kwargs["api_base"] = api_base
         if self.api_key:
             kwargs["api_key"] = self.api_key
+        elif target_model.startswith("openai/") and settings.OPENAI_API_KEY:
+            kwargs["api_key"] = settings.OPENAI_API_KEY
+        elif target_model.startswith("nvidia_nim/") and getattr(settings, "NVIDIA_API_KEY", None):
+            kwargs["api_key"] = settings.NVIDIA_API_KEY
         if response_format:
             kwargs["response_format"] = response_format
         if fallback_models:
@@ -111,6 +121,8 @@ class LLMClient:
 
             choice = response.choices[0]
             output_text = choice.message.content or ""
+            if not output_text and getattr(choice.message, "reasoning_content", None):
+                output_text = choice.message.reasoning_content or ""
             actual_model = getattr(response, "model", target_model)
             usage = getattr(response, "usage", None)
             tokens_used = usage.total_tokens if usage else 0

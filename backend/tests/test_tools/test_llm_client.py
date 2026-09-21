@@ -21,6 +21,26 @@ async def test_llm_client_model_resolution():
     assert client._resolve_model_name("embed") == settings.LLM_EMBED_MODEL
     assert client._resolve_model_name("gpt-4o-mini") == "ollama/gpt-4o-mini"
     assert client._resolve_model_name("openai/gpt-4o") == "openai/gpt-4o"
+    assert client._resolve_model_name("meta/muse-glimmer-30b") == "openai/meta/muse-glimmer-30b"
+
+
+@pytest.mark.asyncio
+async def test_llm_client_reasoning_content_fallback():
+    mock_choice = SimpleNamespace(
+        message=SimpleNamespace(content="", reasoning_content="Thinking process with final answer: 9.8 is larger.")
+    )
+    mock_resp = SimpleNamespace(
+        choices=[mock_choice],
+        model="openai/meta/muse-glimmer-30b",
+        usage=SimpleNamespace(total_tokens=120),
+        _response_cost=0.0,
+    )
+
+    with patch("litellm.acompletion", new=AsyncMock(return_value=mock_resp)):
+        client = LLMClient()
+        result = await client.generate(prompt="Compare numbers", model="meta/muse-glimmer-30b")
+        assert result.text == "Thinking process with final answer: 9.8 is larger."
+
 
 
 @pytest.mark.asyncio
@@ -29,7 +49,7 @@ async def test_llm_client_successful_generation():
     mock_usage = SimpleNamespace(total_tokens=85)
     mock_resp = SimpleNamespace(
         choices=[mock_choice],
-        model="ollama/llama3.1:8b",
+        model=settings.LLM_MODEL_FAST,
         usage=mock_usage,
         _response_cost=0.00012,
     )
@@ -46,12 +66,14 @@ async def test_llm_client_successful_generation():
 
 
 @pytest.mark.asyncio
-async def test_llm_client_fallback_to_fast_model():
+async def test_llm_client_fallback_to_fast_model(monkeypatch):
+    monkeypatch.setattr(settings, "LLM_MODEL_PRIMARY", "provider/primary-model")
+    monkeypatch.setattr(settings, "LLM_MODEL_FAST", "provider/fast-model")
     mock_choice = SimpleNamespace(message=SimpleNamespace(content="Fallback generated post from 8B model."))
     mock_usage = SimpleNamespace(total_tokens=45)
     mock_resp = SimpleNamespace(
         choices=[mock_choice],
-        model="ollama/llama3.1:8b",  # actual model returned was the fallback
+        model="provider/fast-model",  # actual model returned was the fallback
         usage=mock_usage,
         _response_cost=0.0,
     )
@@ -60,12 +82,12 @@ async def test_llm_client_fallback_to_fast_model():
         client = LLMClient()
         result = await client.generate(
             prompt="Analyze trends",
-            model="primary",  # requested 70B, but resolved to 8B fallback
+            model="primary",  # requested primary, but resolved to fallback
             allow_fallback=True,
         )
 
         assert result.fallback_used is True
-        assert result.model == settings.LLM_MODEL_FAST
+        assert result.model == "provider/fast-model"
         assert "Fallback generated post" in result.text
 
 
@@ -76,7 +98,7 @@ async def test_llm_client_generate_structured():
     )
     mock_resp = SimpleNamespace(
         choices=[mock_choice],
-        model="ollama/llama3.1:8b",
+        model=settings.LLM_MODEL_FAST,
         usage=SimpleNamespace(total_tokens=50),
         _response_cost=0.0,
     )

@@ -32,6 +32,9 @@ class Settings(BaseSettings):
 
     # Cloud Provider Keys (Optional)
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""
+    NVIDIA_API_KEY: str = ""
+    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     GROQ_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
@@ -132,7 +135,16 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    st = Settings()
+    import os
+    if st.OPENAI_API_KEY and not os.environ.get("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = st.OPENAI_API_KEY
+    if st.OPENAI_BASE_URL and not os.environ.get("OPENAI_BASE_URL"):
+        os.environ["OPENAI_BASE_URL"] = st.OPENAI_BASE_URL
+        os.environ.setdefault("OPENAI_API_BASE", st.OPENAI_BASE_URL)
+    if st.NVIDIA_API_KEY and not os.environ.get("NVIDIA_NIM_API_KEY"):
+        os.environ["NVIDIA_NIM_API_KEY"] = st.NVIDIA_API_KEY
+    return st
 
 
 settings = get_settings()

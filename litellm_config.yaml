@@ -25,6 +25,12 @@ model_list:
       model: groq/llama-3.1-8b-instant
       api_key: os.environ/GROQ_API_KEY
 
+  - model_name: meta/muse-glimmer-30b
+    litellm_params:
+      model: openai/meta/muse-glimmer-30b
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/OPENAI_API_KEY
+
 router_settings:
   routing_strategy: usage-based-routing
   fallbacks:
