@@ -23,6 +23,9 @@ class Post(BaseModel):
     platform_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("platforms.id", ondelete="CASCADE"), index=True
     )
+    social_connection_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("social_connections.id", ondelete="SET NULL"), index=True
+    )
 
     content: Mapped[str] = mapped_column(Text, nullable=False)
     media_urls: Mapped[list] = mapped_column(JSONB, default=list)
@@ -49,6 +52,8 @@ class Post(BaseModel):
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
     variant_group: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     variant_label: Mapped[str | None] = mapped_column(String(10))
+    current_revision_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    approved_revision_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
 
     # Denormalized composite conversion score from content_performance.
     # Enables fast ORDER BY without joining; kept in sync by TelemetryService.
