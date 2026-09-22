@@ -11,21 +11,21 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ── Application ──
+    # â”€â”€ Application â”€â”€
     APP_NAME: str = "VibeAgent"
     APP_ENV: str = "development"
     APP_DEBUG: bool = False
     APP_SECRET_KEY: str = "dev-secret-key-change-in-production-vibeagent"
 
-    # ── Database ──
+    # â”€â”€ Database â”€â”€
     DATABASE_URL: str = "postgresql+asyncpg://vibeagent:vibeagent@localhost:5432/vibeagent"
     DATABASE_POOL_SIZE: int = 20
     DATABASE_ECHO: bool = False
 
-    # ── Redis ──
+    # â”€â”€ Redis â”€â”€
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # ── LiteLLM & AI Gateway ──
+    # â”€â”€ LiteLLM & AI Gateway â”€â”€
     LITELLM_PROXY_URL: str = ""
     LITELLM_API_KEY: str = ""
     LITELLM_DROP_PARAMS: bool = True
@@ -53,41 +53,48 @@ class Settings(BaseSettings):
     LLM_MODEL_FAST: str = "ollama/llama3.1:8b"
     LLM_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"
 
-    # ── Agent Thresholds ──
+    # â”€â”€ Agent Thresholds â”€â”€
     REPLY_CONFIDENCE_THRESHOLD: float = 0.75
     MAX_RETRIES: int = 3
 
-    # ── Hatchet Workflow Engine ──
+    # â”€â”€ Hatchet Workflow Engine â”€â”€
     HATCHET_CLIENT_TOKEN: str = ""
     HATCHET_HOST: str = ""
 
-    # ── Authentik (Auth/IAM) ──
+    # â”€â”€ Authentik (Auth/IAM) â”€â”€
     AUTHENTIK_BASE_URL: str = ""
     AUTHENTIK_CLIENT_ID: str = ""
     AUTHENTIK_CLIENT_SECRET: str = ""
 
-    # ── RustFS Object Storage ──
+    # â”€â”€ RustFS Object Storage â”€â”€
     RUSTFS_ENDPOINT: str = ""
     RUSTFS_ACCESS_KEY: str = ""
     RUSTFS_SECRET_KEY: str = ""
     RUSTFS_BUCKET: str = ""
 
-    # ── Social Platforms (Optional per platform) ──
+    # â”€â”€ Social Platforms (Optional per platform) â”€â”€
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
+    LINKEDIN_REDIRECT_URI: str = ""
+    LINKEDIN_API_VERSION: str = ""
+    # Legacy application-level settings. New publications use SocialConnection.
     LINKEDIN_ACCESS_TOKEN: str = ""
     LINKEDIN_ORGANIZATION_ID: str = ""
 
-    # ── Webhooks ──
+    # Encrypted social credential storage and browser redirect destination.
+    TOKEN_ENCRYPTION_KEY: str = ""
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
+
+    # â”€â”€ Webhooks â”€â”€
     WEBHOOK_SECRET: str = "dev-webhook-secret-vibeagent"
 
-    # ── Monitoring & Observability ──
+    # â”€â”€ Monitoring & Observability â”€â”€
     PROMETHEUS_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
 
-    # ── Knowledge Ingestion ──────────────────────────────────────────────────
-    # Maximum approximate tokens per chunk (1 tok ≈ 4 chars).
+    # â”€â”€ Knowledge Ingestion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Maximum approximate tokens per chunk (1 tok â‰ˆ 4 chars).
     # Kept at 400 to leave headroom under MiniLM's 512-token context limit.
     INGESTION_CHUNK_SIZE: int = 400
     # Overlap tokens between sliding-window sub-chunks.
@@ -97,7 +104,7 @@ class Settings(BaseSettings):
     # Maximum upload file size in megabytes for the /knowledge/upload endpoint.
     INGESTION_MAX_FILE_SIZE_MB: int = 50
 
-    # ── RAG Retrieval ────────────────────────────────────────────────────────
+    # â”€â”€ RAG Retrieval â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Number of candidates to pull from vector search (Phase 1).
     RAG_TOP_K: int = 20
     # Number of results to return after cross-encoder re-ranking (Phase 2).
@@ -109,7 +116,7 @@ class Settings(BaseSettings):
     # Set to False on latency-sensitive paths (e.g. real-time streaming replies).
     RAG_RERANK_ENABLED: bool = True
 
-    # ── Embedding Service ────────────────────────────────────────────────────
+    # â”€â”€ Embedding Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Backend strategy: "fastembed" (in-process ONNX, $0) or "litellm" (external).
     EMBEDDING_BACKEND: str = "fastembed"
     # Model identifier for the FastEmbed backend (ignored when EMBEDDING_BACKEND=litellm).
@@ -123,7 +130,7 @@ class Settings(BaseSettings):
     # Embedding cache TTL in seconds (default: 7 days).
     EMBEDDING_CACHE_TTL: int = 604800
 
-    # ── Brand Extraction ─────────────────────────────────────────────────────
+    # â”€â”€ Brand Extraction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Vision-capable LLM model for screenshot analysis (empty = skip vision step).
     # Examples: "gemini/gemini-2.0-flash", "openai/gpt-4o", "together_ai/meta-llama/Llama-Vision-Free"
     VISION_LLM_MODEL: str = ""

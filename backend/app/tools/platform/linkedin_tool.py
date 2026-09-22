@@ -19,26 +19,32 @@ class LinkedInTool(BasePlatformTool):
         self,
         access_token: str | None = None,
         organization_id: str | None = None,
+        author_urn: str | None = None,
         http_client: httpx.AsyncClient | None = None,
         rate_limiter: SlidingWindowRateLimiter | None = None,
         rate_limit: int = 20,
     ):
         self.access_token = access_token or settings.LINKEDIN_ACCESS_TOKEN
         self.organization_id = organization_id or settings.LINKEDIN_ORGANIZATION_ID
+        self.author_urn = author_urn
         self.http_client = http_client or httpx.AsyncClient(timeout=30.0)
         self.rate_limiter = rate_limiter or SlidingWindowRateLimiter(default_limit=100, window_seconds=60)
         self.rate_limit = rate_limit
         self.api_base = "https://api.linkedin.com"
 
     def _headers(self) -> dict[str, str]:
-        return {
+        headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
             "X-Restli-Protocol-Version": "2.0.0",
-            "LinkedIn-Version": "202401",
         }
+        if settings.LINKEDIN_API_VERSION:
+            headers["LinkedIn-Version"] = settings.LINKEDIN_API_VERSION
+        return headers
 
     def _author_urn(self) -> str:
+        if self.author_urn:
+            return self.author_urn
         if self.organization_id:
             return f"urn:li:organization:{self.organization_id}"
         return "urn:li:person:me"
@@ -56,7 +62,7 @@ class LinkedInTool(BasePlatformTool):
         # Assemble formatted text
         full_text = content.strip()
         if cta and cta not in full_text:
-            full_text = f"{full_text}\n\n👉 {cta}"
+            full_text = f"{full_text}\n\nðŸ‘‰ {cta}"
         if hashtags:
             clean_tags = " ".join(t if t.startswith("#") else f"#{t}" for t in hashtags)
             full_text = f"{full_text}\n\n{clean_tags}"
