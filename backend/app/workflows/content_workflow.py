@@ -28,6 +28,8 @@ class ContentPipelineInput(BaseModel):
     campaign_id: str | None = None
     variants_count: int = 1
     auto_publish: bool = False
+    tenant_id: str | None = None
+    operator_id: str | None = None
 
 
 @hatchet.task(
@@ -40,13 +42,14 @@ async def content_pipeline_task(
     input: ContentPipelineInput,
     ctx: Context,
 ) -> dict:
-    """Orchestrates: Generate → Save Draft → (Optional Auto-Publish if high confidence)."""
+    """Orchestrates: Generate â†’ Save Draft â†’ (Optional Auto-Publish if high confidence)."""
     from app.dependencies import get_sessionmaker  # noqa: PLC0415
     from app.repositories.post_repo import PostRepository  # noqa: PLC0415
     from app.services.content_service import ContentService  # noqa: PLC0415
 
     platform_id = UUID(input.platform_id)
     campaign_id = UUID(input.campaign_id) if input.campaign_id else None
+    tenant_id = UUID(input.tenant_id) if input.tenant_id else None
 
     session_factory = get_sessionmaker()
     async with session_factory() as session:
@@ -61,6 +64,7 @@ async def content_pipeline_task(
                 tone=input.tone,
                 campaign_id=campaign_id,
                 variants_count=input.variants_count,
+                tenant_id=tenant_id,
             )
             await session.commit()
             logger.info(
@@ -86,9 +90,7 @@ async def content_pipeline_task(
             campaign_id=campaign_id,
         )
 
-        # 2. Auto-publish if requested and confidence is high enough
-        if input.auto_publish and not post.requires_review:
-            post = await content_service.publish_now(post_id=post.id, platform_type=input.platform_type)
+        # Publishing always requires an explicit Operator approval and connection selection.
 
         await session.commit()
 
