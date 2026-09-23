@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import AgentResult, BaseAgent
 from app.exceptions import LeadNotFoundError, LLMError
-from app.models.enums import calculate_lead_stage
+from app.models.enums import (
+    BANT_AUTHORITY_WEIGHT,
+    BANT_BUDGET_WEIGHT,
+    BANT_NEED_WEIGHT,
+    BANT_TIMELINE_WEIGHT,
+    calculate_lead_stage,
+)
 from app.models.lead import Lead
 from app.models.lead_field_history import LeadFieldHistory
 from app.tools.ai.llm_client import LLMClient
@@ -38,26 +44,32 @@ class BantExtraction(BaseModel):
 
 
 def compute_bant_score(lead_or_dict: Lead | dict) -> int:
-    """Deterministic score calculation based on verified BANT criteria."""
+    """Deterministic score calculation based on verified BANT criteria.
+
+    Each component contributes its canonical weight (from enums.BANT_*_WEIGHT).
+    A component is counted when its field is any truthy non-null value.
+    The maximum deterministic score is 100; LLM heuristic deltas can push
+    the total score above or below within the [0, 100] clamp applied by callers.
+    """
     score = 0
     if isinstance(lead_or_dict, dict):
         if lead_or_dict.get("budget"):
-            score += 25
+            score += BANT_BUDGET_WEIGHT
         if lead_or_dict.get("authority"):
-            score += 25
+            score += BANT_AUTHORITY_WEIGHT
         if lead_or_dict.get("need"):
-            score += 25
+            score += BANT_NEED_WEIGHT
         if lead_or_dict.get("timeline"):
-            score += 25
+            score += BANT_TIMELINE_WEIGHT
     else:
         if lead_or_dict.budget:
-            score += 25
+            score += BANT_BUDGET_WEIGHT
         if lead_or_dict.authority:
-            score += 25
+            score += BANT_AUTHORITY_WEIGHT
         if lead_or_dict.need:
-            score += 25
+            score += BANT_NEED_WEIGHT
         if lead_or_dict.timeline:
-            score += 25
+            score += BANT_TIMELINE_WEIGHT
     return score
 
 
