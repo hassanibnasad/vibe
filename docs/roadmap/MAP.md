@@ -15,17 +15,18 @@ Deliver a functional, production-grade **VibeAgent Phase 1 MVP End-to-End Pipeli
 
 - [001-cloud-llm-and-embedding-strategy.md](./tickets/001-cloud-llm-and-embedding-strategy.md): Configured LiteLLM gateway to support zero-GPU cloud execution via Groq (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`), Gemini Flash, and DeepSeek, with CPU-based and OpenAI vector embeddings.
 - [002-frontend-scaffold-and-api-client-seam.md](./tickets/002-frontend-scaffold-and-api-client-seam.md): Scaffolded Next.js 14 frontend with Tailwind CSS, shadcn/ui components, assistant-ui AI copilot, executive analytics dashboard, HITL review queue, BANT lead Kanban, and visual content calendar.
+- [003-linkedin-api-and-webhook-lifecycle.md](./tickets/003-linkedin-api-and-webhook-lifecycle.md): Implemented personal-profile LinkedIn OAuth (3-legged, `openid profile w_member_social`), encrypted token storage (Fernet), draft-review lifecycle (approve / request-revision / reject), idempotent publication service, `SocialConnection` / `OAuthState` / `PostRevision` / `PublicationAttempt` models + repos, connectors REST router, and 122-test green suite. Webhooks, Page publishing, and programmatic token refresh are explicitly deferred to a later gated tier.
 
 ## Frontier & Open Tickets
 
 1. ⚡ [001-cloud-llm-and-embedding-strategy.md](./tickets/001-cloud-llm-and-embedding-strategy.md) (`wayfinder:grilling`) — Select and configure cloud LLM & embedding providers (Groq / OpenRouter / Gemini) for zero-GPU local development.
 2. ✅ [002-frontend-scaffold-and-api-client-seam.md](./tickets/002-frontend-scaffold-and-api-client-seam.md) (`wayfinder:prototype`) — Scaffold Next.js 14 frontend with Tailwind/shadcn, Enterprise UI design system, and establish OpenAPI client generation.
-3. ⚡ [003-linkedin-api-and-webhook-lifecycle.md](./tickets/003-linkedin-api-and-webhook-lifecycle.md) (`wayfinder:research`) — Investigate LinkedIn Marketing API OAuth2 token refresh, webhook payloads, and test sandboxing.
+3. ✅ [003-linkedin-api-and-webhook-lifecycle.md](./tickets/003-linkedin-api-and-webhook-lifecycle.md) (`wayfinder:research`) — Personal-profile OAuth flow, token cipher, draft review, publication service, connectors router, 122 tests green.
 4. ✅ [004-hatchet-workflow-orchestration-and-review-pause.md](./tickets/004-hatchet-workflow-orchestration-and-review-pause.md) (`wayfinder:grilling`) — Define async worker topology, retry policies, and human-in-the-loop review queue pause/resume logic.
 5. 🔒 [005-bant-lead-scoring-and-funnel-transitions.md](./tickets/005-bant-lead-scoring-and-funnel-transitions.md) (`wayfinder:grilling`) — Solidify lead scoring mathematical weighting and automated stage transitions (`cold` → `warm` → `hot` → `mql` → `sql`). *(Blocked by #001)*
 6. 🔒 [006-review-queue-and-calendar-ui-components.md](./tickets/006-review-queue-and-calendar-ui-components.md) (`wayfinder:prototype`) — Build interactive review queue and content calendar views in Next.js. *(Blocked by #002)*
 7. 🔒 [007-database-migrations-and-seed-fixtures.md](./tickets/007-database-migrations-and-seed-fixtures.md) (`wayfinder:task`) — Validate Alembic migrations against PostgreSQL 16 + pgvector and build seed scripts for mock campaigns and leads. *(Blocked by #001)*
-8. 🔒 [008-end-to-end-integration-and-dod-verification.md](./tickets/008-end-to-end-integration-and-dod-verification.md) (`wayfinder:grilling`) — End-to-end integration test harness and full Docker Compose verification. *(Blocked by #003, #004, #005, #006, #007)*
+8. 🔒 [008-end-to-end-integration-and-dod-verification.md](./tickets/008-end-to-end-integration-and-dod-verification.md) (`wayfinder:grilling`) — End-to-end integration test harness and full Docker Compose verification. *(Blocked by #005, #006, #007)*
 
 ## Not yet specified
 
