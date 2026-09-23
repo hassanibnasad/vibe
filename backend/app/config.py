@@ -42,16 +42,28 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     TOGETHER_API_KEY: str = ""
 
+    # ── Image Generation ───────────────────────────────────────────────────────
+    # Provider: "together" (Flux-Schnell, free tier) | "pollinations" (no key) | "" (disabled)
+    IMAGE_GEN_PROVIDER: str = "together"
+    # Together AI model for image generation (Flux-Schnell is free on Together's free tier)
+    IMAGE_GEN_MODEL: str = "black-forest-labs/FLUX.1-schnell-Free"
+    # Default output size; Together Flux supports 1024x1024 max
+    IMAGE_GEN_WIDTH: int = 1024
+    IMAGE_GEN_HEIGHT: int = 1024
+    # Max images per request
+    IMAGE_GEN_STEPS: int = 4
+
     # Legacy / Direct Ollama Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL_PRIMARY: str = "ollama/llama3.1:70b"
     OLLAMA_MODEL_FAST: str = "ollama/llama3.1:8b"
     OLLAMA_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"
 
-    # Unified Model Names
-    LLM_MODEL_PRIMARY: str = "ollama/llama3.1:70b"
-    LLM_MODEL_FAST: str = "ollama/llama3.1:8b"
-    LLM_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"
+    # Unified Model Names — override these in .env to switch providers
+    # Defaults to Groq cloud (zero-GPU, free tier, ~500 tok/s)
+    LLM_MODEL_PRIMARY: str = "groq/llama-3.3-70b-versatile"
+    LLM_MODEL_FAST: str = "groq/llama-3.1-8b-instant"
+    LLM_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"  # unused: embedding uses fastembed
 
     # â”€â”€ Agent Thresholds â”€â”€
     REPLY_CONFIDENCE_THRESHOLD: float = 0.75
@@ -144,13 +156,23 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     st = Settings()
     import os
-    if st.OPENAI_API_KEY and not os.environ.get("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = st.OPENAI_API_KEY
-    if st.OPENAI_BASE_URL and not os.environ.get("OPENAI_BASE_URL"):
-        os.environ["OPENAI_BASE_URL"] = st.OPENAI_BASE_URL
-        os.environ.setdefault("OPENAI_API_BASE", st.OPENAI_BASE_URL)
-    if st.NVIDIA_API_KEY and not os.environ.get("NVIDIA_NIM_API_KEY"):
-        os.environ["NVIDIA_NIM_API_KEY"] = st.NVIDIA_API_KEY
+    # Inject provider keys into os.environ so LiteLLM's native provider detection works
+    # for all call sites without per-call plumbing.
+    _env_map = {
+        "OPENAI_API_KEY": st.OPENAI_API_KEY,
+        "OPENAI_API_BASE": st.OPENAI_BASE_URL,
+        "OPENAI_BASE_URL": st.OPENAI_BASE_URL,
+        "GROQ_API_KEY": st.GROQ_API_KEY,
+        "GEMINI_API_KEY": st.GEMINI_API_KEY,
+        "DEEPSEEK_API_KEY": st.DEEPSEEK_API_KEY,
+        "OPENROUTER_API_KEY": st.OPENROUTER_API_KEY,
+        "TOGETHERAI_API_KEY": st.TOGETHER_API_KEY,
+        "ANTHROPIC_API_KEY": st.ANTHROPIC_API_KEY,
+        "NVIDIA_NIM_API_KEY": st.NVIDIA_API_KEY,
+    }
+    for key, value in _env_map.items():
+        if value and not os.environ.get(key):
+            os.environ[key] = value
     return st
 
 

@@ -43,22 +43,38 @@ class LLMClient:
         if not model:
             return settings.LLM_MODEL_FAST
         norm = model.lower()
-        if norm in ("primary", "70b", "llama-70b", "llama3.1:70b"):
+        # Semantic aliases -> configured model names
+        if norm in ("primary", "70b", "llama-70b", "llama3.1:70b", "llama-3.3-70b"):
             return settings.LLM_MODEL_PRIMARY
-        if norm in ("fast", "8b", "llama-8b", "llama3.1:8b"):
+        if norm in ("fast", "8b", "llama-8b", "llama3.1:8b", "llama-3.1-8b"):
             return settings.LLM_MODEL_FAST
         if norm in ("embed", "embedding"):
             return settings.LLM_EMBED_MODEL
         if norm in ("muse-glimmer", "meta/muse-glimmer-30b", "muse-glimmer-30b"):
             return "openai/meta/muse-glimmer-30b"
-        # If user passes bare model name without provider prefix, default to ollama
+        # If bare name without provider prefix, default to Ollama for local compat
         if "/" not in model:
             return f"ollama/{model}"
         return model
 
+    # Cloud providers whose base URL is managed by LiteLLM natively via env keys.
+    _CLOUD_PREFIXES = (
+        "groq/",
+        "gemini/",
+        "deepseek/",
+        "openrouter/",
+        "together_ai/",
+        "anthropic/",
+        "cohere/",
+        "mistral/",
+    )
+
     def _get_api_base(self, model: str) -> str | None:
         if self.proxy_url:
             return self.proxy_url
+        # Cloud providers: LiteLLM handles base URL via env keys — don't override.
+        if any(model.startswith(p) for p in self._CLOUD_PREFIXES):
+            return None
         if model.startswith("ollama/"):
             return self.ollama_base_url
         if model.startswith("openai/") and settings.OPENAI_BASE_URL:

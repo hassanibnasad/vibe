@@ -1,10 +1,39 @@
 model_list:
+  # ── Primary: Groq (cloud, ~500 tok/s, free tier) ──────────────────────────
   - model_name: general-fast
+    litellm_params:
+      model: groq/llama-3.1-8b-instant
+      api_key: os.environ/GROQ_API_KEY
+
+  - model_name: general-complex
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+
+  # ── Secondary: Google Gemini Flash (free up to 1M tok/day) ────────────────
+  - model_name: gemini-flash
+    litellm_params:
+      model: gemini/gemini-2.0-flash-lite
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: gemini-flash-complex
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  # ── Cheap alternative: DeepSeek ($0.07/1M input tokens) ───────────────────
+  - model_name: deepseek-chat
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  # ── Local Ollama (fallback for offline / no-key development) ───────────────
+  - model_name: ollama-fast
     litellm_params:
       model: ollama/llama3.1:8b
       api_base: http://ollama:11434
 
-  - model_name: general-complex
+  - model_name: ollama-complex
     litellm_params:
       model: ollama/llama3.1:70b
       api_base: http://ollama:11434
@@ -14,28 +43,27 @@ model_list:
       model: ollama/all-minilm:l6-v2
       api_base: http://ollama:11434
 
-  # Optional Cloud Models (Enabled if keys present)
+  # ── Vision / Structured tasks ──────────────────────────────────────────────
+  - model_name: gemini-vision
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  # ── OpenAI (optional, if key present) ─────────────────────────────────────
   - model_name: gpt-4o-mini
     litellm_params:
       model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
 
-  - model_name: groq-fast
-    litellm_params:
-      model: groq/llama-3.1-8b-instant
-      api_key: os.environ/GROQ_API_KEY
-
-  - model_name: meta/muse-glimmer-30b
-    litellm_params:
-      model: openai/meta/muse-glimmer-30b
-      api_base: https://integrate.api.nvidia.com/v1
-      api_key: os.environ/OPENAI_API_KEY
-
 router_settings:
   routing_strategy: usage-based-routing
   fallbacks:
-    - general-complex: ["general-fast"]
+    - general-complex: ["general-fast", "gemini-flash-complex", "deepseek-chat"]
+    - general-fast: ["gemini-flash", "ollama-fast"]
 
 litellm_settings:
   drop_params: true
   set_verbose: false
+  # Budget guardrail: alert when proxy spend exceeds $5/day
+  max_budget: 5.0
+  budget_duration: 1d
