@@ -11,6 +11,7 @@ import {
   Database,
   Sparkles,
   Radio,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -31,9 +32,10 @@ const navigationGroups: NavGroup[] = [
   {
     label: "OPERATE",
     items: [
-      { name: "Command Center", href: "/", icon: LayoutDashboard },
-      { name: "Review Queue", href: "/review-queue", icon: Inbox, countKey: "review_queue_pending" },
-      { name: "Content Studio", href: "/studio", icon: FileEdit },
+      { name: "Command Center",    href: "/",              icon: LayoutDashboard },
+      { name: "Review Queue",      href: "/review-queue",  icon: Inbox, countKey: "review_queue_pending" },
+      { name: "Content Calendar",  href: "/calendar",      icon: CalendarDays },
+      { name: "Content Studio",    href: "/studio",        icon: FileEdit },
     ],
   },
   {
