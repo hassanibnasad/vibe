@@ -105,8 +105,23 @@ export default function DashboardPage() {
     review_queue_pending: 0,
     total_leads: 0,
     mql_sql_leads: 0,
+    avg_reply_confidence: 0,
     avg_response_time_sec: 0.0,
+    sentiment_distribution: {
+      positive: 0,
+      neutral: 0,
+      inquisitive: 0,
+      negative: 0,
+    },
+    leads_by_stage: {
+      cold: 0,
+      warm: 0,
+      hot: 0,
+      mql: 0,
+      sql: 0,
+    },
     recent_posts: [],
+    review_queue: [],
   };
 
   const kpis = [
@@ -291,7 +306,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="divide-y divide-white/[0.05]">
-                {metrics.recent_posts.map((post) => (
+                {activeMetrics.recent_posts.map((post) => (
                   <div
                     key={post.id}
                     className="p-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors"
