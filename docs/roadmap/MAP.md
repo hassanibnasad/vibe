@@ -26,9 +26,9 @@ Deliver a functional, production-grade **VibeAgent Phase 1 MVP End-to-End Pipeli
 3. ✅ [003-linkedin-api-and-webhook-lifecycle.md](./tickets/003-linkedin-api-and-webhook-lifecycle.md) (`wayfinder:research`) — Personal-profile OAuth flow, token cipher, draft review, publication service, connectors router, 122 tests green.
 4. ✅ [004-hatchet-workflow-orchestration-and-review-pause.md](./tickets/004-hatchet-workflow-orchestration-and-review-pause.md) (`wayfinder:grilling`) — Define async worker topology, retry policies, and human-in-the-loop review queue pause/resume logic.
 5. ✅ [005-bant-lead-scoring-and-funnel-transitions.md](./tickets/005-bant-lead-scoring-and-funnel-transitions.md) (`wayfinder:grilling`) — BANT matrix 25 pts/dimension, thresholds 0/20/50/75/90, 30-day decay, 157 tests green.
-6. 🔒 [006-review-queue-and-calendar-ui-components.md](./tickets/006-review-queue-and-calendar-ui-components.md) (`wayfinder:prototype`) — Build interactive review queue and content calendar views in Next.js. *(Blocked by #002)*
+6. ✅ [006-review-queue-and-calendar-ui-components.md](./tickets/006-review-queue-and-calendar-ui-components.md) (`wayfinder:prototype`) — Interactive month calendar, post draft queue with keyboard shortcuts, /calendar route.
 7. ✅ [007-database-migrations-and-seed-fixtures.md](./tickets/007-database-migrations-and-seed-fixtures.md) (`wayfinder:task`) — Migration 005 (connector tables + RLS), idempotent dev seed script.
-8. 🔒 [008-end-to-end-integration-and-dod-verification.md](./tickets/008-end-to-end-integration-and-dod-verification.md) (`wayfinder:grilling`) — End-to-end integration test harness and full Docker Compose verification. *(Blocked by #006)*
+8. ✅ [008-end-to-end-integration-and-dod-verification.md](./tickets/008-end-to-end-integration-and-dod-verification.md) (`wayfinder:grilling`) — Synthetic 10-stage E2E integration test, service verification suite, and full DoD matrix validated.
 
 ## Not yet specified
 
