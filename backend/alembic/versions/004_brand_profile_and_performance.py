@@ -4,9 +4,10 @@ Revision ID: 004
 Revises: 003_knowledge_1024_model
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "004_brand_profile_and_performance"
 down_revision = "003_knowledge_1024_model"
@@ -49,6 +50,53 @@ def upgrade() -> None:
         """
     )
 
+    # ── posts ─────────────────────────────────────────────────────────────────
+    op.create_table(
+        "posts",
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+        sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("campaign_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True),
+        sa.Column("platform_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("platforms.id", ondelete="CASCADE"), nullable=True),
+        sa.Column("content", sa.Text, nullable=False),
+        sa.Column("media_urls", postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("hashtags", postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("cta", sa.Text, nullable=True),
+        sa.Column("platform_post_id", sa.String(255), nullable=True),
+        sa.Column("platform_post_url", sa.String(500), nullable=True),
+        sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
+        sa.Column("error_message", sa.Text, nullable=True),
+        sa.Column("retry_count", sa.Integer, nullable=False, server_default="0"),
+        sa.Column("scheduled_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("engagement_metrics", postgresql.JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("ai_generated", sa.Boolean, nullable=False, server_default="false"),
+        sa.Column("confidence_score", sa.Float, nullable=True),
+        sa.Column("requires_review", sa.Boolean, nullable=False, server_default="false"),
+        sa.Column("generation_prompt", sa.Text, nullable=True),
+        sa.Column("rag_sources", postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("metadata", postgresql.JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("variant_group", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("variant_label", sa.String(10), nullable=True),
+        sa.Column("current_revision_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("approved_revision_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("conversion_score", sa.Float, nullable=False, server_default="0.0"),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+    )
+    op.create_index("ix_posts_tenant_id", "posts", ["tenant_id"])
+    op.create_index("ix_posts_campaign_id", "posts", ["campaign_id"])
+    op.create_index("ix_posts_platform_id", "posts", ["platform_id"])
+    op.create_index("ix_posts_status", "posts", ["status"])
+    op.create_index("ix_posts_scheduled_at", "posts", ["scheduled_at"])
+    op.create_index("ix_posts_published_at", "posts", ["published_at"])
+    op.create_index("ix_posts_conversion_score", "posts", ["conversion_score"])
+
+    op.execute("ALTER TABLE posts ENABLE ROW LEVEL SECURITY")
+    op.execute("""
+        CREATE POLICY tenant_isolation_posts ON posts
+        USING (tenant_id::text = current_setting('app.current_tenant', true))
+    """)
+
     # ── content_performance ───────────────────────────────────────────────────
     op.create_table(
         "content_performance",
@@ -85,17 +133,13 @@ def upgrade() -> None:
         """
     )
 
-    # ── posts.conversion_score ────────────────────────────────────────────────
-    op.add_column("posts", sa.Column("conversion_score", sa.Float, server_default="0.0", nullable=False))
-    op.create_index("ix_posts_conversion_score", "posts", ["conversion_score"])
-
 
 def downgrade() -> None:
-    op.drop_index("ix_posts_conversion_score", table_name="posts")
-    op.drop_column("posts", "conversion_score")
-
     op.execute("DROP POLICY IF EXISTS tenant_isolation_content_performance ON content_performance")
     op.drop_table("content_performance")
+
+    op.execute("DROP POLICY IF EXISTS tenant_isolation_posts ON posts")
+    op.drop_table("posts")
 
     op.execute("DROP POLICY IF EXISTS tenant_isolation_brand_profiles ON brand_profiles")
     op.drop_table("brand_profiles")

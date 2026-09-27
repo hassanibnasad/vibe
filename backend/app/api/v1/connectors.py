@@ -59,10 +59,22 @@ async def begin_linkedin_authorization(
 
 @router.get("/linkedin/callback")
 async def complete_linkedin_authorization(
-    code: str,
-    state: str,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    error_description: str | None = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"LinkedIn OAuth error: {error} - {error_description}",
+        )
+    if not code or not state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing authorization code or state from LinkedIn.",
+        )
     await _service(session).complete_callback(code, state)
     return RedirectResponse(
         url=f"{settings.FRONTEND_BASE_URL}/connections?linkedin=connected",
