@@ -32,6 +32,7 @@ class PostUpdateRequest(BaseModel):
 
 
 class PostPublishRequest(BaseModel):
+    connection_id: UUID | None = None
     scheduled_at: datetime | None = None
 
 

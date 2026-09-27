@@ -1,10 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_content_service
-from app.dependencies import DEFAULT_TENANT_ID
+from app.dependencies import DEFAULT_TENANT_ID, get_db_session
 from app.middleware.auth import get_current_user
+from app.repositories.social_connection_repo import SocialConnectionRepository
 from app.schemas.post import (
     PostCreateRequest,
     PostGenerateRequest,
@@ -144,12 +146,37 @@ async def publish_post(
     data: PostPublishRequest,
     content_service: ContentService = Depends(get_content_service),
     current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
 ) -> PostResponse:
     if data.scheduled_at:
         post = await content_service.schedule(post_id, scheduled_at=data.scheduled_at)
         return PostResponse.model_validate(post)
 
-    await publish_single_post_task.aio_run(PublishSinglePostInput(post_id=str(post_id)))
+    tenant_id = UUID(str(current_user.get("tenant_id", DEFAULT_TENANT_ID)))
+    operator_id = UUID(str(current_user.get("id", DEFAULT_TENANT_ID)))
+
+    connection_id = data.connection_id
+    if not connection_id:
+        conn_repo = SocialConnectionRepository(session)
+        conns = await conn_repo.list_for_operator(tenant_id, operator_id)
+        if not conns:
+            conns = await conn_repo.list_for_tenant(tenant_id)
+        active = [c for c in conns if c.status == "connected"]
+        if not active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No connected LinkedIn account found. Please connect your LinkedIn account first via /api/v1/connectors/linkedin/authorize.",
+            )
+        connection_id = active[0].id
+
+    await publish_single_post_task.aio_run(
+        PublishSinglePostInput(
+            post_id=str(post_id),
+            connection_id=str(connection_id),
+            tenant_id=str(tenant_id),
+            operator_id=str(operator_id),
+        )
+    )
     post = await content_service.get_post(post_id)
     return PostResponse.model_validate(post)
 

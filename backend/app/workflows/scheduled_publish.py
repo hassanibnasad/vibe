@@ -66,6 +66,9 @@ class PublishSinglePostInput(BaseModel):
     """Input schema for the publish-single-post task."""
 
     post_id: str
+    connection_id: str | None = None
+    tenant_id: str | None = None
+    operator_id: str | None = None
 
 
 @hatchet.task(
@@ -81,16 +84,45 @@ async def publish_single_post_task(
     """On-demand task: publish a specific post with automatic retries on failure."""
     from app.dependencies import get_sessionmaker  # noqa: PLC0415
     from app.repositories.post_repo import PostRepository  # noqa: PLC0415
-    from app.services.content_service import ContentService  # noqa: PLC0415
 
     post_id = UUID(input.post_id)
 
     session_factory = get_sessionmaker()
     async with session_factory() as session:
         post_repo = PostRepository(session)
-        service = ContentService(post_repo=post_repo)
-        post = await service.publish_now(post_id=post_id)
+        if input.connection_id and input.tenant_id and input.operator_id:
+            from app.repositories.oauth_state_repo import OAuthStateRepository  # noqa: PLC0415
+            from app.repositories.publication_attempt_repo import (
+                PublicationAttemptRepository,  # noqa: PLC0415
+            )
+            from app.repositories.social_connection_repo import (
+                SocialConnectionRepository,  # noqa: PLC0415
+            )
+            from app.services.linkedin_connection_service import (
+                LinkedInConnectionService,  # noqa: PLC0415
+            )
+            from app.services.publication_service import PublicationService  # noqa: PLC0415
+
+            pub_service = PublicationService(
+                post_repo=post_repo,
+                attempts=PublicationAttemptRepository(session),
+                connections=LinkedInConnectionService(
+                    connection_repo=SocialConnectionRepository(session),
+                    state_repo=OAuthStateRepository(session),
+                ),
+            )
+            post = await pub_service.publish(
+                post_id=post_id,
+                connection_id=UUID(input.connection_id),
+                tenant_id=UUID(input.tenant_id),
+                operator_id=UUID(input.operator_id),
+            )
+        else:
+            post = await post_repo.get_by_id(post_id)
         await session.commit()
+
+    if not post:
+        return {"status": "not_found", "post_id": str(post_id), "platform_post_id": None, "error_message": "Post not found"}
 
     logger.info("single_post_publish_completed", post_id=str(post.id), status=post.status)
     return {
