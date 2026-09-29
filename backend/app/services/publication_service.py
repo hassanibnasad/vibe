@@ -94,7 +94,7 @@ class PublicationService:
         )
 
         if not result.success:
-            err = result.error or "LinkedIn publishing failed."
+            err = getattr(result, "error_message", None) or "LinkedIn publishing failed."
             await self._attempts.update(
                 attempt.id,
                 status="failed",
@@ -108,8 +108,8 @@ class PublicationService:
                 retry_count=post.retry_count + 1,
             )
 
-        post_id_val = result.data.get("platform_post_id")
-        post_url_val = result.data.get("platform_post_url")
+        post_id_val = result.platform_post_id
+        post_url_val = result.platform_post_url
         await self._attempts.update(
             attempt.id,
             status="succeeded",
@@ -117,7 +117,7 @@ class PublicationService:
             platform_post_url=post_url_val,
             dispatched_at=datetime.now(UTC),
             completed_at=datetime.now(UTC),
-            metadata_=result.data,
+            metadata_=getattr(result, "metadata_", {}) or {},
         )
         return await self._posts.update(
             post.id,

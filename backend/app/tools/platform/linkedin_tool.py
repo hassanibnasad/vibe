@@ -118,6 +118,18 @@ class LinkedInTool(BasePlatformTool):
                     platform_post_url=post_url,
                     metadata_={"status_code": response.status_code},
                 )
+            elif response.status_code == 422 and "DUPLICATE_POST" in response.text:
+                import re  # noqa: PLC0415
+                m = re.search(r"urn:li:share:\d+", response.text)
+                post_id = m.group(0) if m else ""
+                post_url = f"https://www.linkedin.com/feed/update/{post_id}/" if post_id else None
+                logger.info("linkedin_duplicate_post_detected", post_id=post_id, url=post_url)
+                return PublishResult(
+                    success=True,
+                    platform_post_id=post_id,
+                    platform_post_url=post_url,
+                    metadata_={"status_code": 422, "duplicate": True},
+                )
             else:
                 error_msg = f"LinkedIn API returned {response.status_code}: {response.text}"
                 logger.error("linkedin_publish_failed", error=error_msg)

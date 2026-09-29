@@ -40,6 +40,7 @@ async def generate_post(
             campaign_id=str(data.campaign_id) if data.campaign_id else None,
             variants_count=data.variants,
             auto_publish=False,
+            tenant_id=str(DEFAULT_TENANT_ID),
         )
     )
 
@@ -65,6 +66,7 @@ async def generate_post_variants(
             campaign_id=str(data.campaign_id) if data.campaign_id else None,
             variants_count=max(data.variants, 2),
             auto_publish=False,
+            tenant_id=str(DEFAULT_TENANT_ID),
         )
     )
 
@@ -161,7 +163,7 @@ async def publish_post(
         conns = await conn_repo.list_for_operator(tenant_id, operator_id)
         if not conns:
             conns = await conn_repo.list_for_tenant(tenant_id)
-        active = [c for c in conns if c.status == "connected"]
+        active = [c for c in conns if c.is_publishable or c.status in ("active", "connected")]
         if not active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
