@@ -130,6 +130,8 @@ class ContentService:
             platform_id=platform_id,
             campaign_id=campaign_id,
             content=content,
+            hashtags=hashtags,
+            cta=cta,
             status=PostStatus.DRAFT.value,
             ai_generated=True,
             confidence_score=agent_result.confidence_score,

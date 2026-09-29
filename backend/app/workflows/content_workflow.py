@@ -88,6 +88,7 @@ async def content_pipeline_task(
             platform_type=input.platform_type,
             tone=input.tone,
             campaign_id=campaign_id,
+            tenant_id=tenant_id,
         )
 
         # Publishing always requires an explicit Operator approval and connection selection.

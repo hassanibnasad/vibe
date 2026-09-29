@@ -1,6 +1,7 @@
 import json
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
@@ -130,6 +131,7 @@ class ContentGeneratorAgent(BaseAgent):
                 prompt=prompt,
                 model=model,
                 temperature=0.7,
+                response_format={"type": "json_object"},
             )
 
             # Parse JSON output from LLM
@@ -141,7 +143,42 @@ class ContentGeneratorAgent(BaseAgent):
             if raw_text.endswith("```"):
                 raw_text = raw_text[:-3]
 
-            parsed = json.loads(raw_text.strip())
+            parsed: dict[str, Any] | None = None
+            try:
+                parsed = json.loads(raw_text.strip(), strict=False)
+            except Exception:
+                start_idx = raw_text.find("{")
+                end_idx = raw_text.rfind("}")
+                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                    try:
+                        parsed = json.loads(raw_text[start_idx : end_idx + 1], strict=False)
+                    except Exception:
+                        pass
+
+            if not isinstance(parsed, dict):
+                return AgentResult(
+                    success=True,
+                    confidence_score=0.75,
+                    requires_review=True,
+                    data={
+                        "content": llm_response.text,
+                        "hashtags": [],
+                        "cta": "",
+                        "platform": platform,
+                        "tone": tone,
+                        "tokens_used": llm_response.tokens_used,
+                        "latency_ms": llm_response.latency_ms,
+                        "rag_sources": rag_sources,
+                        "variant_label": variant_label,
+                        "variant_group": str(variant_group) if variant_group else None,
+                        "model_used": llm_response.model,
+                        "brand_profile_used": brand_profile is not None,
+                        "few_shot_count": len(top_posts),
+                        "conversion_asset_used": None,
+                    },
+                    reasoning="LLM output could not be strictly parsed as JSON; fallback text used.",
+                )
+
             content = parsed.get("content", raw_text)
             hashtags = parsed.get("hashtags", [])
             cta = parsed.get("cta", "")
@@ -177,27 +214,6 @@ class ContentGeneratorAgent(BaseAgent):
                 reasoning="Generated using BrandProfile + factual RAG + few-shot exemplars."
                 if brand_profile
                 else "Generated using Jinja2 prompt and RAG context.",
-            )
-        except json.JSONDecodeError:
-            # Fallback if raw text wasn't valid JSON
-            return AgentResult(
-                success=True,
-                confidence_score=0.75,
-                requires_review=True,
-                data={
-                    "content": llm_response.text,
-                    "hashtags": [],
-                    "cta": "",
-                    "platform": platform,
-                    "tone": tone,
-                    "tokens_used": llm_response.tokens_used,
-                    "latency_ms": llm_response.latency_ms,
-                    "rag_sources": rag_sources,
-                    "variant_label": variant_label,
-                    "variant_group": str(variant_group) if variant_group else None,
-                    "model_used": llm_response.model,
-                },
-                reasoning="LLM output could not be strictly parsed as JSON; fallback text used."
             )
         except Exception as exc:
             self.logger.error("generation_failed", error=str(exc))
