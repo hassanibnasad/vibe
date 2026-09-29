@@ -80,6 +80,8 @@ def upgrade() -> None:
         sa.Column("current_revision_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("approved_revision_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("conversion_score", sa.Float, nullable=False, server_default="0.0"),
+        sa.Column("created_by", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("approved_by", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
     )
