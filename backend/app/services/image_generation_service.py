@@ -11,10 +11,11 @@ optional local path (when the image is downloaded to RustFS or disk).
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 import httpx
 import structlog
 from pydantic import BaseModel
-from urllib.parse import quote
 
 from app.config import settings
 

@@ -51,7 +51,7 @@ class LLMClient:
         if norm in ("embed", "embedding"):
             return settings.LLM_EMBED_MODEL
         if norm in ("muse-glimmer", "meta/muse-glimmer-30b", "muse-glimmer-30b"):
-            return "openai/meta/muse-glimmer-30b"
+            return "openai/meta/llama-3.2-11b-vision-instruct"
         # If bare name without provider prefix, default to Ollama for local compat
         if "/" not in model:
             return f"ollama/{model}"

@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +11,14 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def _sanitize_models(self) -> "Settings":
+        if "muse-glimmer" in self.LLM_MODEL_PRIMARY:
+            self.LLM_MODEL_PRIMARY = "openai/meta/llama-3.2-11b-vision-instruct"
+        if "muse-glimmer" in self.LLM_MODEL_FAST:
+            self.LLM_MODEL_FAST = "openai/meta/llama-3.2-11b-vision-instruct"
+        return self
 
     # â”€â”€ Application â”€â”€
     APP_NAME: str = "VibeAgent"
@@ -61,8 +70,8 @@ class Settings(BaseSettings):
 
     # Unified Model Names — override these in .env to switch providers
     # Defaults to Groq cloud (zero-GPU, free tier, ~500 tok/s)
-    LLM_MODEL_PRIMARY: str = "groq/llama-3.3-70b-versatile"
-    LLM_MODEL_FAST: str = "groq/llama-3.1-8b-instant"
+    LLM_MODEL_PRIMARY: str = "openai/meta/llama-3.2-11b-vision-instruct"
+    LLM_MODEL_FAST: str = "openai/meta/llama-3.2-11b-vision-instruct"
     LLM_EMBED_MODEL: str = "ollama/all-minilm:l6-v2"  # unused: embedding uses fastembed
 
     # â”€â”€ Agent Thresholds â”€â”€
@@ -88,7 +97,7 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
     LINKEDIN_REDIRECT_URI: str = ""
-    LINKEDIN_API_VERSION: str = ""
+    LINKEDIN_API_VERSION: str = "202510"
     # Legacy application-level settings. New publications use SocialConnection.
     LINKEDIN_ACCESS_TOKEN: str = ""
     LINKEDIN_ORGANIZATION_ID: str = ""
