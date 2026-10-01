@@ -144,6 +144,18 @@ export interface SystemHealth {
   version: string;
 }
 
+export interface SocialConnection {
+  id: string;
+  provider: string;
+  display_name: string | null;
+  author_urn: string;
+  status: "active" | "disconnected" | "reconnect_required" | string;
+  expires_at: string | null;
+  granted_scopes: string[];
+  last_error: string | null;
+  connected_at: string | null;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const DEFAULT_TIMEOUT_MS = 8000;
 
@@ -540,3 +552,34 @@ export async function uploadKnowledgeDoc(
 export async function fetchHealthStatus(): Promise<SystemHealth> {
   return request<SystemHealth>("/health", { cache: "no-store" });
 }
+
+// ──────────────── Social Connectors ────────────────
+
+export function getLinkedInAuthUrl(): string {
+  return `${API_BASE}/connectors/linkedin/authorize`;
+}
+
+export async function fetchConnectors(): Promise<SocialConnection[]> {
+  return request<SocialConnection[]>("/connectors", { cache: "no-store" });
+}
+
+export async function disconnectConnector(connectionId: string): Promise<void> {
+  const url = `${API_BASE}/connectors/${connectionId}`;
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const errorBody = await res.json();
+      detail = errorBody.detail || JSON.stringify(errorBody);
+    } catch {
+      detail = await res.text().catch(() => "");
+    }
+    throw new ApiError(res.status, res.statusText, detail);
+  }
+}
+

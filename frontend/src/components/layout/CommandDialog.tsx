@@ -18,6 +18,7 @@ import {
   Bot,
   PlusCircle,
   ShieldAlert,
+  Link2,
 } from "lucide-react";
 
 interface CommandDialogProps {
@@ -35,11 +36,13 @@ const commands = [
       { name: "Lead Pipeline (CRM & Scoring)", href: "/leads", icon: Users },
       { name: "Knowledge Base & RAG Index", href: "/knowledge", icon: Database },
       { name: "AI Marketing Copilot", href: "/assistant", icon: Bot },
+      { name: "Social Connectors (LinkedIn OAuth)", href: "/connections", icon: Link2 },
     ],
   },
   {
     category: "Quick Actions",
     items: [
+      { name: "Connect / Authorize LinkedIn Profile", href: "/connections", icon: Link2 },
       { name: "Draft New LinkedIn Post Brief", href: "/studio", icon: PlusCircle },
       { name: "Inspect Flagged Low-Confidence Replies", href: "/review-queue", icon: ShieldAlert },
     ],
