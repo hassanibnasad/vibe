@@ -23,6 +23,21 @@ NEVER use these words: {{ brand_profile.written_identity.banned_words | join(", 
 {% if brand_profile.written_identity.formatting_rules %}
 Formatting Rules: {{ brand_profile.written_identity.formatting_rules }}
 {% endif %}
+{% if brand_profile.written_identity.compliance_policies %}
+## Compliance & Editorial Policies
+{% if brand_profile.written_identity.compliance_policies.competitor_blacklist %}
+NEVER mention, praise, or validate these competitors: {{ brand_profile.written_identity.compliance_policies.competitor_blacklist | join(", ") }}
+{% endif %}
+{% if brand_profile.written_identity.compliance_policies.sensitive_topics %}
+STRICTLY AVOID these sensitive / off-limits topics: {{ brand_profile.written_identity.compliance_policies.sensitive_topics | join(", ") }}
+{% endif %}
+{% if brand_profile.written_identity.compliance_policies.mandatory_disclaimers %}
+Mandatory Disclaimers (include or adhere where appropriate):
+{% for disclaimer in brand_profile.written_identity.compliance_policies.mandatory_disclaimers %}
+- {{ disclaimer }}
+{% endfor %}
+{% endif %}
+{% endif %}
 
 ## Core Value Propositions
 {% for prop in brand_profile.core_value_props | default([]) %}

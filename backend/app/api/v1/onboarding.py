@@ -63,6 +63,7 @@ class BrandProfileResponse(BaseModel):
 
 class BrandProfileUpdateRequest(BaseModel):
     brand_name: str | None = None
+    website_url: str | None = None
     tagline: str | None = None
     visual_identity: dict | None = None
     written_identity: dict | None = None
