@@ -35,10 +35,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchPosts, schedulePost, Post } from "@/lib/api-client";
+import Link from "next/link";
+import {
+  fetchPosts,
+  schedulePost,
+  Post,
+  fetchConnectors,
+  SocialConnection,
+  fetchBrandProfile,
+  BrandProfile,
+} from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
 import { FadeIn } from "@/lib/motion";
 import { AnimatedCheck, PulseBeacon } from "@/components/ui/AnimatedCheck";
+import { ShieldCheck, ShieldAlert, ExternalLink } from "lucide-react";
 
 const tones = [
   { id: "thought_leadership", label: "Thought Leadership" },
@@ -54,6 +64,29 @@ export default function ContentStudioPage() {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduledTime, setScheduledTime] = useState("");
   const [scheduling, setScheduling] = useState(false);
+  const [linkedInConnected, setLinkedInConnected] = useState<boolean | null>(null);
+  const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
+
+  useEffect(() => {
+    fetchConnectors()
+      .then((conns) => {
+        const active = conns.some(
+          (c) => c.provider.toLowerCase() === "linkedin" && c.status === "active"
+        );
+        setLinkedInConnected(active);
+      })
+      .catch(() => {
+        setLinkedInConnected(false);
+      });
+
+    fetchBrandProfile()
+      .then((bp) => {
+        setBrandProfile(bp);
+      })
+      .catch(() => {
+        // Silently continue if backend offline
+      });
+  }, []);
 
   // Calendar tab data
   const [calendarPosts, setCalendarPosts] = useState<Post[]>([]);
@@ -66,6 +99,7 @@ export default function ContentStudioPage() {
     isLoading: isStreaming,
   } = useCompletion({
     api: "/api/generate",
+    streamProtocol: "text",
   });
 
   const loadCalendarPosts = () => {
@@ -87,6 +121,7 @@ export default function ContentStudioPage() {
       body: {
         tone,
         platform: "LinkedIn",
+        brand_profile: brandProfile,
       },
     });
   };
@@ -153,10 +188,117 @@ export default function ContentStudioPage() {
               <div className="glass-panel rounded-3xl p-7 border border-white/[0.08] space-y-6">
                 <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
                   <h3 className="font-display font-bold text-base text-white">Strategic Brief</h3>
-                  <span className="text-[11px] font-mono text-cyan-400 bg-cyan-400/10 px-2.5 py-0.5 rounded-full border border-cyan-400/20">
-                    LinkedIn B2B
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {linkedInConnected === true ? (
+                      <Link
+                        href="/connections"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/20 transition-colors"
+                        title="LinkedIn connected. Click to manage."
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        <span>LinkedIn Active</span>
+                      </Link>
+                    ) : linkedInConnected === false ? (
+                      <Link
+                        href="/connections"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/25 transition-colors"
+                        title="LinkedIn not connected. Click to authorize."
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <span>Connect LinkedIn</span>
+                      </Link>
+                    ) : (
+                      <span className="text-[11px] font-mono text-cyan-400 bg-cyan-400/10 px-2.5 py-0.5 rounded-full border border-cyan-400/20">
+                        LinkedIn B2B
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Brand Identity Grounding Banner */}
+                {brandProfile ? (
+                  <div className="rounded-xl border border-white/[0.08] bg-black/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-cyan-400 shrink-0" />
+                        <span className="text-xs font-semibold text-white">
+                          {brandProfile.brand_name || "Active Brand"}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="border-cyan-400/30 bg-cyan-400/10 text-cyan-300 text-[10px] py-0 px-2 font-mono"
+                        >
+                          {brandProfile.written_identity?.archetype || "Brand Grounded"}
+                        </Badge>
+                      </div>
+                      <Link
+                        href="/brand"
+                        className="text-[11px] text-muted-foreground hover:text-white flex items-center gap-1 transition-colors"
+                        title="View & customize brand voice and policies"
+                      >
+                        <span>Brand Rules</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+
+                    {/* Quick Insertion Chips */}
+                    {((brandProfile.core_value_props && brandProfile.core_value_props.length > 0) ||
+                      (brandProfile.conversion_assets?.cta_templates &&
+                        brandProfile.conversion_assets.cta_templates.length > 0)) && (
+                      <div className="pt-2 border-t border-white/[0.05] flex flex-wrap gap-1.5 items-center">
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mr-1">
+                          Inject:
+                        </span>
+                        {brandProfile.core_value_props?.slice(0, 2).map((vp, idx) => (
+                          <button
+                            key={`prop-${idx}`}
+                            type="button"
+                            onClick={() => {
+                              setBrief((prev) =>
+                                prev
+                                  ? `${prev}\n\nKey Value Proposition: "${vp}"`
+                                  : `Key Value Proposition: "${vp}"`
+                              );
+                            }}
+                            className="text-[10px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-muted-foreground hover:text-white px-2 py-0.5 rounded-md transition-colors truncate max-w-[190px]"
+                            title={`Click to append value prop: ${vp}`}
+                          >
+                            + Prop: {vp}
+                          </button>
+                        ))}
+                        {brandProfile.conversion_assets?.cta_templates?.slice(0, 2).map((cta, idx) => (
+                          <button
+                            key={`cta-${idx}`}
+                            type="button"
+                            onClick={() => {
+                              setBrief((prev) =>
+                                prev ? `${prev}\n\nCall To Action: "${cta}"` : `Call To Action: "${cta}"`
+                              );
+                            }}
+                            className="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md transition-colors truncate max-w-[190px]"
+                            title={`Click to append CTA hook: ${cta}`}
+                          >
+                            + CTA: {cta}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.01] p-3 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <span>No brand voice configured. Posts use standard defaults.</span>
+                    </div>
+                    <Link
+                      href="/brand"
+                      className="text-cyan-400 hover:underline text-[11px] font-medium flex items-center gap-1"
+                    >
+                      <span>Configure</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                )}
 
                 {/* Brief Input */}
                 <div className="space-y-2">
