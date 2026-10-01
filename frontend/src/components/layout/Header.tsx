@@ -16,6 +16,7 @@ const pageTitles: Record<string, { group: string; title: string }> = {
   "/review-queue": { group: "Operate", title: "Review Queue" },
   "/calendar": { group: "Operate", title: "Content Calendar" },
   "/studio": { group: "Operate", title: "Content Studio" },
+  "/brand": { group: "Intelligence", title: "Brand Identity & Guidelines" },
   "/leads": { group: "Intelligence", title: "Lead Pipeline" },
   "/knowledge": { group: "Intelligence", title: "Knowledge Base" },
   "/assistant": { group: "Intelligence", title: "AI Copilot" },

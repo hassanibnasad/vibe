@@ -18,6 +18,8 @@ import {
   Bot,
   PlusCircle,
   ShieldAlert,
+  ShieldCheck,
+  Sparkles,
   Link2,
 } from "lucide-react";
 
@@ -33,6 +35,7 @@ const commands = [
       { name: "Command Center Dashboard", href: "/", icon: LayoutDashboard },
       { name: "Review Queue (Triage Pending)", href: "/review-queue", icon: Inbox },
       { name: "Content Studio (Create Post)", href: "/studio", icon: FileEdit },
+      { name: "Brand Identity & Guidelines", href: "/brand", icon: ShieldCheck },
       { name: "Lead Pipeline (CRM & Scoring)", href: "/leads", icon: Users },
       { name: "Knowledge Base & RAG Index", href: "/knowledge", icon: Database },
       { name: "AI Marketing Copilot", href: "/assistant", icon: Bot },
@@ -42,6 +45,7 @@ const commands = [
   {
     category: "Quick Actions",
     items: [
+      { name: "Extract Brand from Website (AI Scrape)", href: "/brand?action=extract", icon: Sparkles },
       { name: "Connect / Authorize LinkedIn Profile", href: "/connections", icon: Link2 },
       { name: "Draft New LinkedIn Post Brief", href: "/studio", icon: PlusCircle },
       { name: "Inspect Flagged Low-Confidence Replies", href: "/review-queue", icon: ShieldAlert },

@@ -583,3 +583,107 @@ export async function disconnectConnector(connectionId: string): Promise<void> {
   }
 }
 
+// ──────────────── Brand Profile & Guidelines ────────────────
+
+export interface VisualIdentity {
+  palette?: {
+    primary?: string;
+    accent?: string;
+    neutral?: string;
+    [key: string]: string | undefined;
+  };
+  aesthetic_summary?: string;
+  imagery_style?: string;
+  negative_prompts?: string;
+  logo_urls?: string[];
+}
+
+export interface WrittenIdentity {
+  archetype?: string;
+  tone_attributes?: string[];
+  banned_words?: string[];
+  formatting_rules?: string;
+  compliance_policies?: {
+    competitor_blacklist?: string[];
+    sensitive_topics?: string[];
+    mandatory_disclaimers?: string[];
+  };
+}
+
+export interface ConversionAssets {
+  lead_magnets?: string[];
+  cta_templates?: string[];
+  offer_hooks?: string[];
+}
+
+export interface IcpPainPoint {
+  feature: string;
+  pain_hook: string;
+  target_persona?: string;
+}
+
+export interface BrandProfile {
+  id: string;
+  tenant_id: string;
+  brand_name: string;
+  website_url?: string | null;
+  tagline?: string | null;
+  visual_identity: VisualIdentity;
+  written_identity: WrittenIdentity;
+  core_value_props: string[];
+  conversion_assets: ConversionAssets;
+  icp_pain_points: IcpPainPoint[];
+  extraction_status: "pending" | "queued" | "processing" | "complete" | "failed" | string;
+  screenshot_url?: string | null;
+  last_extracted_at?: string | null;
+}
+
+export interface BrandProfileUpdateRequest {
+  brand_name?: string;
+  website_url?: string;
+  tagline?: string;
+  visual_identity?: VisualIdentity;
+  written_identity?: WrittenIdentity;
+  core_value_props?: string[];
+  conversion_assets?: ConversionAssets;
+  icp_pain_points?: IcpPainPoint[];
+}
+
+export interface ExtractBrandRequest {
+  website_url: string;
+  brand_name: string;
+}
+
+export interface ExtractBrandResponse {
+  job_id: string;
+  brand_name: string;
+  website_url: string;
+  status: string;
+  message: string;
+}
+
+export async function fetchBrandProfile(): Promise<BrandProfile | null> {
+  try {
+    return await request<BrandProfile>("/onboarding/brand-profile", { cache: "no-store" });
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function extractBrandFromWebsite(data: ExtractBrandRequest): Promise<ExtractBrandResponse> {
+  return request<ExtractBrandResponse>("/onboarding/extract-brand", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateBrandProfile(data: BrandProfileUpdateRequest): Promise<BrandProfile> {
+  return request<BrandProfile>("/onboarding/brand-profile", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+

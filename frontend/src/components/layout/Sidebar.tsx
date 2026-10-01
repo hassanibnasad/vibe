@@ -13,6 +13,7 @@ import {
   Radio,
   CalendarDays,
   Link2,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ const navigationGroups: NavGroup[] = [
   {
     label: "INTELLIGENCE",
     items: [
+      { name: "Brand Identity", href: "/brand", icon: ShieldCheck },
       { name: "Lead Pipeline", href: "/leads", icon: Users, countKey: "mql_sql_leads" },
       { name: "Knowledge Base", href: "/knowledge", icon: Database },
       { name: "AI Copilot", href: "/assistant", icon: Sparkles },
