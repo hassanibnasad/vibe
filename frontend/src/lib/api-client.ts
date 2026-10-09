@@ -284,22 +284,62 @@ export async function fetchPosts(params?: { status?: string; platform?: string }
   return res.data;
 }
 
+export interface ImageResult {
+  url: string;
+  prompt: string;
+  width: number;
+  height: number;
+  provider: string;
+  local_path?: string | null;
+}
+
+export async function generateImage(params: {
+  prompt: string;
+  width?: number;
+  height?: number;
+  aspect_ratio?: string;
+  style_preset?: string;
+  brand_profile_id?: string;
+  n?: number;
+}): Promise<ImageResult[]> {
+  return request<ImageResult[]>("/images/generate", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 export async function generatePost(
   brief: string,
   tone: string = "professional",
   platform: string = "linkedin",
-  variants: number = 1
+  variants: number = 1,
+  generate_image: boolean = false,
+  aspect_ratio: string = "1:1"
 ): Promise<Post[]> {
   if (variants > 1) {
     return request<Post[]>("/posts/generate-variants", {
       method: "POST",
-      body: JSON.stringify({ brief, tone, platforms: [platform], variants }),
+      body: JSON.stringify({
+        brief,
+        tone,
+        platforms: [platform],
+        variants,
+        generate_image,
+        aspect_ratio,
+      }),
     });
   }
 
   const single = await request<Post>("/posts/generate", {
     method: "POST",
-    body: JSON.stringify({ brief, tone, platforms: [platform], variants: 1 }),
+    body: JSON.stringify({
+      brief,
+      tone,
+      platforms: [platform],
+      variants: 1,
+      generate_image,
+      aspect_ratio,
+    }),
   });
   return [single];
 }

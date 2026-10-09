@@ -12,6 +12,8 @@ import {
   RefreshCw,
   Clock,
   Layers,
+  ImageIcon,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +46,8 @@ import {
   SocialConnection,
   fetchBrandProfile,
   BrandProfile,
+  generateImage,
+  ImageResult,
 } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
 import { FadeIn } from "@/lib/motion";
@@ -66,6 +70,14 @@ export default function ContentStudioPage() {
   const [scheduling, setScheduling] = useState(false);
   const [linkedInConnected, setLinkedInConnected] = useState<boolean | null>(null);
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
+
+  // FLUX.1 [schnell] visual companion state
+  const [generateImageEnabled, setGenerateImageEnabled] = useState(false);
+  const [imageAspectRatio, setImageAspectRatio] = useState("1:1");
+  const [imageStylePreset, setImageStylePreset] = useState("editorial_photography");
+  const [generatedImage, setGeneratedImage] = useState<ImageResult | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchConnectors()
@@ -115,8 +127,35 @@ export default function ContentStudioPage() {
       });
   };
 
+  const handleGenerateImage = async () => {
+    if (!brief.trim() || isGeneratingImage) return;
+    setIsGeneratingImage(true);
+    setImageError(null);
+    try {
+      const results = await generateImage({
+        prompt: brief,
+        aspect_ratio: imageAspectRatio,
+        style_preset: imageStylePreset,
+        brand_profile_id: brandProfile?.id,
+        n: 1,
+      });
+      if (results && results.length > 0) {
+        setGeneratedImage(results[0]);
+      } else {
+        setImageError("No visual returned by provider.");
+      }
+    } catch (err: any) {
+      setImageError(err.message || "Failed to generate visual asset.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   const handleStreamGenerate = async () => {
     if (!brief.trim() || isStreaming) return;
+    if (generateImageEnabled) {
+      handleGenerateImage();
+    }
     await complete(brief, {
       body: {
         tone,
@@ -337,6 +376,108 @@ export default function ContentStudioPage() {
                   </div>
                 </div>
 
+                {/* AI Visual Companion (FLUX.1 [schnell]) */}
+                <div className="rounded-2xl border border-white/[0.08] bg-black/30 p-4 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-cyan-400" />
+                      <span className="text-xs font-semibold text-white">Visual Companion</span>
+                      <Badge
+                        variant="outline"
+                        className="border-indigo-400/30 bg-indigo-500/10 text-indigo-300 text-[10px] py-0 px-1.5 font-mono"
+                      >
+                        FLUX.1 [schnell]
+                      </Badge>
+                    </div>
+                    <Switch
+                      checked={generateImageEnabled}
+                      onCheckedChange={setGenerateImageEnabled}
+                      className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-cyan-500 data-[state=checked]:to-indigo-500"
+                    />
+                  </div>
+
+                  {generateImageEnabled && (
+                    <div className="space-y-3 pt-2 border-t border-white/[0.06] text-xs">
+                      {/* Aspect Ratio */}
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                          Aspect Ratio
+                        </Label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: "1:1", label: "1:1 Square" },
+                            { id: "16:9", label: "16:9 Banner" },
+                            { id: "4:5", label: "4:5 Portrait" },
+                          ].map((ar) => (
+                            <button
+                              key={ar.id}
+                              type="button"
+                              onClick={() => setImageAspectRatio(ar.id)}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border text-center transition-all ${
+                                imageAspectRatio === ar.id
+                                  ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
+                                  : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
+                              }`}
+                            >
+                              {ar.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Style Preset */}
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                          Visual Style Preset
+                        </Label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: "editorial_photography", label: "Editorial Photo" },
+                            { id: "minimalist_3d", label: "Minimalist 3D" },
+                            { id: "modern_vector", label: "Modern Vector" },
+                            { id: "dark_cyberpunk", label: "Dark Tech" },
+                          ].map((sp) => (
+                            <button
+                              key={sp.id}
+                              type="button"
+                              onClick={() => setImageStylePreset(sp.id)}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border text-center transition-all ${
+                                imageStylePreset === sp.id
+                                  ? "border-indigo-400/50 bg-indigo-500/15 text-indigo-200"
+                                  : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
+                              }`}
+                            >
+                              {sp.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Standalone Button */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateImage}
+                        disabled={!brief.trim() || isGeneratingImage}
+                        className="w-full h-8 text-[11px] gap-1.5 border-white/[0.08] hover:bg-white/[0.06] text-muted-foreground hover:text-white"
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
+                            <span>Generating FLUX Visual...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-3 w-3 text-cyan-400" />
+                            <span>Generate Visual Asset Only</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Stream Trigger Button */}
                 <Button
                   onClick={handleStreamGenerate}
@@ -387,7 +528,78 @@ export default function ContentStudioPage() {
                 </div>
 
                 {/* Streaming Content Surface */}
-                <div className="flex-1">
+                <div className="flex-1 space-y-6">
+                  {/* FLUX.1 Visual Companion Asset */}
+                  {(isGeneratingImage || generatedImage || imageError) && (
+                    <div className="rounded-2xl border border-white/[0.08] bg-black/50 p-4 space-y-3 overflow-hidden backdrop-blur-xl shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4 text-cyan-400" />
+                          <span className="text-xs font-semibold text-white">Visual Companion Asset</span>
+                          <Badge
+                            variant="outline"
+                            className="border-indigo-400/30 bg-indigo-500/10 text-indigo-300 text-[10px] font-mono"
+                          >
+                            FLUX.1 [schnell]
+                          </Badge>
+                          {generatedImage?.provider && (
+                            <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">
+                              · {generatedImage.provider}
+                            </span>
+                          )}
+                        </div>
+                        {generatedImage && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(generatedImage.url, "_blank")}
+                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-white gap-1"
+                              title="Open image full size"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              <span>View Full</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleGenerateImage}
+                              disabled={isGeneratingImage}
+                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-white gap-1"
+                              title="Regenerate image"
+                            >
+                              <RefreshCw className={`h-3 w-3 ${isGeneratingImage ? "animate-spin" : ""}`} />
+                              <span>Regenerate</span>
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {isGeneratingImage ? (
+                        <div className="h-60 rounded-xl border border-dashed border-white/10 bg-white/[0.02] flex flex-col items-center justify-center space-y-2 animate-pulse">
+                          <RefreshCw className="h-6 w-6 text-cyan-400 animate-spin" />
+                          <p className="text-xs font-mono text-muted-foreground">
+                            Synthesizing on-brand visual with FLUX.1 [schnell]...
+                          </p>
+                        </div>
+                      ) : generatedImage ? (
+                        <div className="relative rounded-xl overflow-hidden border border-white/10 group max-h-80 flex justify-center bg-black/80">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={generatedImage.url}
+                            alt={generatedImage.prompt || "Generated post visual"}
+                            className="object-contain max-h-80 w-full rounded-xl transition-transform duration-300 group-hover:scale-[1.01]"
+                          />
+                        </div>
+                      ) : null}
+
+                      {imageError && (
+                        <p className="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5">
+                          {imageError}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   {!completion && !isStreaming ? (
                     <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center space-y-3 p-8">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground/60">
