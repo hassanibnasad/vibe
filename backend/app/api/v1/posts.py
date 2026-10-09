@@ -41,6 +41,8 @@ async def generate_post(
             variants_count=data.variants,
             auto_publish=False,
             tenant_id=str(DEFAULT_TENANT_ID),
+            generate_image=data.generate_image,
+            aspect_ratio=data.aspect_ratio,
         )
     )
 

@@ -10,6 +10,8 @@ class PostGenerateRequest(BaseModel):
     campaign_id: UUID | None = None
     tone: str = "professional"
     variants: int = Field(default=1, ge=1, le=5)
+    generate_image: bool = False
+    aspect_ratio: str = "1:1"
 
 
 class PostCreateRequest(BaseModel):

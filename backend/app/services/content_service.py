@@ -103,6 +103,8 @@ class ContentService:
         campaign_context: str | None = None,
         model: str | None = None,
         tenant_id: UUID | None = None,
+        generate_image: bool = False,
+        aspect_ratio: str = "1:1",
     ) -> Post:
         """Generate and stage an AI-authored post draft."""
         logger.info("content_service_generate_draft", platform=platform_type, tone=tone, tenant_id=str(tenant_id) if tenant_id else None)
@@ -118,6 +120,8 @@ class ContentService:
             tenant_id=tenant_id,
             brand_profile=brand_profile,
             top_performing_posts=top_exemplars,
+            generate_image=generate_image,
+            aspect_ratio=aspect_ratio,
         )
 
         content = agent_result.data.get("content", "")
@@ -125,11 +129,13 @@ class ContentService:
         cta = agent_result.data.get("cta", "")
         rag_sources = agent_result.data.get("rag_sources", [])
         conversion_asset_used = agent_result.data.get("conversion_asset_used")
+        media_urls = agent_result.data.get("media_urls", [])
 
         post = await self.post_repo.create(
             platform_id=platform_id,
             campaign_id=campaign_id,
             content=content,
+            media_urls=media_urls,
             hashtags=hashtags,
             cta=cta,
             status=PostStatus.DRAFT.value,

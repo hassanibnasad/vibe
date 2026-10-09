@@ -30,6 +30,8 @@ class ContentPipelineInput(BaseModel):
     auto_publish: bool = False
     tenant_id: str | None = None
     operator_id: str | None = None
+    generate_image: bool = False
+    aspect_ratio: str = "1:1"
 
 
 @hatchet.task(
@@ -42,7 +44,7 @@ async def content_pipeline_task(
     input: ContentPipelineInput,
     ctx: Context,
 ) -> dict:
-    """Orchestrates: Generate â†’ Save Draft â†’ (Optional Auto-Publish if high confidence)."""
+    """Orchestrates: Generate → Save Draft → (Optional Auto-Publish if high confidence)."""
     from app.dependencies import get_sessionmaker  # noqa: PLC0415
     from app.repositories.post_repo import PostRepository  # noqa: PLC0415
     from app.services.content_service import ContentService  # noqa: PLC0415
@@ -89,6 +91,8 @@ async def content_pipeline_task(
             tone=input.tone,
             campaign_id=campaign_id,
             tenant_id=tenant_id,
+            generate_image=input.generate_image,
+            aspect_ratio=input.aspect_ratio,
         )
 
         # Publishing always requires an explicit Operator approval and connection selection.

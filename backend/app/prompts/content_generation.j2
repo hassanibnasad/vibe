@@ -8,6 +8,35 @@ You are an expert social media marketer generating high-performing marketing pos
 
 ## Tone: {{ tone }}
 
+{% if framework %}
+## Copywriting Framework: {{ framework }}
+{% if framework_instructions %}
+Guidelines: {{ framework_instructions }}
+{% endif %}
+{% endif %}
+
+{% if target_audience %}
+## Target Audience / Persona
+Address specifically: {{ target_audience }}
+Tailor vocabulary, pain thresholds, and nuance specifically to this persona.
+{% endif %}
+
+{% if hook_style %}
+## Hook Directive
+Hook Style: {{ hook_style }}
+Craft an arresting, scroll-stopping opening hook (1-2 lines).
+{% endif %}
+
+{% if cta_objective %}
+## CTA Objective
+Conversion Goal: {{ cta_objective }}
+{% endif %}
+
+{% if custom_instructions %}
+## Custom Directives
+{{ custom_instructions }}
+{% endif %}
+
 {% if campaign_context %}
 ## Campaign Context
 {{ campaign_context }}
@@ -88,5 +117,7 @@ Respond ONLY with a valid JSON object matching this structure:
   "content": "The full post text formatted with hooks, short paragraphs, and clear structure",
   "hashtags": ["#tag1", "#tag2", "#tag3"],
   "cta": "Call to action text incorporating a conversion asset",
-  "conversion_asset_used": "Name or hook of the conversion asset used (or null if none)"
+  "conversion_asset_used": "Name or hook of the conversion asset used (or null if none)",
+  "image_prompt": "A detailed, vivid prompt describing an on-brand visual scene or infographic graphic for this post, incorporating brand visual style and colors"
 }
+

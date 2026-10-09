@@ -9,6 +9,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from app.agents.base import AgentResult, BaseAgent
 from app.exceptions import LLMError
+from app.services.image_generation_service import ImageGenerationService
 from app.tools.ai.llm_client import LLMClient
 from app.tools.ai.rag_tool import RAGTool
 
@@ -42,25 +43,63 @@ VARIANT_ANGLES = [
     "Data-Driven Benchmark & Trend Analysis",
 ]
 
+FRAMEWORK_GUIDELINES: dict[str, str] = {
+    "PAS": (
+        "Problem-Agitate-Solve: State the burning problem clearly, agitate the consequences and hidden costs "
+        "of ignoring it, then introduce the definitive solution or insight."
+    ),
+    "BAB": (
+        "Before-After-Bridge: Describe the painful current 'Before' state, vividly depict the desirable 'After' "
+        "transformation, and provide the actionable 'Bridge' to get there."
+    ),
+    "AIDA": (
+        "Attention-Interest-Desire-Action: Grab immediate Attention with a shocking hook, build deep Interest "
+        "with counterintuitive insights, foster Desire with proven upside, and close with a single Action."
+    ),
+    "CONTRARIAN": (
+        "Contrarian Truth / Myth-Busting: Challenge widely accepted industry dogma. State the conventional wisdom, "
+        "explain why it fails with evidence, and reveal the contrarian truth that high performers use."
+    ),
+    "PLAYBOOK": (
+        "Tactical Playbook / Step-by-Step: Deliver high-density, actionable execution steps (Step 1, Step 2, Step 3). "
+        "Zero fluff, specific tools/metrics, and concrete implementation rules."
+    ),
+    "STORY_LESSON": (
+        "Executive Story & Lesson: Open with an authentic narrative or behind-the-scenes breakdown, highlight the pivot "
+        "point of realization, and extract 2-3 universal tactical principles."
+    ),
+    "BENCHMARK": (
+        "Data Benchmark & Trend Analysis: Anchor the post around specific metrics, conversion percentages, or emerging "
+        "market trends. Contrast top 1% performance against the industry baseline."
+    ),
+    "CASE_STUDY": (
+        "Case Study Transformation: Outline the initial client bottleneck, the root cause identified, the exact intervention "
+        "deployed, and the quantified business outcomes achieved."
+    ),
+}
+
 
 class ContentGeneratorAgent(BaseAgent):
     """Generates channel-tailored marketing posts grounded in brand knowledge.
 
     Enhanced to use the tenant's ``BrandProfile`` for deterministic voice/tone
-    injection rather than searching vector chunks for style cues.  Factual RAG
+    injection rather than searching vector chunks for style cues. Factual RAG
     is still used for product knowledge, but only for ``faq``, ``product``,
-    and ``case_study`` doc_types.
+    and ``case_study`` doc_types. Supports dynamic copywriting frameworks
+    and on-brand visual prompt generation and image synthesis.
     """
 
     def __init__(
         self,
         llm_client: LLMClient | None = None,
         rag_tool: RAGTool | None = None,
+        image_service: ImageGenerationService | None = None,
         confidence_threshold: float = 0.85,
     ):
         super().__init__(name="ContentGeneratorAgent", confidence_threshold=confidence_threshold)
         self.llm = llm_client or LLMClient()
         self.rag = rag_tool
+        self.image_service = image_service or ImageGenerationService()
 
         prompt_dir = Path(__file__).parent.parent / "prompts"
         self.jinja_env = Environment(loader=FileSystemLoader(str(prompt_dir)), autoescape=False)
@@ -70,6 +109,11 @@ class ContentGeneratorAgent(BaseAgent):
         brief: str,
         platform: str = "linkedin",
         tone: str = "professional",
+        framework: str | None = None,
+        target_audience: str | None = None,
+        hook_style: str | None = None,
+        cta_objective: str | None = None,
+        custom_instructions: str | None = None,
         campaign_context: str | None = None,
         model: str | None = None,
         angle_guideline: str | None = None,
@@ -78,6 +122,9 @@ class ContentGeneratorAgent(BaseAgent):
         tenant_id: UUID | None = None,
         brand_profile: dict | None = None,
         top_performing_posts: list[dict] | None = None,
+        generate_image: bool = False,
+        image_prompt_override: str | None = None,
+        aspect_ratio: str = "1:1",
     ) -> AgentResult:
         self.logger.info("generating_post", platform=platform, tone=tone, brief_len=len(brief))
 
@@ -191,6 +238,27 @@ class ContentGeneratorAgent(BaseAgent):
 
             success, requires_review = self.evaluate_confidence(confidence)
 
+            media_urls: list[str] = []
+            if generate_image or image_prompt_override:
+                try:
+                    base_img_prompt = (
+                        image_prompt_override or parsed.get("image_prompt") or brief
+                    )
+                    img_prompt = self.image_service.build_brand_image_prompt(
+                        base_prompt=base_img_prompt,
+                        brand_profile=brand_profile,
+                        style_preset="editorial_photography" if platform.lower() == "linkedin" else "minimalist_3d",
+                    )
+                    img_results = await self.image_service.generate(
+                        prompt=img_prompt,
+                        aspect_ratio=aspect_ratio,
+                        n=1,
+                        fallback_to_pollinations=True,
+                    )
+                    media_urls = [r.url for r in img_results if r.url]
+                except Exception as img_err:
+                    self.logger.warning("image_generation_failed", error=str(img_err))
+
             return AgentResult(
                 success=success,
                 confidence_score=round(confidence, 2),
@@ -200,6 +268,7 @@ class ContentGeneratorAgent(BaseAgent):
                     "hashtags": hashtags,
                     "cta": cta,
                     "conversion_asset_used": conversion_asset_used,
+                    "media_urls": media_urls,
                     "platform": platform,
                     "tone": tone,
                     "tokens_used": llm_response.tokens_used,
