@@ -50,17 +50,24 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
     TOGETHER_API_KEY: str = ""
+    HF_TOKEN: str = ""
+    HUGGINGFACE_API_KEY: str = ""
 
     # ── Image Generation ───────────────────────────────────────────────────────
-    # Provider: "together" (Flux-Schnell, free tier) | "pollinations" (no key) | "" (disabled)
-    IMAGE_GEN_PROVIDER: str = "together"
-    # Together AI model for image generation (Flux-Schnell is free on Together's free tier)
-    IMAGE_GEN_MODEL: str = "black-forest-labs/FLUX.1-schnell-Free"
-    # Default output size; Together Flux supports 1024x1024 max
+    # Provider: "huggingface" (Flux-Schnell HF Space) | "together" (Flux-Schnell) | "pollinations" (zero-key fallback) | "" (disabled)
+    IMAGE_GEN_PROVIDER: str = "huggingface"
+    # Model identifier
+    IMAGE_GEN_MODEL: str = "black-forest-labs/FLUX.1-schnell"
+    # Hugging Face Space ID & URL for FLUX.1-schnell
+    IMAGE_GEN_SPACE_ID: str = "black-forest-labs/FLUX.1-schnell"
+    IMAGE_GEN_SPACE_URL: str = "https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell"
+    # Default output size (FLUX supports 1024x1024 natively)
     IMAGE_GEN_WIDTH: int = 1024
     IMAGE_GEN_HEIGHT: int = 1024
-    # Max images per request
+    # Max images / steps per request (FLUX.1-schnell runs in 4 steps)
     IMAGE_GEN_STEPS: int = 4
+    # Backend URL for serving local media assets
+    BACKEND_BASE_URL: str = "http://localhost:8000"
 
     # Legacy / Direct Ollama Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -178,6 +185,9 @@ def get_settings() -> Settings:
         "TOGETHERAI_API_KEY": st.TOGETHER_API_KEY,
         "ANTHROPIC_API_KEY": st.ANTHROPIC_API_KEY,
         "NVIDIA_NIM_API_KEY": st.NVIDIA_API_KEY,
+        "HF_TOKEN": st.HF_TOKEN or st.HUGGINGFACE_API_KEY,
+        "HUGGINGFACE_API_KEY": st.HF_TOKEN or st.HUGGINGFACE_API_KEY,
+        "HUGGINGFACE_HUB_TOKEN": st.HF_TOKEN or st.HUGGINGFACE_API_KEY,
     }
     for key, value in _env_map.items():
         if value and not os.environ.get(key):
