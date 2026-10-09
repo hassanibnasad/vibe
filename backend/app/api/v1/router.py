@@ -6,6 +6,7 @@ from app.api.v1 import (
     connectors,
     conversations,
     health,
+    images,
     knowledge,
     leads,
     onboarding,
@@ -16,6 +17,7 @@ from app.api.v1 import (
 api_v1_router = APIRouter()
 
 api_v1_router.include_router(health.router)
+api_v1_router.include_router(images.router)
 api_v1_router.include_router(posts.router)
 api_v1_router.include_router(leads.router)
 api_v1_router.include_router(conversations.router)
