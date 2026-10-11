@@ -20,7 +20,7 @@ export function AnimatedCheck({
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center rounded-full bg-emerald-500/15 p-1 text-emerald-400 ring-1 ring-emerald-500/30",
+        "relative flex items-center justify-center rounded-full bg-emerald-500/10 p-1 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
         className
       )}
       style={{ width: size + 8, height: size + 8 }}
@@ -42,7 +42,7 @@ export function AnimatedCheck({
           transition={{
             duration: 0.45,
             delay,
-            ease: [0.16, 1, 0.3, 1], // fluid cubic bezier
+            ease: [0.16, 1, 0.3, 1],
           }}
         />
       </motion.svg>
@@ -58,17 +58,17 @@ export function PulseBeacon({
   className?: string;
 }) {
   const colorMap = {
-    live: "bg-emerald-400 text-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]",
-    idle: "bg-amber-400 text-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.4)]",
-    error: "bg-rose-400 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.5)]",
+    live: "bg-emerald-500 text-emerald-500",
+    idle: "bg-amber-500 text-amber-500",
+    error: "bg-rose-500 text-rose-500",
   };
 
   return (
     <span className={cn("relative flex h-2 w-2 items-center justify-center", className)}>
       <motion.span
-        animate={{ scale: [1, 2, 1], opacity: [0.75, 0, 0.75] }}
+        animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
         transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-        className={cn("absolute inline-flex h-full w-full rounded-full opacity-75", colorMap[status])}
+        className={cn("absolute inline-flex h-full w-full rounded-full opacity-60", colorMap[status])}
       />
       <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", colorMap[status])} />
     </span>
