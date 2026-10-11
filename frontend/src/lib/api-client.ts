@@ -371,6 +371,8 @@ export async function schedulePost(id: string, scheduledAt: string): Promise<{ s
   return { status: post.status };
 }
 
+export const reschedulePost = schedulePost;
+
 // ──────────────── Leads & Pipeline ────────────────
 
 export async function fetchLeads(params?: { stage?: string; search?: string }): Promise<Lead[]> {

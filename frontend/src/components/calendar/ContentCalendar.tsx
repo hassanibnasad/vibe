@@ -1,49 +1,35 @@
 "use client";
 
-/**
- * ContentCalendar — visual month-grid calendar for scheduled/published posts.
- *
- * Features:
- * - Month-grid layout with post chips on their scheduled date
- * - Day click → opens side panel with that day's posts
- * - Drag-to-reschedule (HTML5 drag events, no heavy DnD library)
- * - Post status color-coding: draft=slate, approved=blue, scheduled=indigo,
- *   publishing=amber, published=emerald, failed=rose
- * - Prev/Next month navigation
- * - Loading skeleton + empty state
- */
-
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Calendar,
   Clock,
+  Calendar,
   ExternalLink,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Post } from "@/lib/api-client";
-import { fetchCalendarPosts, reschedulePost } from "@/lib/calendar-api";
+import { fetchPosts, reschedulePost, Post } from "@/lib/api-client";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Types & Constants ────────────────────────────────────────────────────────
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ] as const;
 
 const STATUS_STYLES: Record<Post["status"], { chip: string; badge: string; label: string }> = {
-  draft:      { chip: "bg-slate-500/20 border-slate-500/30 text-slate-300",  badge: "bg-slate-500/20 text-slate-300",  label: "Draft" },
-  approved:   { chip: "bg-blue-500/20  border-blue-500/30  text-blue-300",   badge: "bg-blue-500/20 text-blue-300",    label: "Approved" },
-  scheduled:  { chip: "bg-indigo-500/20 border-indigo-500/30 text-indigo-300", badge: "bg-indigo-500/20 text-indigo-300", label: "Scheduled" },
-  publishing: { chip: "bg-amber-500/20 border-amber-500/30 text-amber-300",  badge: "bg-amber-500/20 text-amber-300",  label: "Publishing" },
-  published:  { chip: "bg-emerald-500/20 border-emerald-500/30 text-emerald-300", badge: "bg-emerald-500/20 text-emerald-300", label: "Published" },
-  failed:     { chip: "bg-rose-500/20  border-rose-500/30  text-rose-300",   badge: "bg-rose-500/20 text-rose-300",    label: "Failed" },
+  draft:      { chip: "bg-muted border-border text-muted-foreground", badge: "bg-muted text-muted-foreground", label: "Draft" },
+  approved:   { chip: "bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400", badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400", label: "Approved" },
+  scheduled:  { chip: "bg-secondary border-border text-foreground", badge: "bg-secondary text-foreground", label: "Scheduled" },
+  publishing: { chip: "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300", badge: "bg-amber-500/10 text-amber-700 dark:text-amber-300", label: "Publishing" },
+  published:  { chip: "bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", label: "Published" },
+  failed:     { chip: "bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400", badge: "bg-rose-500/10 text-rose-600 dark:text-rose-400", label: "Failed" },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -60,31 +46,22 @@ function postDateKey(post: Post): string | null {
 
 function buildCalendarGrid(year: number, month: number): Date[][] {
   const firstDay = new Date(year, month - 1, 1);
-  const startOffset = firstDay.getDay();
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const lastDay = new Date(year, month, 0);
 
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+
+  const startDate = new Date(year, month - 1, 1 - startOffset);
+
+  const totalCells = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
   const grid: Date[][] = [];
-  let week: Date[] = [];
 
-  // Leading blank days from previous month
-  for (let i = 0; i < startOffset; i++) {
-    const d = new Date(year, month - 2, new Date(year, month - 1, 0).getDate() - (startOffset - i - 1));
-    week.push(d);
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    week.push(new Date(year, month - 1, day));
-    if (week.length === 7) {
-      grid.push(week);
-      week = [];
-    }
-  }
-
-  // Trailing blank days
-  if (week.length > 0) {
-    let trailingDay = 1;
-    while (week.length < 7) {
-      week.push(new Date(year, month, trailingDay++));
+  let cur = new Date(startDate);
+  for (let row = 0; row < totalCells / 7; row++) {
+    const week: Date[] = [];
+    for (let col = 0; col < 7; col++) {
+      week.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
     }
     grid.push(week);
   }
@@ -106,7 +83,7 @@ function PostChip({ post, onDragStart }: PostChipProps) {
       draggable
       onDragStart={(e) => onDragStart(e, post.id)}
       title={post.content}
-      className={`text-[10px] rounded px-1.5 py-0.5 border truncate cursor-grab active:cursor-grabbing select-none ${s.chip}`}
+      className={`text-[10px] rounded px-1.5 py-0.5 border truncate cursor-grab active:cursor-grabbing select-none font-medium ${s.chip}`}
     >
       {post.content.slice(0, 40)}{post.content.length > 40 ? "…" : ""}
     </div>
@@ -124,16 +101,16 @@ function DayPanel({ date, posts, onClose }: DayPanelProps) {
   const dateLabel = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <div className="w-80 border-l border-white/[0.07] bg-[#0d0d0f] flex flex-col h-full">
+    <div className="w-80 border-l border-border bg-card flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div>
           <p className="text-xs font-mono text-muted-foreground">Selected day</p>
-          <p className="text-sm font-semibold text-white mt-0.5">{dateLabel}</p>
+          <p className="text-sm font-semibold text-foreground mt-0.5">{dateLabel}</p>
         </div>
         <button
           onClick={onClose}
-          className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-white/[0.06] transition-colors"
+          className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           aria-label="Close panel"
         >
           ✕
@@ -154,11 +131,11 @@ function DayPanel({ date, posts, onClose }: DayPanelProps) {
             return (
               <div
                 key={post.id}
-                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3"
+                className="rounded-xl border border-border bg-surface p-4 space-y-3 shadow-subtle"
               >
                 {/* Status + time */}
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${s.badge}`}>
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${s.badge}`}>
                     {s.label}
                   </span>
                   {time && (
@@ -170,13 +147,13 @@ function DayPanel({ date, posts, onClose }: DayPanelProps) {
                 </div>
 
                 {/* Content preview */}
-                <p className="text-xs text-foreground/80 leading-relaxed line-clamp-4">{post.content}</p>
+                <p className="text-xs text-foreground/90 leading-relaxed line-clamp-4">{post.content}</p>
 
                 {/* Hashtags */}
                 {post.hashtags?.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {post.hashtags.slice(0, 4).map((tag) => (
-                      <span key={tag} className="text-[10px] font-mono text-indigo-400 bg-indigo-400/10 px-1.5 py-0.5 rounded">
+                      <span key={tag} className="text-[10px] font-mono text-foreground bg-muted border border-border px-1.5 py-0.5 rounded">
                         #{tag}
                       </span>
                     ))}
@@ -189,7 +166,7 @@ function DayPanel({ date, posts, onClose }: DayPanelProps) {
                     href={post.platform_post_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
+                    className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <ExternalLink className="h-3 w-3" />
                     View on LinkedIn
@@ -204,132 +181,150 @@ function DayPanel({ date, posts, onClose }: DayPanelProps) {
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 
-export function ContentCalendar() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1); // 1-indexed
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ContentCalendarProps {
+  initialPosts?: Post[];
+}
+
+export function ContentCalendar({ initialPosts }: ContentCalendarProps) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [posts, setPosts] = useState<Post[]>(initialPosts ?? []);
+  const [loading, setLoading] = useState(!initialPosts);
   const [error, setError] = useState<string | null>(null);
+
+  // Selected date for side panel
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Drag & drop state
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
 
-  const todayKey = isoDate(now);
-
+  // Load posts if not provided initially
   const loadPosts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchCalendarPosts(year, month);
+      const data = await fetchPosts();
       setPosts(data);
-    } catch {
-      setError("Could not load posts. Check your API connection.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load scheduled posts.");
     } finally {
       setLoading(false);
     }
-  }, [year, month]);
+  }, []);
 
-  useEffect(() => { loadPosts(); }, [loadPosts]);
-
-  // Index posts by date key
-  const postsByDay = React.useMemo(() => {
-    const map: Record<string, Post[]> = {};
-    for (const p of posts) {
-      const key = postDateKey(p);
-      if (key) {
-        (map[key] ??= []).push(p);
-      }
+  useEffect(() => {
+    if (!initialPosts) {
+      loadPosts();
     }
-    return map;
-  }, [posts]);
+  }, [initialPosts, loadPosts]);
 
-  const selectedDayPosts = selectedDate ? (postsByDay[isoDate(selectedDate)] ?? []) : [];
-  const grid = buildCalendarGrid(year, month);
-
-  // Navigation
+  // ── Month Navigation ──
   const prevMonth = () => {
-    if (month === 1) { setYear((y) => y - 1); setMonth(12); }
-    else setMonth((m) => m - 1);
-    setSelectedDate(null);
-  };
-  const nextMonth = () => {
-    if (month === 12) { setYear((y) => y + 1); setMonth(1); }
-    else setMonth((m) => m + 1);
+    if (month === 1) {
+      setYear((y) => y - 1);
+      setMonth(12);
+    } else {
+      setMonth((m) => m - 1);
+    }
     setSelectedDate(null);
   };
 
-  // Drag & Drop
-  const handleDragStart = (e: React.DragEvent, postId: string) => {
-    e.dataTransfer.effectAllowed = "move";
+  const nextMonth = () => {
+    if (month === 12) {
+      setYear((y) => y + 1);
+      setMonth(1);
+    } else {
+      setMonth((m) => m + 1);
+    }
+    setSelectedDate(null);
+  };
+
+  // ── Calendar Grid ──
+  const grid = buildCalendarGrid(year, month);
+  const todayKey = isoDate(today);
+
+  // Group posts by YYYY-MM-DD
+  const postsByDay = posts.reduce<Record<string, Post[]>>((acc, p) => {
+    const key = postDateKey(p);
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(p);
+    return acc;
+  }, {});
+
+  const selectedDayPosts = selectedDate
+    ? (postsByDay[isoDate(selectedDate)] ?? [])
+    : [];
+
+  // ── Drag & Drop Reschedule Handlers ──
+  const handleDragStart = (_e: React.DragEvent, postId: string) => {
     setDraggingId(postId);
   };
+
   const handleDragOver = (e: React.DragEvent, dateKey: string) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverDate(dateKey);
+    if (dragOverDate !== dateKey) {
+      setDragOverDate(dateKey);
+    }
   };
+
   const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
+    const postId = draggingId;
+    setDraggingId(null);
     setDragOverDate(null);
-    if (!draggingId) return;
 
-    const post = posts.find((p) => p.id === draggingId);
+    if (!postId) return;
+
+    const post = posts.find((p) => p.id === postId);
     if (!post) return;
 
-    // Preserve existing time if any, else default to 9am
-    const existingTime = post.scheduled_at ? new Date(post.scheduled_at) : null;
-    const newDt = new Date(targetDate);
-    newDt.setHours(existingTime?.getHours() ?? 9, existingTime?.getMinutes() ?? 0, 0, 0);
+    const originalTime = post.scheduled_at ? new Date(post.scheduled_at) : new Date();
+    const newScheduled = new Date(targetDate);
+    newScheduled.setHours(originalTime.getHours(), originalTime.getMinutes(), 0, 0);
 
-    // Optimistic update
+    // Optimistic UI update
     setPosts((prev) =>
       prev.map((p) =>
-        p.id === draggingId ? { ...p, scheduled_at: newDt.toISOString() } : p
+        p.id === postId
+          ? { ...p, scheduled_at: newScheduled.toISOString(), status: "scheduled" }
+          : p
       )
     );
 
     try {
-      await reschedulePost(draggingId, newDt.toISOString());
+      await reschedulePost(postId, newScheduled.toISOString());
     } catch {
       // Revert on failure
-      await loadPosts();
-    } finally {
-      setDraggingId(null);
+      loadPosts();
     }
   };
-  const handleDragEnd = () => {
-    setDraggingId(null);
-    setDragOverDate(null);
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  const currentMonthKey = `${year}-${String(month).padStart(2, "0")}`;
 
   return (
-    <div className="flex h-full rounded-2xl border border-white/[0.07] overflow-hidden bg-[#0a0a0c]">
+    <div className="flex h-full rounded-2xl border border-border overflow-hidden bg-card shadow-subtle">
       {/* Calendar body */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.07]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <button
               onClick={prevMonth}
               aria-label="Previous month"
-              className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-white hover:bg-white/[0.06] transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <h2 className="font-semibold text-white text-sm w-40 text-center">
+            <h2 className="font-semibold text-foreground text-sm w-40 text-center">
               {MONTH_NAMES[month - 1]} {year}
             </h2>
             <button
               onClick={nextMonth}
               aria-label="Next month"
-              className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-white hover:bg-white/[0.06] transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -349,7 +344,7 @@ export function ContentCalendar() {
               variant="ghost"
               size="sm"
               onClick={loadPosts}
-              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-white"
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh
@@ -359,16 +354,16 @@ export function ContentCalendar() {
 
         {/* Error */}
         {error && (
-          <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs text-rose-300">
+          <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs text-rose-600 dark:text-rose-400">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
         {/* Day header row */}
-        <div className="grid grid-cols-7 border-b border-white/[0.05]">
+        <div className="grid grid-cols-7 border-b border-border">
           {DAY_NAMES.map((d) => (
-            <div key={d} className="py-2.5 text-center text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">
+            <div key={d} className="py-2.5 text-center text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               {d}
             </div>
           ))}
@@ -376,13 +371,13 @@ export function ContentCalendar() {
 
         {/* Calendar grid */}
         {loading ? (
-          <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-white/[0.04] p-px">
+          <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border p-px">
             {Array.from({ length: 35 }).map((_, i) => (
-              <Skeleton key={i} className="h-full min-h-[80px] rounded-none bg-[#0d0d0f]" />
+              <Skeleton key={i} className="h-full min-h-[80px] rounded-none bg-card" />
             ))}
           </div>
         ) : (
-          <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-white/[0.04] p-px overflow-y-auto">
+          <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border p-px overflow-y-auto">
             {grid.flat().map((day, idx) => {
               const key = isoDate(day);
               const isCurrentMonth = day.getMonth() === month - 1;
@@ -400,9 +395,9 @@ export function ContentCalendar() {
                   onDragLeave={() => setDragOverDate(null)}
                   className={[
                     "min-h-[80px] p-2 flex flex-col gap-1 cursor-pointer transition-colors",
-                    isCurrentMonth ? "bg-[#0d0d0f]" : "bg-[#0a0a0c]",
-                    isSelected ? "ring-1 ring-inset ring-cyan-400/40 bg-cyan-400/[0.04]" : "hover:bg-white/[0.025]",
-                    isDragOver ? "bg-indigo-500/10 ring-1 ring-inset ring-indigo-400/40" : "",
+                    isCurrentMonth ? "bg-card" : "bg-surface",
+                    isSelected ? "ring-1 ring-inset ring-foreground/40 bg-accent/40" : "hover:bg-accent/30",
+                    isDragOver ? "bg-accent ring-1 ring-inset ring-foreground/40" : "",
                   ].join(" ")}
                 >
                   {/* Day number */}
@@ -411,16 +406,16 @@ export function ContentCalendar() {
                       className={[
                         "text-xs font-mono w-6 h-6 flex items-center justify-center rounded-full",
                         isToday
-                          ? "bg-cyan-400 text-black font-bold"
+                          ? "bg-foreground text-background font-bold"
                           : isCurrentMonth
-                          ? "text-foreground/70"
-                          : "text-muted-foreground/25",
+                          ? "text-foreground"
+                          : "text-muted-foreground/30",
                       ].join(" ")}
                     >
                       {day.getDate()}
                     </span>
                     {dayPosts.length > 2 && (
-                      <span className="text-[9px] font-mono text-muted-foreground/50">
+                      <span className="text-[9px] font-mono text-muted-foreground">
                         +{dayPosts.length - 2}
                       </span>
                     )}

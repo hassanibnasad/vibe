@@ -72,8 +72,8 @@ function DraftRow({ draft, isSelected, onClick }: DraftRowProps) {
       className={[
         "w-full text-left rounded-xl border p-4 transition-all",
         isSelected
-          ? "border-cyan-400/30 bg-cyan-400/[0.04]"
-          : "border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03]",
+          ? "border-foreground/40 bg-accent font-medium shadow-subtle"
+          : "border-border bg-surface hover:border-border-strong hover:bg-accent/40",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -322,7 +322,7 @@ export function PostDraftQueue() {
                 <LinkedInIcon className="h-4 w-4 text-[#0A66C2]" />
                 <span className="text-sm font-medium text-foreground">LinkedIn Draft</span>
                 {current.ai_generated && (
-                  <span className="text-[10px] font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full border border-cyan-400/20">
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border">
                     AI-generated
                   </span>
                 )}
@@ -342,7 +342,7 @@ export function PostDraftQueue() {
                   <Textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[180px] text-sm bg-black/30 border-white/[0.08] rounded-lg focus:border-cyan-400/40 resize-none"
+                    className="min-h-[180px] text-sm bg-surface border-border rounded-lg focus:border-ring resize-none"
                     autoFocus
                   />
                   <div className="text-[10px] font-mono text-muted-foreground text-right">
@@ -375,7 +375,7 @@ export function PostDraftQueue() {
                   {current.hashtags.map((tag) => (
                     <span
                       key={tag}
-                      className="text-[10px] font-mono text-indigo-300 bg-indigo-400/10 border border-indigo-400/20 px-2 py-0.5 rounded-full"
+                      className="text-[10px] font-mono text-foreground bg-muted border border-border px-2 py-0.5 rounded-full"
                     >
                       #{tag}
                     </span>
@@ -453,7 +453,7 @@ export function PostDraftQueue() {
                       ? "Explain why this draft doesn't meet standards..."
                       : "Describe what needs to change in the next version..."
                   }
-                  className="min-h-[90px] text-xs bg-black/30 border-white/[0.08] rounded-lg focus:border-cyan-400/40 resize-none"
+                  className="min-h-[90px] text-xs bg-surface border-border rounded-lg focus:border-ring resize-none"
                   autoFocus
                 />
                 <div className="flex justify-end gap-2">
