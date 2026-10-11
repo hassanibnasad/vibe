@@ -1,22 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, RefreshCw, Globe, ArrowRight, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Globe, ArrowRight, RefreshCw, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface BrandExtractionWizardProps {
   brandName: string;
-  setBrandName: (v: string) => void;
+  setBrandName: (val: string) => void;
   websiteUrl: string;
-  setWebsiteUrl: (v: string) => void;
+  setWebsiteUrl: (val: string) => void;
   extracting: boolean;
   extractionStep: string;
   extractionJobId: string | null;
   onStartExtraction: () => void;
   hasProfile: boolean;
-  extractionStatus?: string;
+  extractionStatus?: string | null;
   lastExtractedAt?: string | null;
 }
 
@@ -35,14 +35,14 @@ export function BrandExtractionWizard({
 }: BrandExtractionWizardProps) {
   const [isExpanded, setIsExpanded] = useState(!hasProfile);
 
-  const canExtract = websiteUrl.trim().length > 0 && brandName.trim().length > 0 && !extracting;
+  const canExtract = Boolean(websiteUrl.trim()) && !extracting;
 
   // When profile is configured and not extracting, show an uncluttered compact bar with expand option
   if (hasProfile && !isExpanded && !extracting) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0c0e14]/60 px-5 py-3.5 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card px-5 py-3.5 shadow-subtle">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-foreground border border-border">
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
@@ -50,10 +50,10 @@ export function BrandExtractionWizard({
               <span className="text-sm font-semibold text-foreground">AI Brand Auto-Extraction</span>
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-medium ${
                 extractionStatus === "complete"
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                   : extractionStatus === "failed"
-                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                  : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
               }`}>
                 {extractionStatus === "complete" && <CheckCircle2 className="h-2.5 w-2.5" />}
                 {extractionStatus || "Configured"}
@@ -72,7 +72,7 @@ export function BrandExtractionWizard({
             variant="outline"
             size="sm"
             onClick={() => setIsExpanded(true)}
-            className="border-white/10 hover:bg-white/5 text-xs h-8 gap-1.5"
+            className="border-border hover:bg-accent text-xs h-8 gap-1.5"
           >
             Re-sync from Website
             <ChevronDown className="h-3 w-3" />
@@ -83,14 +83,14 @@ export function BrandExtractionWizard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-cyan-950/20 via-[#0c0e14]/80 to-[#0c0e14]/90 p-6 backdrop-blur-xl shadow-lg">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-subtle">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-300 border border-cyan-400/20">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface text-foreground border border-border">
               <Sparkles className="h-4 w-4" />
             </div>
-            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-cyan-400">
+            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">
               Instant Setup
             </span>
           </div>
@@ -108,7 +108,7 @@ export function BrandExtractionWizard({
             variant="ghost"
             size="sm"
             onClick={() => setIsExpanded(false)}
-            className="text-xs text-muted-foreground hover:text-white h-7 gap-1"
+            className="text-xs text-muted-foreground hover:text-foreground h-7 gap-1"
           >
             Collapse
             <ChevronUp className="h-3 w-3" />
@@ -127,7 +127,7 @@ export function BrandExtractionWizard({
             onChange={(e) => setBrandName(e.target.value)}
             placeholder="e.g. Stripe, Linear, Acme AI"
             disabled={extracting}
-            className="bg-black/40 border-white/10 text-sm h-10 rounded-xl focus:border-cyan-400/50"
+            className="bg-surface border-border text-sm h-10 rounded-lg focus:border-ring"
           />
         </div>
 
@@ -143,7 +143,7 @@ export function BrandExtractionWizard({
               onChange={(e) => setWebsiteUrl(e.target.value)}
               placeholder="https://example.com"
               disabled={extracting}
-              className="bg-black/40 border-white/10 text-sm h-10 pl-9 rounded-xl focus:border-cyan-400/50"
+              className="bg-surface border-border text-sm h-10 pl-9 rounded-lg focus:border-ring"
             />
           </div>
         </div>
@@ -153,7 +153,7 @@ export function BrandExtractionWizard({
             type="button"
             onClick={onStartExtraction}
             disabled={!canExtract}
-            className="w-full h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-xs gap-2 shadow-md transition-all disabled:opacity-50"
+            className="w-full h-10 rounded-lg bg-foreground text-background hover:bg-foreground/90 font-medium text-xs gap-2 transition-colors shadow-subtle disabled:opacity-50"
           >
             {extracting ? (
               <>
@@ -172,16 +172,16 @@ export function BrandExtractionWizard({
       </div>
 
       {extracting && (
-        <div className="mt-4 rounded-xl border border-cyan-500/20 bg-cyan-950/30 p-3.5 flex items-center justify-between text-xs">
+        <div className="mt-4 rounded-xl border border-border bg-surface p-3.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2.5">
-            <RefreshCw className="h-4 w-4 text-cyan-400 animate-spin shrink-0" />
+            <RefreshCw className="h-4 w-4 text-foreground animate-spin shrink-0" />
             <div>
-              <span className="font-medium text-cyan-200">Autonomous Crawl & Synthesis</span>
-              <p className="text-[11px] text-cyan-300/70">{extractionStep || "Processing..."}</p>
+              <span className="font-medium text-foreground">Autonomous Crawl & Synthesis</span>
+              <p className="text-[11px] text-muted-foreground">{extractionStep || "Processing..."}</p>
             </div>
           </div>
           {extractionJobId && (
-            <span className="text-[10px] font-mono text-cyan-400/60 hidden sm:inline">
+            <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">
               Job: {extractionJobId.slice(0, 8)}...
             </span>
           )}

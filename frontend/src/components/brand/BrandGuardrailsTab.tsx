@@ -72,19 +72,19 @@ export function BrandGuardrailsTab({
       {/* 1. Banned Buzzwords & Competitor Blacklist */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Banned Words */}
-        <Card className="border-white/10 bg-[#0c0e14]/70">
+        <Card className="border-border bg-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <AlertOctagon className="h-4 w-4 text-rose-400" />
+                <AlertOctagon className="h-4 w-4 text-rose-500" />
                 Banned Buzzwords & Phrases
               </CardTitle>
-              <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-400 font-mono text-xs">
+              <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-mono text-xs">
                 {bannedWords.length} Banned
               </Badge>
             </div>
             <CardDescription className="text-xs text-muted-foreground">
-              Hard negative constraints. The AI model will never use these cliché terms.
+              Corporate jargon, AI hallmarks and cliches blocked from all posts.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -98,65 +98,65 @@ export function BrandGuardrailsTab({
                     addTag(newBanned, bannedWords, setBannedWords, () => setNewBanned(""));
                   }
                 }}
-                placeholder="Type buzzword and press Enter"
-                className="bg-black/30 border-white/10 text-xs h-9"
+                placeholder="e.g. game-changer, delve into"
+                className="bg-surface border-border text-xs h-9"
               />
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
+                size="sm"
                 onClick={() => addTag(newBanned, bannedWords, setBannedWords, () => setNewBanned(""))}
-                className="h-9 border-white/10 px-3 text-xs"
+                className="h-9 border-border px-3 text-xs"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Add
+                <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Quick Suggestions */}
             <div className="space-y-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
-                Common AI Clichés (Click to ban)
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block">
+                Common AI Cliches (Click to Ban)
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {SUGGESTED_BANNED_WORDS.map((word) => {
-                  const isBanned = bannedWords.includes(word);
+                {SUGGESTED_BANNED_WORDS.map((w) => {
+                  const alreadyBanned = bannedWords.includes(w);
                   return (
                     <button
-                      key={word}
+                      key={w}
                       type="button"
-                      disabled={isBanned}
-                      onClick={() => addTag(word, bannedWords, setBannedWords, () => {})}
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-all ${
-                        isBanned
-                          ? "border-transparent text-muted-foreground/30 line-through cursor-default"
-                          : "border-white/10 bg-white/[0.02] text-muted-foreground hover:border-rose-400/40 hover:text-rose-300"
+                      disabled={alreadyBanned}
+                      onClick={() => addTag(w, bannedWords, setBannedWords, () => {})}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${
+                        alreadyBanned
+                          ? "border-transparent text-muted-foreground/40 cursor-default"
+                          : "border-border bg-surface text-muted-foreground hover:border-rose-400/40 hover:text-rose-500"
                       }`}
                     >
-                      + {word}
+                      + {w}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Active Banned Badges */}
-            <div className="border-t border-white/5 pt-3 space-y-2">
+            {/* Active Banned Pills */}
+            <div className="border-t border-border pt-3 space-y-2">
               <span className="text-[11px] font-medium text-foreground block">
-                Enforced Banned List ({bannedWords.length})
+                Active Banned Phrases ({bannedWords.length})
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
                 {bannedWords.map((word) => (
                   <Badge
                     key={word}
-                    variant="secondary"
-                    className="bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 py-1 px-2.5 gap-1.5 rounded-lg"
+                    variant="outline"
+                    className="gap-1.5 py-0.5 px-2 text-xs font-mono border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400"
                   >
                     <span>{word}</span>
                     <button
                       type="button"
                       onClick={() => removeTag(word, bannedWords, setBannedWords)}
-                      className="text-rose-400 hover:text-white text-xs font-bold leading-none"
+                      className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400"
+                      title="Unban word"
                     >
                       ×
                     </button>
@@ -164,7 +164,7 @@ export function BrandGuardrailsTab({
                 ))}
                 {bannedWords.length === 0 && (
                   <span className="text-xs text-muted-foreground italic">
-                    No banned buzzwords yet. Click presets above to add.
+                    No words blocked yet. Add phrases to prevent cringe LinkedIn jargon.
                   </span>
                 )}
               </div>
@@ -173,19 +173,19 @@ export function BrandGuardrailsTab({
         </Card>
 
         {/* Competitor Blacklist */}
-        <Card className="border-white/10 bg-[#0c0e14]/70">
+        <Card className="border-border bg-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-amber-400" />
-                Competitor Blacklist
+                <ShieldAlert className="h-4 w-4 text-amber-500" />
+                Competitor Name Blacklist
               </CardTitle>
-              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-xs">
-                {competitorBlacklist.length} Monitored
+              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-xs">
+                {competitorBlacklist.length} Blacklisted
               </Badge>
             </div>
             <CardDescription className="text-xs text-muted-foreground">
-              Competitor names or trademarks the AI must never endorse, validate, or reference.
+              Direct competitors that should never be mentioned, tagged or promoted.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -199,37 +199,38 @@ export function BrandGuardrailsTab({
                     addTag(newCompetitor, competitorBlacklist, setCompetitorBlacklist, () => setNewCompetitor(""));
                   }
                 }}
-                placeholder="e.g. CompetitorCorp, RivalAI"
-                className="bg-black/30 border-white/10 text-xs h-9"
+                placeholder="e.g. RivalCorp, Competitor Inc"
+                className="bg-surface border-border text-xs h-9"
               />
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
+                size="sm"
                 onClick={() => addTag(newCompetitor, competitorBlacklist, setCompetitorBlacklist, () => setNewCompetitor(""))}
-                className="h-9 border-white/10 px-3 text-xs"
+                className="h-9 border-border px-3 text-xs"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Add
+                <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
 
-            <div className="border-t border-white/5 pt-3 space-y-2">
+            {/* Active Competitor Pills */}
+            <div className="border-t border-border pt-3 space-y-2">
               <span className="text-[11px] font-medium text-foreground block">
-                Blacklisted Competitors ({competitorBlacklist.length})
+                Restricted Competitors ({competitorBlacklist.length})
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
                 {competitorBlacklist.map((comp) => (
                   <Badge
                     key={comp}
-                    variant="secondary"
-                    className="bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 py-1 px-2.5 gap-1.5 rounded-lg"
+                    variant="outline"
+                    className="gap-1.5 py-0.5 px-2 text-xs font-mono border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-300"
                   >
                     <span>{comp}</span>
                     <button
                       type="button"
                       onClick={() => removeTag(comp, competitorBlacklist, setCompetitorBlacklist)}
-                      className="text-amber-400 hover:text-white text-xs font-bold leading-none"
+                      className="text-muted-foreground hover:text-amber-700 dark:hover:text-amber-300"
+                      title="Remove competitor"
                     >
                       ×
                     </button>
@@ -249,10 +250,10 @@ export function BrandGuardrailsTab({
       {/* 2. Sensitive Topics & Mandatory Disclaimers */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Sensitive Topics */}
-        <Card className="md:col-span-5 border-white/10 bg-[#0c0e14]/70">
+        <Card className="md:col-span-5 border-border bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-cyan-400" />
+              <ShieldCheck className="h-4 w-4 text-foreground" />
               Off-Limits & Sensitive Topics
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
@@ -270,51 +271,54 @@ export function BrandGuardrailsTab({
                     addTag(newSensitive, sensitiveTopics, setSensitiveTopics, () => setNewSensitive(""));
                   }
                 }}
-                placeholder="e.g. Unreleased pricing, IPO plans"
-                className="bg-black/30 border-white/10 text-xs h-9"
+                placeholder="e.g. Unreleased V2 pricing, M&A rumors"
+                className="bg-surface border-border text-xs h-9"
               />
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
+                size="sm"
                 onClick={() => addTag(newSensitive, sensitiveTopics, setSensitiveTopics, () => setNewSensitive(""))}
-                className="h-9 border-white/10 px-3 text-xs"
+                className="h-9 border-border px-3 text-xs"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
               {sensitiveTopics.map((topic) => (
                 <div
                   key={topic}
-                  className="flex items-center justify-between p-2 rounded-lg border border-white/5 bg-black/20 text-xs text-foreground"
+                  className="flex items-center justify-between p-2 rounded-lg border border-border bg-surface text-xs text-foreground"
                 >
                   <span className="truncate pr-2">{topic}</span>
                   <button
                     type="button"
                     onClick={() => removeTag(topic, sensitiveTopics, setSensitiveTopics)}
-                    className="text-muted-foreground hover:text-rose-400 text-xs"
+                    className="text-muted-foreground hover:text-foreground shrink-0"
                   >
                     ×
                   </button>
                 </div>
               ))}
               {sensitiveTopics.length === 0 && (
-                <span className="text-xs text-muted-foreground italic">No off-limits topics specified.</span>
+                <span className="text-xs text-muted-foreground italic block p-2">
+                  No sensitive topics configured.
+                </span>
               )}
             </div>
           </CardContent>
         </Card>
 
         {/* Mandatory Disclaimers */}
-        <Card className="md:col-span-7 border-white/10 bg-[#0c0e14]/70">
+        <Card className="md:col-span-7 border-border bg-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-foreground">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
               Mandatory Legal Disclaimers
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Statements or legal caveats that must accompany regulatory or financial claims.
+              Statements automatically appended when discussing financial, medical, or security topics.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -328,17 +332,17 @@ export function BrandGuardrailsTab({
                     addTag(newDisclaimer, mandatoryDisclaimers, setMandatoryDisclaimers, () => setNewDisclaimer(""));
                   }
                 }}
-                placeholder="e.g. Past performance does not guarantee future results."
-                className="bg-black/30 border-white/10 text-xs h-9"
+                placeholder="e.g. Not financial advice. Past performance does not guarantee future results."
+                className="bg-surface border-border text-xs h-9"
               />
               <Button
                 type="button"
+                variant="outline"
                 size="sm"
                 onClick={() => addTag(newDisclaimer, mandatoryDisclaimers, setMandatoryDisclaimers, () => setNewDisclaimer(""))}
-                className="h-9 px-3 text-xs bg-white text-black hover:bg-zinc-200 rounded-lg font-medium shrink-0"
+                className="h-9 border-border px-3 text-xs"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Add Disclaimer
+                <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
 
@@ -346,23 +350,25 @@ export function BrandGuardrailsTab({
               {mandatoryDisclaimers.map((disc, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-black/20 text-xs text-foreground group"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface text-xs text-foreground group"
                 >
-                  <span className="flex-1 pr-3 leading-relaxed font-sans">{disc}</span>
+                  <span className="pr-3 leading-relaxed font-mono text-[11px] text-muted-foreground">
+                    &quot;{disc}&quot;
+                  </span>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => removeTag(disc, mandatoryDisclaimers, setMandatoryDisclaimers)}
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-rose-400 opacity-60 group-hover:opacity-100"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500 opacity-60 group-hover:opacity-100"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
               {mandatoryDisclaimers.length === 0 && (
-                <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-white/10 rounded-lg">
-                  No legal disclaimers configured.
+                <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
+                  No mandatory disclaimers configured.
                 </div>
               )}
             </div>

@@ -325,7 +325,7 @@ export default function BrandIdentityPage() {
             onClick={handleSaveProfile}
             disabled={saving || loading}
             size="sm"
-            className="bg-white text-black hover:bg-zinc-200 text-xs h-9 font-medium gap-1.5 shadow-sm rounded-xl px-4"
+            className="bg-foreground text-background hover:bg-foreground/90 text-xs h-9 font-medium gap-1.5 shadow-subtle rounded-lg px-4 transition-colors"
           >
             {saving ? (
               <>
@@ -420,26 +420,26 @@ export default function BrandIdentityPage() {
       ) : (
         <FadeIn>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-[#0b0d13] border border-white/10 p-1 h-auto flex flex-wrap gap-1 rounded-xl">
+            <TabsList className="bg-surface border border-border p-1 h-auto flex flex-wrap gap-1 rounded-xl">
               <TabsTrigger
                 value="voice"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs font-medium px-4 py-2 rounded-lg gap-2"
+                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-lg gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <MessageSquare className="h-3.5 w-3.5 text-cyan-400" />
+                <MessageSquare className="h-3.5 w-3.5 text-foreground" />
                 Identity & Voice
               </TabsTrigger>
               <TabsTrigger
                 value="icp"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs font-medium px-4 py-2 rounded-lg gap-2"
+                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-lg gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Target className="h-3.5 w-3.5 text-indigo-400" />
+                <Target className="h-3.5 w-3.5 text-foreground" />
                 Value Props & ICP Hooks
               </TabsTrigger>
               <TabsTrigger
                 value="compliance"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs font-medium px-4 py-2 rounded-lg gap-2"
+                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-lg gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ShieldCheck className="h-3.5 w-3.5 text-rose-400" />
+                <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
                 Guardrails & Compliance
               </TabsTrigger>
             </TabsList>
