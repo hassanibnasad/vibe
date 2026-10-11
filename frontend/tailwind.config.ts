@@ -53,8 +53,6 @@ const config: Config = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          brand: "hsl(var(--brand-accent))",
-          cyan: "hsl(var(--brand-cyan))",
         },
         text: {
           primary: "hsl(var(--text-primary))",
@@ -85,12 +83,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        "glow-cyan": "0 0 25px -5px rgba(56, 189, 248, 0.25)",
-        "glow-sm": "0 0 15px -3px rgba(255, 255, 255, 0.08)",
-        "glass": "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
-      },
-      backdropBlur: {
-        xs: "2px",
+        subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        elevated: "0 4px 12px -2px rgba(0, 0, 0, 0.12)",
       },
     },
   },
