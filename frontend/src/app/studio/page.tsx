@@ -182,14 +182,14 @@ export default function ContentStudioPage() {
       {/* Editorial Header */}
       <FadeIn>
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl">
-            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface border border-border">
+            <Sparkles className="h-3.5 w-3.5 text-foreground" />
             <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               Vercel AI SDK Engine
             </span>
           </div>
-          <h1 className="font-display text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
-            Content <span className="text-gradient-cyan">Studio</span>
+          <h1 className="font-display text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
+            Content Studio
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             Stream high-conversion social narratives, optimize scroll-stopping hooks, and schedule multi-platform dispatches.
@@ -204,16 +204,16 @@ export default function ContentStudioPage() {
           if (v === "calendar") loadCalendarPosts();
         }}
       >
-        <TabsList className="h-11 p-1 bg-white/[0.03] border border-white/[0.08] rounded-xl backdrop-blur-xl">
+        <TabsList className="h-10 p-1 bg-surface border border-border rounded-lg">
           <TabsTrigger
             value="creator"
-            className="rounded-lg px-5 py-2 text-xs font-medium data-[state=active]:bg-white/[0.08] data-[state=active]:text-white transition-all"
+            className="rounded-md px-4 py-1.5 text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors"
           >
             Creative Canvas
           </TabsTrigger>
           <TabsTrigger
             value="calendar"
-            className="rounded-lg px-5 py-2 text-xs font-medium data-[state=active]:bg-white/[0.08] data-[state=active]:text-white transition-all"
+            className="rounded-md px-4 py-1.5 text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors"
           >
             Dispatch Schedule
           </TabsTrigger>
@@ -224,30 +224,30 @@ export default function ContentStudioPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left: Strategic Brief Parameters */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="glass-panel rounded-3xl p-7 border border-white/[0.08] space-y-6">
-                <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
-                  <h3 className="font-display font-bold text-base text-white">Strategic Brief</h3>
+              <div className="bg-card rounded-2xl p-7 border border-border space-y-6 shadow-subtle">
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <h3 className="font-display font-bold text-base text-foreground">Strategic Brief</h3>
                   <div className="flex items-center gap-2">
                     {linkedInConnected === true ? (
                       <Link
                         href="/connections"
-                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/20 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/20 transition-colors"
                         title="LinkedIn connected. Click to manage."
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         <span>LinkedIn Active</span>
                       </Link>
                     ) : linkedInConnected === false ? (
                       <Link
                         href="/connections"
-                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/25 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/25 transition-colors"
                         title="LinkedIn not connected. Click to authorize."
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                         <span>Connect LinkedIn</span>
                       </Link>
                     ) : (
-                      <span className="text-[11px] font-mono text-cyan-400 bg-cyan-400/10 px-2.5 py-0.5 rounded-full border border-cyan-400/20">
+                      <span className="text-[11px] font-mono text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full border border-border">
                         LinkedIn B2B
                       </span>
                     )}
@@ -256,82 +256,39 @@ export default function ContentStudioPage() {
 
                 {/* Brand Identity Grounding Banner */}
                 {brandProfile ? (
-                  <div className="rounded-xl border border-white/[0.08] bg-black/30 p-3 space-y-2">
+                  <div className="rounded-xl border border-border bg-surface p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-cyan-400 shrink-0" />
-                        <span className="text-xs font-semibold text-white">
+                        <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-semibold text-foreground">
                           {brandProfile.brand_name || "Active Brand"}
                         </span>
                         <Badge
                           variant="outline"
-                          className="border-cyan-400/30 bg-cyan-400/10 text-cyan-300 text-[10px] py-0 px-2 font-mono"
+                          className="border-border bg-muted text-foreground text-[10px] py-0 px-2 font-mono"
                         >
                           {brandProfile.written_identity?.archetype || "Brand Grounded"}
                         </Badge>
                       </div>
                       <Link
                         href="/brand"
-                        className="text-[11px] text-muted-foreground hover:text-white flex items-center gap-1 transition-colors"
+                        className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                         title="View & customize brand voice and policies"
                       >
                         <span>Brand Rules</span>
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     </div>
-
-                    {/* Quick Insertion Chips */}
-                    {((brandProfile.core_value_props && brandProfile.core_value_props.length > 0) ||
-                      (brandProfile.conversion_assets?.cta_templates &&
-                        brandProfile.conversion_assets.cta_templates.length > 0)) && (
-                      <div className="pt-2 border-t border-white/[0.05] flex flex-wrap gap-1.5 items-center">
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mr-1">
-                          Inject:
-                        </span>
-                        {brandProfile.core_value_props?.slice(0, 2).map((vp, idx) => (
-                          <button
-                            key={`prop-${idx}`}
-                            type="button"
-                            onClick={() => {
-                              setBrief((prev) =>
-                                prev
-                                  ? `${prev}\n\nKey Value Proposition: "${vp}"`
-                                  : `Key Value Proposition: "${vp}"`
-                              );
-                            }}
-                            className="text-[10px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-muted-foreground hover:text-white px-2 py-0.5 rounded-md transition-colors truncate max-w-[190px]"
-                            title={`Click to append value prop: ${vp}`}
-                          >
-                            + Prop: {vp}
-                          </button>
-                        ))}
-                        {brandProfile.conversion_assets?.cta_templates?.slice(0, 2).map((cta, idx) => (
-                          <button
-                            key={`cta-${idx}`}
-                            type="button"
-                            onClick={() => {
-                              setBrief((prev) =>
-                                prev ? `${prev}\n\nCall To Action: "${cta}"` : `Call To Action: "${cta}"`
-                              );
-                            }}
-                            className="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md transition-colors truncate max-w-[190px]"
-                            title={`Click to append CTA hook: ${cta}`}
-                          >
-                            + CTA: {cta}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.01] p-3 flex items-center justify-between text-xs">
+                  <div className="rounded-xl border border-dashed border-border bg-surface p-3 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <ShieldAlert className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                       <span>No brand voice configured. Posts use standard defaults.</span>
                     </div>
                     <Link
                       href="/brand"
-                      className="text-cyan-400 hover:underline text-[11px] font-medium flex items-center gap-1"
+                      className="text-foreground hover:underline text-[11px] font-medium flex items-center gap-1"
                     >
                       <span>Configure</span>
                       <ExternalLink className="h-3 w-3" />
@@ -349,7 +306,7 @@ export default function ContentStudioPage() {
                     value={brief}
                     onChange={(e) => setBrief(e.target.value)}
                     placeholder="e.g. Why AI outbound fails without real-time BANT intent qualification. Target Series A founders and VPs of Sales..."
-                    className="min-h-[140px] text-sm bg-black/40 border-white/[0.08] rounded-xl focus:border-cyan-400/50 transition-colors placeholder:text-muted-foreground/50 leading-relaxed"
+                    className="min-h-[140px] text-sm bg-surface border-border rounded-xl focus:border-ring transition-colors placeholder:text-muted-foreground/50 leading-relaxed"
                   />
                 </div>
 
@@ -364,10 +321,10 @@ export default function ContentStudioPage() {
                         key={t.id}
                         type="button"
                         onClick={() => setTone(t.id)}
-                        className={`rounded-xl border p-2.5 text-xs text-left transition-all ${
+                        className={`rounded-lg border p-2.5 text-xs text-left transition-colors ${
                           tone === t.id
-                            ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200 font-medium shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]"
-                            : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04] hover:text-white"
+                            ? "border-foreground/40 bg-accent text-foreground font-medium"
+                            : "border-border bg-surface text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                         }`}
                       >
                         {t.label}
@@ -377,14 +334,14 @@ export default function ContentStudioPage() {
                 </div>
 
                 {/* AI Visual Companion (FLUX.1 [schnell]) */}
-                <div className="rounded-2xl border border-white/[0.08] bg-black/30 p-4 space-y-3.5">
+                <div className="rounded-xl border border-border bg-surface p-4 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4 text-cyan-400" />
-                      <span className="text-xs font-semibold text-white">Visual Companion</span>
+                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-foreground">Visual Companion</span>
                       <Badge
                         variant="outline"
-                        className="border-indigo-400/30 bg-indigo-500/10 text-indigo-300 text-[10px] py-0 px-1.5 font-mono"
+                        className="border-border bg-muted text-foreground text-[10px] py-0 px-1.5 font-mono"
                       >
                         FLUX.1 [schnell]
                       </Badge>
@@ -392,12 +349,11 @@ export default function ContentStudioPage() {
                     <Switch
                       checked={generateImageEnabled}
                       onCheckedChange={setGenerateImageEnabled}
-                      className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-cyan-500 data-[state=checked]:to-indigo-500"
                     />
                   </div>
 
                   {generateImageEnabled && (
-                    <div className="space-y-3 pt-2 border-t border-white/[0.06] text-xs">
+                    <div className="space-y-3 pt-2 border-t border-border text-xs">
                       {/* Aspect Ratio */}
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
@@ -413,10 +369,10 @@ export default function ContentStudioPage() {
                               key={ar.id}
                               type="button"
                               onClick={() => setImageAspectRatio(ar.id)}
-                              className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border text-center transition-all ${
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border text-center transition-colors ${
                                 imageAspectRatio === ar.id
-                                  ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
-                                  : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
+                                  ? "border-foreground/40 bg-accent text-foreground font-medium"
+                                  : "border-border bg-surface text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                               }`}
                             >
                               {ar.label}
@@ -441,10 +397,10 @@ export default function ContentStudioPage() {
                               key={sp.id}
                               type="button"
                               onClick={() => setImageStylePreset(sp.id)}
-                              className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border text-center transition-all ${
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border text-center transition-colors ${
                                 imageStylePreset === sp.id
-                                  ? "border-indigo-400/50 bg-indigo-500/15 text-indigo-200"
-                                  : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
+                                  ? "border-foreground/40 bg-accent text-foreground font-medium"
+                                  : "border-border bg-surface text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                               }`}
                             >
                               {sp.label}
@@ -460,16 +416,16 @@ export default function ContentStudioPage() {
                         size="sm"
                         onClick={handleGenerateImage}
                         disabled={!brief.trim() || isGeneratingImage}
-                        className="w-full h-8 text-[11px] gap-1.5 border-white/[0.08] hover:bg-white/[0.06] text-muted-foreground hover:text-white"
+                        className="w-full h-8 text-[11px] gap-1.5 border-border hover:bg-accent text-muted-foreground hover:text-foreground"
                       >
                         {isGeneratingImage ? (
                           <>
-                            <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
+                            <RefreshCw className="h-3 w-3 animate-spin text-foreground" />
                             <span>Generating FLUX Visual...</span>
                           </>
                         ) : (
                           <>
-                            <Wand2 className="h-3 w-3 text-cyan-400" />
+                            <Wand2 className="h-3 w-3 text-foreground" />
                             <span>Generate Visual Asset Only</span>
                           </>
                         )}
@@ -482,7 +438,7 @@ export default function ContentStudioPage() {
                 <Button
                   onClick={handleStreamGenerate}
                   disabled={!brief.trim() || isStreaming}
-                  className="w-full h-12 rounded-xl text-sm font-medium bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white shadow-[0_0_25px_-5px_rgba(56,189,248,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+                  className="w-full h-11 rounded-lg text-sm font-medium bg-foreground text-background hover:bg-foreground/90 transition-colors shadow-subtle disabled:opacity-50"
                 >
                   {isStreaming ? (
                     <>
@@ -501,11 +457,11 @@ export default function ContentStudioPage() {
 
             {/* Right: Live Generative Output Canvas */}
             <div className="lg:col-span-7">
-              <div className="glass-panel rounded-3xl p-7 lg:p-8 border border-white/[0.08] min-h-[480px] flex flex-col justify-between relative overflow-hidden">
+              <div className="bg-card rounded-2xl p-7 lg:p-8 border border-border min-h-[480px] flex flex-col justify-between relative overflow-hidden shadow-subtle">
                 {/* Header bar */}
-                <div className="flex items-center justify-between border-b border-white/[0.07] pb-4 mb-6">
+                <div className="flex items-center justify-between border-b border-border pb-4 mb-6">
                   <div className="flex items-center gap-2">
-                    <span className="font-display font-bold text-base text-white">Live Draft Stream</span>
+                    <span className="font-display font-bold text-base text-foreground">Live Draft Stream</span>
                     {isStreaming && <PulseBeacon status="live" />}
                   </div>
 
@@ -518,9 +474,9 @@ export default function ContentStudioPage() {
                         variant="ghost"
                         size="sm"
                         onClick={handleCopy}
-                        className="h-8 px-2.5 rounded-lg text-xs gap-1.5 text-muted-foreground hover:text-white hover:bg-white/[0.06]"
+                        className="h-8 px-2.5 rounded-lg text-xs gap-1.5 text-muted-foreground hover:text-foreground hover:bg-accent"
                       >
-                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                         <span>{copied ? "Copied" : "Copy"}</span>
                       </Button>
                     </div>
@@ -531,14 +487,14 @@ export default function ContentStudioPage() {
                 <div className="flex-1 space-y-6">
                   {/* FLUX.1 Visual Companion Asset */}
                   {(isGeneratingImage || generatedImage || imageError) && (
-                    <div className="rounded-2xl border border-white/[0.08] bg-black/50 p-4 space-y-3 overflow-hidden backdrop-blur-xl shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)]">
+                    <div className="rounded-xl border border-border bg-surface p-4 space-y-3 overflow-hidden shadow-subtle">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <ImageIcon className="h-4 w-4 text-cyan-400" />
-                          <span className="text-xs font-semibold text-white">Visual Companion Asset</span>
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs font-semibold text-foreground">Visual Companion Asset</span>
                           <Badge
                             variant="outline"
-                            className="border-indigo-400/30 bg-indigo-500/10 text-indigo-300 text-[10px] font-mono"
+                            className="border-border bg-muted text-foreground text-[10px] font-mono"
                           >
                             FLUX.1 [schnell]
                           </Badge>
@@ -554,7 +510,7 @@ export default function ContentStudioPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => window.open(generatedImage.url, "_blank")}
-                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-white gap-1"
+                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
                               title="Open image full size"
                             >
                               <ExternalLink className="h-3 w-3" />
@@ -565,7 +521,7 @@ export default function ContentStudioPage() {
                               size="sm"
                               onClick={handleGenerateImage}
                               disabled={isGeneratingImage}
-                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-white gap-1"
+                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
                               title="Regenerate image"
                             >
                               <RefreshCw className={`h-3 w-3 ${isGeneratingImage ? "animate-spin" : ""}`} />
@@ -576,25 +532,25 @@ export default function ContentStudioPage() {
                       </div>
 
                       {isGeneratingImage ? (
-                        <div className="h-60 rounded-xl border border-dashed border-white/10 bg-white/[0.02] flex flex-col items-center justify-center space-y-2 animate-pulse">
-                          <RefreshCw className="h-6 w-6 text-cyan-400 animate-spin" />
+                        <div className="h-60 rounded-xl border border-dashed border-border bg-muted/40 flex flex-col items-center justify-center space-y-2 animate-pulse">
+                          <RefreshCw className="h-6 w-6 text-foreground animate-spin" />
                           <p className="text-xs font-mono text-muted-foreground">
                             Synthesizing on-brand visual with FLUX.1 [schnell]...
                           </p>
                         </div>
                       ) : generatedImage ? (
-                        <div className="relative rounded-xl overflow-hidden border border-white/10 group max-h-80 flex justify-center bg-black/80">
+                        <div className="relative rounded-xl overflow-hidden border border-border group max-h-80 flex justify-center bg-black/10 dark:bg-black/40">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={generatedImage.url}
                             alt={generatedImage.prompt || "Generated post visual"}
-                            className="object-contain max-h-80 w-full rounded-xl transition-transform duration-300 group-hover:scale-[1.01]"
+                            className="object-contain max-h-80 w-full rounded-xl transition-transform duration-200 group-hover:scale-[1.01]"
                           />
                         </div>
                       ) : null}
 
                       {imageError && (
-                        <p className="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5">
+                        <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5">
                           {imageError}
                         </p>
                       )}
@@ -602,21 +558,21 @@ export default function ContentStudioPage() {
                   )}
                   {!completion && !isStreaming ? (
                     <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center space-y-3 p-8">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground/60">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface border border-border text-muted-foreground">
                         <FileEdit className="h-5 w-5" />
                       </div>
                       <div className="space-y-1">
-                        <h4 className="font-display font-semibold text-white text-sm">Awaiting Strategic Brief</h4>
+                        <h4 className="font-display font-semibold text-foreground text-sm">Awaiting Strategic Brief</h4>
                         <p className="text-xs text-muted-foreground max-w-sm">
                           Enter your thesis and tone in the panel on the left, then trigger the stream to watch the AI craft your dispatch live.
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="font-sans text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed space-y-4 font-normal selection:bg-cyan-500/30">
+                    <div className="font-sans text-sm text-foreground whitespace-pre-wrap leading-relaxed space-y-4 font-normal">
                       {completion}
                       {isStreaming && (
-                        <span className="inline-block w-1.5 h-4 ml-1 bg-cyan-400 animate-pulse align-middle" />
+                        <span className="inline-block w-1.5 h-4 ml-1 bg-foreground animate-pulse align-middle" />
                       )}
                     </div>
                   )}
@@ -624,10 +580,10 @@ export default function ContentStudioPage() {
 
                 {/* Action Footer */}
                 {completion && (
-                  <div className="pt-6 border-t border-white/[0.07] flex items-center justify-between mt-6">
+                  <div className="pt-6 border-t border-border flex items-center justify-between mt-6">
                     <div className="flex items-center gap-2">
                       <AnimatedCheck size={14} />
-                      <span className="text-xs font-mono text-emerald-400">Stream Complete</span>
+                      <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">Stream Complete</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -635,7 +591,7 @@ export default function ContentStudioPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setScheduleDialogOpen(true)}
-                        className="rounded-xl h-9 text-xs gap-1.5 border-white/[0.08] hover:bg-white/[0.06] text-muted-foreground hover:text-white"
+                        className="rounded-lg h-9 text-xs gap-1.5 border-border hover:bg-accent text-muted-foreground hover:text-foreground"
                       >
                         <CalendarIcon className="h-3.5 w-3.5" />
                         Schedule Dispatch
@@ -650,9 +606,9 @@ export default function ContentStudioPage() {
 
         {/* Schedule View */}
         <TabsContent value="calendar" className="mt-0">
-          <div className="glass-panel rounded-3xl p-7 border border-white/[0.08]">
+          <div className="bg-card rounded-2xl p-7 border border-border shadow-subtle">
             <div className="mb-6">
-              <h3 className="font-display font-bold text-lg text-white">Scheduled Dispatches</h3>
+              <h3 className="font-display font-bold text-lg text-foreground">Scheduled Dispatches</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Upcoming social publications verified by operators
               </p>
@@ -670,7 +626,7 @@ export default function ContentStudioPage() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/[0.07]">
+                  <TableRow className="border-border">
                     <TableHead className="text-xs font-mono">Date</TableHead>
                     <TableHead className="text-xs font-mono">Content Excerpt</TableHead>
                     <TableHead className="text-xs font-mono">Status</TableHead>
@@ -678,7 +634,7 @@ export default function ContentStudioPage() {
                 </TableHeader>
                 <TableBody>
                   {calendarPosts.map((p) => (
-                    <TableRow key={p.id} className="border-white/[0.05]">
+                    <TableRow key={p.id} className="border-border">
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {p.scheduled_at ? formatRelativeTime(p.scheduled_at) : "Draft"}
                       </TableCell>
