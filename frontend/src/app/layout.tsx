@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -37,9 +38,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`dark ${syne.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
     >
-      <body className="font-sans bg-background text-foreground antialiased selection:bg-cyan-500/20 selection:text-cyan-200">
-        <AppShell>{children}</AppShell>
+      <body className="font-sans bg-background text-foreground antialiased">
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );

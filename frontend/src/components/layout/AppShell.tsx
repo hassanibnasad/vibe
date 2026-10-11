@@ -15,8 +15,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="relative min-h-screen flex bg-background text-foreground antialiased selection:bg-cyan-500/25 selection:text-cyan-200">
-        {/* Atmospheric Living Shader Backdrop */}
+      <div className="relative min-h-screen flex bg-background text-foreground antialiased selection:bg-foreground selection:text-background">
+        {/* Subtle Micro-Grain Noise Backdrop */}
         <FluidShader />
 
         {/* Navigation Sidebar */}
