@@ -1,5 +1,6 @@
 import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import type { BrandProfile } from "@/lib/api-client";
 
 export const runtime = "nodejs";
 
@@ -7,7 +8,7 @@ export async function POST(req: Request) {
   let prompt = "";
   let tone = "authoritative";
   let platform = "LinkedIn";
-  let brand_profile: any = null;
+  let brand_profile: BrandProfile | null = null;
 
   try {
     const body = await req.json();

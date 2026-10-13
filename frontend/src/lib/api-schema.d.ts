@@ -9,7 +9,7 @@ export interface paths {
       responses: {
         200: {
           content: {
-            "application/json": Record<string, any>;
+            "application/json": Record<string, unknown>;
           };
         };
       };
@@ -31,7 +31,7 @@ export interface paths {
       responses: {
         201: {
           content: {
-            "application/json": Record<string, any>;
+            "application/json": Record<string, unknown>;
           };
         };
       };
@@ -50,7 +50,7 @@ export interface paths {
       responses: {
         200: {
           content: {
-            "application/json": Record<string, any>;
+            "application/json": Record<string, unknown>;
           };
         };
       };
@@ -61,7 +61,7 @@ export interface paths {
       responses: {
         200: {
           content: {
-            "application/json": Record<string, any>;
+            "application/json": Record<string, unknown>;
           };
         };
       };
@@ -71,6 +71,6 @@ export interface paths {
 
 export interface components {
   schemas: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
