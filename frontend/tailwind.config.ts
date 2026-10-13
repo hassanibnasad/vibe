@@ -10,15 +10,25 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1.5rem",
       screens: {
         "2xl": "1400px",
       },
     },
     fontFamily: {
       sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-      display: ["var(--font-display)", "sans-serif"],
+      display: ["var(--font-sans)", "system-ui", "sans-serif"],
       mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+    },
+    fontSize: {
+      xs: ["12px", { lineHeight: "16px" }],
+      sm: ["13px", { lineHeight: "18px" }],
+      base: ["14px", { lineHeight: "20px" }],
+      md: ["15px", { lineHeight: "22px" }],
+      lg: ["16px", { lineHeight: "24px" }],
+      xl: ["18px", { lineHeight: "24px" }],
+      "2xl": ["22px", { lineHeight: "28px" }],
+      "3xl": ["28px", { lineHeight: "34px" }],
     },
     extend: {
       colors: {
@@ -31,7 +41,7 @@ const config: Config = {
         surface: {
           DEFAULT: "hsl(var(--surface))",
           raised: "hsl(var(--surface-raised))",
-          glass: "hsl(var(--surface-glass))",
+          elevated: "hsl(var(--surface-elevated))",
         },
         foreground: "hsl(var(--foreground))",
         primary: {
@@ -68,23 +78,35 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         status: {
-          success: "hsl(var(--status-success))",
+          draft: "hsl(var(--status-draft))",
+          scheduled: "hsl(var(--status-scheduled))",
+          published: "hsl(var(--status-published))",
+          failed: "hsl(var(--status-danger))",
+          success: "hsl(var(--status-published))",
           warning: "hsl(var(--status-warning))",
           danger: "hsl(var(--status-danger))",
-          error: "hsl(var(--status-error))",
-          info: "hsl(var(--status-info))",
+          error: "hsl(var(--status-danger))",
+          info: "hsl(var(--status-scheduled))",
         },
       },
       borderRadius: {
-        "2xl": "1rem",
-        xl: "0.75rem",
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        sm: "4px",
+        DEFAULT: "6px",
+        md: "6px",
+        lg: "10px",
+        xl: "10px",
+        "2xl": "10px",
+        full: "9999px",
       },
       boxShadow: {
-        subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-        elevated: "0 4px 12px -2px rgba(0, 0, 0, 0.12)",
+        subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.04)",
+        elevated: "0 4px 12px -2px rgba(0, 0, 0, 0.08)",
+      },
+      transitionDuration: {
+        DEFAULT: "150ms",
+        fast: "120ms",
+        normal: "160ms",
+        slow: "200ms",
       },
     },
   },

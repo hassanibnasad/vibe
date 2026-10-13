@@ -56,3 +56,38 @@ export function formatConfidence(score: number, threshold: number = 0.85): Confi
   };
 }
 
+export function humanizeTitle(title: string): string {
+  if (!title) return "";
+  // Strip common file extensions
+  const clean = title.replace(/\.(md|txt|pdf|docx|html)$/i, "");
+  // Replace underscores and hyphens with spaces
+  const words = clean.replace(/[_-]+/g, " ").trim().split(/\s+/);
+
+  const ACRONYMS = new Set([
+    "ai",
+    "api",
+    "rag",
+    "icp",
+    "bant",
+    "crm",
+    "sql",
+    "mql",
+    "url",
+    "ui",
+    "ux",
+    "faq",
+    "roi",
+    "b2b",
+    "llm",
+  ]);
+
+  return words
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (ACRONYMS.has(lower)) {
+        return lower.toUpperCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}

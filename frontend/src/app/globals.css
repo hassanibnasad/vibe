@@ -3,92 +3,92 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── LIGHT MODE (Default) ── */
+  /* ── LIGHT MODE (Quiet Pro Editorial Tool) ── */
   :root {
-    --background: 0 0% 100%;        /* #FFFFFF */
-    --canvas: 0 0% 98%;             /* #FAFAFA */
-    --surface: 0 0% 96%;            /* #F5F5F5 */
+    --background: 210 20% 98%;          /* #F8FAFC Tinted neutral canvas */
+    --canvas: 210 20% 98%;
+    --surface: 0 0% 100%;               /* #FFFFFF Clean flat surface */
     --surface-raised: 0 0% 100%;
-    --surface-glass: 0 0% 100% / 0.8;
+    --surface-elevated: 0 0% 100%;
 
-    --foreground: 0 0% 9%;          /* #171717 */
+    --foreground: 222 47% 11%;          /* #0F172A Deep slate ink */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 222 47% 11%;
 
     /* Typography & Hierarchy */
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --text-primary: 0 0% 9%;
-    --text-secondary: 0 0% 45%;
-    --text-disabled: 0 0% 64%;
+    --primary: 221.2 83.2% 53.3%;       /* #2563EB Pro Cobalt */
+    --primary-foreground: 0 0% 100%;
+    --text-primary: 222 47% 11%;
+    --text-secondary: 215 16% 40%;      /* #475569 Crisp readable secondary */
+    --text-disabled: 215 16% 62%;       /* #94A3B8 */
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --secondary: 210 20% 95%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 16% 45%;
 
-    --accent: 0 0% 94%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 210 20% 93%;
+    --accent-foreground: 222 47% 11%;
 
-    /* Crisp Precision Borders */
-    --border: 0 0% 90%;
-    --border-strong: 0 0% 75%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 20%;
-    --radius: 0.625rem;
+    /* Crisp Precision Borders (Stronger for light mode) */
+    --border: 214 32% 90%;              /* #E2E8F0 */
+    --border-strong: 215 25% 75%;       /* #CBD5E1 Visible 3:1 ratio */
+    --input: 214 32% 88%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 6px;
 
-    /* Semantic Status Tokens */
-    --status-success: 142 71% 45%;
-    --status-warning: 38 92% 50%;
-    --status-error: 0 84% 60%;
-    --status-danger: 0 84% 60%;
-    --status-info: 221 83% 53%;
+    /* Semantic Status Tokens (4.5:1 text contrast) */
+    --status-draft: 215 16% 45%;
+    --status-scheduled: 221 83% 50%;
+    --status-published: 158 64% 36%;
+    --status-danger: 350 89% 45%;
+    --status-warning: 38 92% 40%;
   }
 
-  /* ── DARK MODE ── */
+  /* ── DARK MODE (Surfaces get lighter as they elevate) ── */
   .dark {
-    --background: 0 0% 4%;           /* #0A0A0A */
-    --canvas: 0 0% 4%;
-    --surface: 0 0% 7%;              /* #121212 */
-    --surface-raised: 0 0% 10%;
-    --surface-glass: 0 0% 7% / 0.8;
+    --background: 224 71% 4%;           /* #030712 Deep base */
+    --canvas: 224 71% 4%;
+    --surface: 222 47% 7%;              /* #0B0F19 Base surface */
+    --surface-raised: 217 33% 11%;      /* #111827 Elevated card */
+    --surface-elevated: 215 28% 16%;    /* #1F2937 Popover / Modal */
 
-    --foreground: 0 0% 98%;          /* #FAFAFA */
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7% / 0.95;
-    --popover-foreground: 0 0% 98%;
+    --foreground: 210 40% 98%;          /* #F8FAFC Crisp text */
+    --card: 217 33% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 215 28% 16%;
+    --popover-foreground: 210 40% 98%;
 
     /* Typography & Hierarchy */
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --text-primary: 0 0% 98%;
-    --text-secondary: 0 0% 60%;
-    --text-disabled: 0 0% 40%;
+    --primary: 217 91% 60%;             /* #3B82F6 Pro Cobalt */
+    --primary-foreground: 0 0% 100%;
+    --text-primary: 210 40% 98%;
+    --text-secondary: 215 20% 68%;      /* #A0AEC0 High readability */
+    --text-disabled: 215 16% 45%;       /* #64748B */
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 55%;
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 60%;
 
-    --accent: 0 0% 14%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 217 33% 16%;
+    --accent-foreground: 210 40% 98%;
 
     /* Crisp Precision Borders */
-    --border: 0 0% 15%;
-    --border-strong: 0 0% 25%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 80%;
-    --radius: 0.625rem;
+    --border: 217 33% 18%;              /* Clean visible border */
+    --border-strong: 217 33% 28%;       /* Higher contrast border */
+    --input: 217 33% 20%;
+    --ring: 217 91% 60%;
+    --radius: 6px;
 
-    /* Semantic Status Tokens */
-    --status-success: 142 71% 45%;
-    --status-warning: 38 92% 50%;
-    --status-error: 0 84% 60%;
-    --status-danger: 0 84% 60%;
-    --status-info: 221 83% 53%;
+    /* Semantic Status Tokens (4.5:1 text contrast) */
+    --status-draft: 215 20% 70%;
+    --status-scheduled: 217 91% 68%;
+    --status-published: 158 64% 55%;
+    --status-danger: 350 89% 65%;
+    --status-warning: 38 92% 60%;
   }
 }
 
@@ -97,17 +97,17 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-foreground selection:text-background;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Focus-visible ring for keyboard navigation */
+  /* Clear focus-visible ring for keyboard navigation */
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-ring ring-offset-1 ring-offset-background;
   }
 }
 
-/* Neutral Surfaces & Migration Compatibility */
+/* Neutral Surfaces */
 .glass-panel {
   @apply bg-card border border-border;
 }
@@ -116,13 +116,12 @@
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .glass-panel-hover:hover {
-  @apply border-border-strong bg-accent/40;
+  @apply border-border-strong bg-accent/30;
 }
 
-/* Neutral Headings */
-.text-gradient-white,
-.text-gradient-cyan {
-  @apply text-foreground;
+/* Tabular numerals utility */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Subtle, clean scrollbar */
@@ -139,4 +138,14 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--border-strong));
+}
+
+/* Respect user's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
