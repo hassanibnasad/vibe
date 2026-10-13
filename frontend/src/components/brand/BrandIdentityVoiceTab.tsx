@@ -371,8 +371,8 @@ export function BrandIdentityVoiceTab({
                   onClick={() => setArchetype(config.name)}
                   className={`group flex flex-col items-start p-3.5 rounded-xl border text-left transition-colors relative ${
                     isSelected
-                      ? "border-foreground/40 bg-accent shadow-subtle"
-                      : "border-border bg-surface hover:border-border-strong hover:bg-accent/40"
+                      ? "border-primary bg-primary/5 shadow-subtle ring-1 ring-primary/30"
+                      : "border-border bg-card hover:border-border-strong hover:bg-accent/40"
                   }`}
                 >
                   <div className="flex items-center justify-between w-full mb-1.5">
@@ -380,7 +380,7 @@ export function BrandIdentityVoiceTab({
                       <div
                         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
                           isSelected
-                            ? "bg-foreground text-background font-semibold"
+                            ? "bg-primary text-primary-foreground font-semibold"
                             : "bg-muted text-muted-foreground group-hover:text-foreground"
                         }`}
                       >
@@ -400,6 +400,35 @@ export function BrandIdentityVoiceTab({
                 </button>
               );
             })}
+          </div>
+
+          {/* Live Sample Sentence Preview */}
+          <div className="mt-4 rounded-lg border border-border bg-surface p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Live Voice Sample Preview ({archetype})
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground">Real-time simulation</span>
+            </div>
+            <p className="text-xs font-serif italic text-foreground/90 leading-relaxed pl-3 border-l-2 border-primary/50">
+              {archetype === "Technical Expert"
+                ? "“We benchmarked 100k vector embeddings across pgvector and specialized vector databases. The surprising bottleneck wasn't memory bandwidth—it was index quantization latency.”"
+                : archetype === "Visionary Leader"
+                ? "“The next decade of B2B outbound won't be defined by SDR headcount, but by autonomous agents reasoning over unified enterprise context graphs.”"
+                : archetype === "Pragmatic Operator"
+                ? "“Here is the exact 4-step playbook our team used to reduce post draft turnaround from 3 days to 45 seconds without sacrificing brand voice.”"
+                : archetype === "Challenger / Contrarian"
+                ? "“Stop measuring marketing success by vanity impressions. If your outbound content doesn't actively disqualify bad-fit prospects in the first sentence, it's costing you revenue.”"
+                : archetype === "Consultative Strategist"
+                ? "“Enterprise content maturity moves across 4 distinct phases: ad-hoc prompt testing, centralized templates, operator review gates, and grounded autonomous execution.”"
+                : "“A teardown of why clean, keyboard-first UX wins: zero marketing fluff, instant responsive interactions, and state changes that never block the operator.”"}
+            </p>
+            {toneAttributes.length > 0 && (
+              <p className="text-[10px] text-muted-foreground pt-1">
+                Tuned with traits: <span className="text-foreground font-medium">{toneAttributes.join(" · ")}</span>
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

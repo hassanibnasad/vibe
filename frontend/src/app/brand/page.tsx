@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   BrandProfile,
   BrandProfileUpdateRequest,
@@ -36,6 +36,7 @@ export default function BrandIdentityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Active Tab
@@ -128,6 +129,7 @@ export default function BrandIdentityPage() {
           }))
         : []
     );
+    setHasUnsavedChanges(false);
   };
 
   const loadData = useCallback(async () => {
@@ -138,94 +140,67 @@ export default function BrandIdentityPage() {
       if (data) {
         setProfile(data);
         syncFormFromProfile(data);
-        if (data.website_url && !scrapeUrl) {
-          setScrapeUrl(data.website_url);
-        }
-        if (data.brand_name && !scrapeBrandName) {
-          setScrapeBrandName(data.brand_name);
-        }
       }
     } catch {
-      setErrorMessage("Could not load brand profile. Check connection to backend service.");
+      setErrorMessage("Unable to fetch brand profile. Please verify API connection.");
     } finally {
       setLoading(false);
     }
-  }, [scrapeUrl, scrapeBrandName]);
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
-  }, []);
+  }, [loadData]);
 
-  // Poll for extraction completion
-  const startExtractionPolling = () => {
-    let attempts = 0;
-    const maxAttempts = 40; // 2 minutes (40 * 3s)
-    setExtractionStep("Scraping website contents and analyzing visual DOM...");
+  // Mark unsaved when any value changes
+  const markDirty = () => setHasUnsavedChanges(true);
 
-    pollTimerRef.current = setInterval(async () => {
-      attempts++;
-      if (attempts === 4) {
-        setExtractionStep("Extracting visual color tokens and brand imagery...");
-      } else if (attempts === 8) {
-        setExtractionStep("Synthesizing voice archetype, core value propositions, and ICP hooks...");
-      } else if (attempts === 15) {
-        setExtractionStep("Formulating negative buzzwords and compliance guardrails...");
-      }
-
-      try {
-        const fresh = await fetchBrandProfile();
-        if (fresh && fresh.extraction_status === "complete") {
-          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-          setProfile(fresh);
-          syncFormFromProfile(fresh);
-          setExtracting(false);
-          setExtractionStep("");
-          setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 3000);
-          return;
-        } else if (fresh && fresh.extraction_status === "failed") {
-          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-          setExtracting(false);
-          setExtractionStep("Extraction failed on backend scraper. Please verify the URL.");
-          return;
-        }
-      } catch {
-        // Continue polling until timeout
-      }
-
-      if (attempts >= maxAttempts) {
-        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-        setExtracting(false);
-        setExtractionStep("Extraction timed out. Refreshing profile status.");
-        loadData();
-      }
-    }, 3000);
-  };
-
+  // Trigger one-click extraction
   const handleStartExtraction = async () => {
     const targetUrl = scrapeUrl || websiteUrl;
-    const targetName = scrapeBrandName || brandName;
-    if (!targetUrl.trim() || !targetName.trim()) return;
+    if (!targetUrl.trim()) {
+      setErrorMessage("Please enter a valid website URL to extract brand data.");
+      return;
+    }
 
     setExtracting(true);
-    setExtractionStep("Dispatching extraction task to crawler...");
     setErrorMessage(null);
+    setExtractionStep("Connecting to website and scraping semantic assets...");
 
     try {
-      const payload: ExtractBrandRequest = {
-        website_url: targetUrl.trim(),
-        brand_name: targetName.trim(),
+      const req: ExtractBrandRequest = {
+        website_url: targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`,
+        brand_name: (scrapeBrandName || brandName).trim() || "Brand",
       };
-      const res = await extractBrandFromWebsite(payload);
+
+      const res = await extractBrandFromWebsite(req);
       setExtractionJobId(res.job_id);
-      startExtractionPolling();
+
+      let stepIndex = 0;
+      const steps = [
+        "Analyzing color palette and extracting visual tokens...",
+        "Synthesizing brand archetype and tone traits...",
+        "Identifying core value propositions and audience pain points...",
+        "Finalizing brand profile guardrails...",
+      ];
+
+      pollTimerRef.current = setInterval(() => {
+        stepIndex++;
+        if (stepIndex < steps.length) {
+          setExtractionStep(steps[stepIndex]);
+        } else {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          loadData().then(() => {
+            setExtracting(false);
+            setExtractionStep("");
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3500);
+          });
+        }
+      }, 1500);
     } catch (err) {
       setExtracting(false);
       setErrorMessage(
@@ -234,15 +209,15 @@ export default function BrandIdentityPage() {
     }
   };
 
+  // Save manual modifications
   const handleSaveProfile = async () => {
     setSaving(true);
-    setSaveSuccess(false);
     setErrorMessage(null);
 
     const payload: BrandProfileUpdateRequest = {
       brand_name: brandName,
       website_url: websiteUrl,
-      tagline: tagline,
+      tagline,
       visual_identity: {
         palette: {
           primary: palettePrimary,
@@ -278,6 +253,7 @@ export default function BrandIdentityPage() {
       setProfile(updated);
       syncFormFromProfile(updated);
       setSaveSuccess(true);
+      setHasUnsavedChanges(false);
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (err) {
       setErrorMessage(
@@ -291,65 +267,44 @@ export default function BrandIdentityPage() {
   const totalGuardrailsCount =
     bannedWords.length + competitorBlacklist.length + sensitiveTopics.length + mandatoryDisclaimers.length;
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-6 pb-20">
-      {/* 1. Header Bar with Clear Action */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
-              Brand Identity & Voice
-            </h1>
-            {profile && (
-              <Badge
-                variant="outline"
-                className={`text-xs capitalize font-medium ${
-                  profile.extraction_status === "complete"
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : profile.extraction_status === "failed"
-                    ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
-                    : "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                }`}
-              >
-                {profile.extraction_status === "complete" ? "Extraction Active" : profile.extraction_status}
-              </Badge>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Define your company voice, core value props, and compliance guardrails for autonomous content generation.
-          </p>
-        </div>
+  const hasConfiguredProfile = Boolean(profile && (profile.brand_name || profile.website_url));
 
-        <div className="flex items-center gap-2.5">
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 pb-28">
+      {/* 1. Compact Page Header without noisy Active pill */}
+      <PageHeader
+        title="Brand Identity"
+        description="Define voice traits, value propositions, and guardrails to ground all generated content."
+        action={
           <Button
             onClick={handleSaveProfile}
             disabled={saving || loading}
             size="sm"
-            className="bg-foreground text-background hover:bg-foreground/90 text-xs h-9 font-medium gap-1.5 shadow-subtle rounded-lg px-4 transition-colors"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8 font-medium gap-1.5 shadow-subtle rounded-md px-3.5 transition-colors"
           >
             {saving ? (
               <>
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                Saving Changes...
+                Saving...
               </>
             ) : saveSuccess ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-600" />
-                Saved Changes
+                <Check className="h-3.5 w-3.5 text-emerald-300" />
+                Saved
               </>
             ) : (
               <>
                 <Save className="h-3.5 w-3.5" />
-                Save Changes
+                Save changes
               </>
             )}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* 2. Global Feedback Alerts */}
+      {/* Global Alerts */}
       {errorMessage && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-300 flex items-center justify-between">
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-300 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
             <span>{errorMessage}</span>
@@ -366,35 +321,14 @@ export default function BrandIdentityPage() {
       )}
 
       {saveSuccess && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-300 flex items-center gap-2.5">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400 flex items-center gap-2.5">
           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>Brand guidelines saved. Future generated posts and replies will strictly follow these rules.</span>
         </div>
       )}
 
-      {/* 3. Streamlined One-Click Extraction Wizard Hero */}
-      <BrandExtractionWizard
-        brandName={scrapeBrandName || brandName}
-        setBrandName={(val) => {
-          setScrapeBrandName(val);
-          if (!brandName) setBrandName(val);
-        }}
-        websiteUrl={scrapeUrl || websiteUrl}
-        setWebsiteUrl={(val) => {
-          setScrapeUrl(val);
-          if (!websiteUrl) setWebsiteUrl(val);
-        }}
-        extracting={extracting}
-        extractionStep={extractionStep}
-        extractionJobId={extractionJobId}
-        onStartExtraction={handleStartExtraction}
-        hasProfile={Boolean(profile && (profile.brand_name || profile.website_url))}
-        extractionStatus={profile?.extraction_status}
-        lastExtractedAt={profile?.last_extracted_at}
-      />
-
-      {/* 4. Brand At-A-Glance Snapshot Card */}
-      {!loading && (
+      {/* 2. Brand Profile Shown First When Configured */}
+      {!loading && hasConfiguredProfile && (
         <BrandSnapshotCard
           brandName={brandName}
           websiteUrl={websiteUrl}
@@ -411,36 +345,59 @@ export default function BrandIdentityPage() {
         />
       )}
 
-      {/* 5. Clean, Progressive 3-Tab Workspace */}
+      {/* 3. Re-Extraction Tool (Shown Prominently Only on First-Run; Secondary Collapsed Bar Otherwise) */}
+      <BrandExtractionWizard
+        brandName={scrapeBrandName || brandName}
+        setBrandName={(val) => {
+          setScrapeBrandName(val);
+          if (!brandName) setBrandName(val);
+          markDirty();
+        }}
+        websiteUrl={scrapeUrl || websiteUrl}
+        setWebsiteUrl={(val) => {
+          setScrapeUrl(val);
+          if (!websiteUrl) setWebsiteUrl(val);
+          markDirty();
+        }}
+        extracting={extracting}
+        extractionStep={extractionStep}
+        extractionJobId={extractionJobId}
+        onStartExtraction={handleStartExtraction}
+        hasProfile={hasConfiguredProfile}
+        extractionStatus={profile?.extraction_status}
+        lastExtractedAt={profile?.last_extracted_at}
+      />
+
+      {/* 4. Progressive 3-Tab Workspace */}
       {loading ? (
         <div className="space-y-4 pt-2">
-          <div className="h-10 w-full bg-white/[0.03] animate-pulse rounded-xl border border-white/5" />
-          <div className="h-80 w-full bg-white/[0.03] animate-pulse rounded-2xl border border-white/5" />
+          <div className="h-10 w-full bg-surface animate-pulse rounded-lg border border-border" />
+          <div className="h-80 w-full bg-surface animate-pulse rounded-lg border border-border" />
         </div>
       ) : (
         <FadeIn>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-surface border border-border p-1 h-auto flex flex-wrap gap-1 rounded-xl">
+            <TabsList className="bg-surface border border-border p-1 h-auto flex flex-wrap gap-1 rounded-lg">
               <TabsTrigger
                 value="voice"
-                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-lg gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <MessageSquare className="h-3.5 w-3.5 text-foreground" />
                 Identity & Voice
               </TabsTrigger>
               <TabsTrigger
                 value="icp"
-                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-lg gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Target className="h-3.5 w-3.5 text-foreground" />
                 Value Props & ICP Hooks
               </TabsTrigger>
               <TabsTrigger
                 value="compliance"
-                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-lg gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
-                Guardrails & Compliance
+                Guardrails & Rules
               </TabsTrigger>
             </TabsList>
 
@@ -448,29 +405,29 @@ export default function BrandIdentityPage() {
             <TabsContent value="voice" className="space-y-6">
               <BrandIdentityVoiceTab
                 brandName={brandName}
-                setBrandName={setBrandName}
+                setBrandName={(v) => { setBrandName(v); markDirty(); }}
                 websiteUrl={websiteUrl}
-                setWebsiteUrl={setWebsiteUrl}
+                setWebsiteUrl={(v) => { setWebsiteUrl(v); markDirty(); }}
                 tagline={tagline}
-                setTagline={setTagline}
+                setTagline={(v) => { setTagline(v); markDirty(); }}
                 aestheticSummary={aestheticSummary}
-                setAestheticSummary={setAestheticSummary}
+                setAestheticSummary={(v) => { setAestheticSummary(v); markDirty(); }}
                 palettePrimary={palettePrimary}
-                setPalettePrimary={setPalettePrimary}
+                setPalettePrimary={(v) => { setPalettePrimary(v); markDirty(); }}
                 paletteAccent={paletteAccent}
-                setPaletteAccent={setPaletteAccent}
+                setPaletteAccent={(v) => { setPaletteAccent(v); markDirty(); }}
                 paletteNeutral={paletteNeutral}
-                setPaletteNeutral={setPaletteNeutral}
+                setPaletteNeutral={(v) => { setPaletteNeutral(v); markDirty(); }}
                 imageryStyle={imageryStyle}
-                setImageryStyle={setImageryStyle}
+                setImageryStyle={(v) => { setImageryStyle(v); markDirty(); }}
                 negativePrompts={negativePrompts}
-                setNegativePrompts={setNegativePrompts}
+                setNegativePrompts={(v) => { setNegativePrompts(v); markDirty(); }}
                 archetype={archetype}
-                setArchetype={setArchetype}
+                setArchetype={(v) => { setArchetype(v); markDirty(); }}
                 toneAttributes={toneAttributes}
-                setToneAttributes={setToneAttributes}
+                setToneAttributes={(v) => { setToneAttributes(v); markDirty(); }}
                 formattingRules={formattingRules}
-                setFormattingRules={setFormattingRules}
+                setFormattingRules={(v) => { setFormattingRules(v); markDirty(); }}
               />
             </TabsContent>
 
@@ -478,15 +435,15 @@ export default function BrandIdentityPage() {
             <TabsContent value="icp" className="space-y-6">
               <BrandOfferingsTab
                 valueProps={valueProps}
-                setValueProps={setValueProps}
+                setValueProps={(v) => { setValueProps(v); markDirty(); }}
                 icpPainPoints={icpPainPoints}
-                setIcpPainPoints={setIcpPainPoints}
+                setIcpPainPoints={(v) => { setIcpPainPoints(v); markDirty(); }}
                 leadMagnets={leadMagnets}
-                setLeadMagnets={setLeadMagnets}
+                setLeadMagnets={(v) => { setLeadMagnets(v); markDirty(); }}
                 ctaTemplates={ctaTemplates}
-                setCtaTemplates={setCtaTemplates}
+                setCtaTemplates={(v) => { setCtaTemplates(v); markDirty(); }}
                 offerHooks={offerHooks}
-                setOfferHooks={setOfferHooks}
+                setOfferHooks={(v) => { setOfferHooks(v); markDirty(); }}
               />
             </TabsContent>
 
@@ -494,18 +451,76 @@ export default function BrandIdentityPage() {
             <TabsContent value="compliance" className="space-y-6">
               <BrandGuardrailsTab
                 bannedWords={bannedWords}
-                setBannedWords={setBannedWords}
+                setBannedWords={(v) => { setBannedWords(v); markDirty(); }}
                 competitorBlacklist={competitorBlacklist}
-                setCompetitorBlacklist={setCompetitorBlacklist}
+                setCompetitorBlacklist={(v) => { setCompetitorBlacklist(v); markDirty(); }}
                 sensitiveTopics={sensitiveTopics}
-                setSensitiveTopics={setSensitiveTopics}
+                setSensitiveTopics={(v) => { setSensitiveTopics(v); markDirty(); }}
                 mandatoryDisclaimers={mandatoryDisclaimers}
-                setMandatoryDisclaimers={setMandatoryDisclaimers}
+                setMandatoryDisclaimers={(v) => { setMandatoryDisclaimers(v); markDirty(); }}
               />
             </TabsContent>
           </Tabs>
         </FadeIn>
       )}
+
+      {/* Sticky Save Bar when edits occur */}
+      <div className="fixed bottom-0 left-0 md:left-16 lg:left-64 right-0 z-30 border-t border-border bg-background/95 backdrop-blur px-6 py-3 flex items-center justify-between shadow-subtle">
+        <div className="flex items-center gap-2 text-xs">
+          {hasUnsavedChanges ? (
+            <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-medium">
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              You have unsaved brand changes
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+              All brand rules in sync
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {hasUnsavedChanges && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (profile) syncFormFromProfile(profile);
+              }}
+              className="h-8 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Reset
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            onClick={handleSaveProfile}
+            disabled={saving || !hasUnsavedChanges}
+            size="sm"
+            className="h-8 text-xs font-medium gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-subtle disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : saveSuccess ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-300" />
+                <span>Saved</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-3.5 w-3.5" />
+                <span>Save guidelines</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
