@@ -3,25 +3,20 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Link2,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
-  ExternalLink,
   ShieldCheck,
   KeyRound,
   Trash2,
-  Calendar,
   Lock,
   ArrowRight,
-  Info,
   Clock,
-  Radio,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Dialog,
   DialogContent,
@@ -118,38 +113,22 @@ function ConnectorsContent() {
 
   return (
     <div className="space-y-8 pb-16 max-w-6xl mx-auto">
-      {/* Top Editorial Header */}
-      <FadeIn>
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface border border-border">
-            <Radio className="h-3.5 w-3.5 text-foreground" />
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-              Social Gateway Seam
-            </span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-                Social Connectors
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-                Manage authenticated social platform credentials for autonomous dispatches,
-                scheduled publications, and audience sentiment qualification.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadConnections}
-              disabled={loading}
-              className="gap-2 rounded-lg border-border bg-surface hover:bg-accent text-xs h-9 shrink-0 text-foreground"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Sync Status
-            </Button>
-          </div>
-        </div>
-      </FadeIn>
+      <PageHeader
+        title="Connectors"
+        description="Connect and manage authenticated social platform accounts."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadConnections}
+            disabled={loading}
+            className="gap-1.5 rounded-md border-border bg-surface hover:bg-accent text-xs h-8 shrink-0 text-foreground"
+          >
+            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+            Sync status
+          </Button>
+        }
+      />
 
       {/* OAuth Callback Success / Error Notifications */}
       {justConnected && (

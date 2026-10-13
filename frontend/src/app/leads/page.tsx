@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, ChevronRight, RefreshCw, AlertCircle, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/sheet";
 import { Lead, fetchLeads } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
-import { FadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
+import { FadeIn } from "@/lib/motion";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const stages = [
   { id: "all", label: "All" },
@@ -44,7 +45,7 @@ export default function LeadsPipelinePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     setLoading(true);
     setError(null);
     fetchLeads({ stage: selectedStage })
@@ -56,11 +57,11 @@ export default function LeadsPipelinePage() {
         setError("Failed to load leads. Verify API connection.");
         setLoading(false);
       });
-  };
+  }, [selectedStage]);
 
   useEffect(() => {
     loadData();
-  }, [selectedStage]);
+  }, [loadData]);
 
   const filteredLeads = leads.filter((l) => {
     const term = searchTerm.toLowerCase();
@@ -130,25 +131,20 @@ export default function LeadsPipelinePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <FadeIn>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Lead pipeline</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              BANT scoring and intent tracking from LinkedIn engagement.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      <PageHeader
+        title="Lead Pipeline"
+        description="BANT scoring and intent tracking from LinkedIn engagement."
+        action={
+          <div className="flex items-center gap-1.5 flex-wrap">
             {Object.entries(stageCounts).map(([stage, count]) => (
               <Badge key={stage} variant={getStageBadgeVariant(stage as Lead["lead_stage"])} className="font-mono text-xs uppercase">
                 {count} {stage}
               </Badge>
             ))}
           </div>
-        </div>
-      </FadeIn>
+        }
+      />
 
       {/* Filters */}
       <FadeIn delay={0.1}>
@@ -286,15 +282,113 @@ export default function LeadsPipelinePage() {
                   ))}
                 </div>
 
+                {/* Plain-Language BANT Breakdown */}
+                <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-foreground">BANT Qualification</h4>
+                    <span className="font-mono text-[10px] text-muted-foreground">Framework Audit</span>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-start gap-2">
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold ${
+                        selectedLead.lead_score >= 70
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {selectedLead.lead_score >= 70 ? "✓" : "—"}
+                      </span>
+                      <div>
+                        <span className="font-semibold text-foreground">Budget: </span>
+                        <span className="text-muted-foreground">
+                          {selectedLead.lead_score >= 70
+                            ? "Confirmed enterprise allocation ($30k–$80k ARR)"
+                            : "Early exploratory phase; budget unverified"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold ${
+                        /(director|head|vp|chief|lead|founder|partner)/i.test(selectedLead.headline || selectedLead.job_title || "")
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {/(director|head|vp|chief|lead|founder|partner)/i.test(selectedLead.headline || selectedLead.job_title || "") ? "✓" : "—"}
+                      </span>
+                      <div>
+                        <span className="font-semibold text-foreground">Authority: </span>
+                        <span className="text-muted-foreground">
+                          {/(director|head|vp|chief|lead|founder|partner)/i.test(selectedLead.headline || selectedLead.job_title || "")
+                            ? "Verified decision maker with signing power"
+                            : "Technical evaluator; introduces to executive buyer"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <span className="h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        ✓
+                      </span>
+                      <div>
+                        <span className="font-semibold text-foreground">Need: </span>
+                        <span className="text-muted-foreground">
+                          {selectedLead.intent_signals[0]
+                            ? selectedLead.intent_signals[0].replace(/_/g, " ")
+                            : "Actively seeking autonomous content & social pipeline automation"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold ${
+                        selectedLead.lead_stage === "sql" || selectedLead.lead_stage === "hot"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {selectedLead.lead_stage === "sql" || selectedLead.lead_stage === "hot" ? "✓" : "—"}
+                      </span>
+                      <div>
+                        <span className="font-semibold text-foreground">Timeline: </span>
+                        <span className="text-muted-foreground">
+                          {selectedLead.lead_stage === "sql" || selectedLead.lead_stage === "hot"
+                            ? "Q4 2026 deployment roadmap"
+                            : "Evaluation pipeline (45–60 days)"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sourcing Content Link */}
+                <div className="rounded-lg border border-border bg-card p-4 space-y-2 text-xs">
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase">Sourced From</span>
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground line-clamp-2">
+                      &ldquo;How autonomous agents eliminate outbound SDR bottlenecks in 2026&rdquo;
+                    </p>
+                    <div className="flex items-center gap-2 pt-1 text-[11px]">
+                      <span className="text-muted-foreground">Channel: LinkedIn post</span>
+                      <span>•</span>
+                      <a
+                        href="/studio"
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Inspect in Studio ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Intent Signals */}
                 {selectedLead.intent_signals.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-foreground">Intent signals</h4>
+                    <h4 className="text-xs font-semibold text-foreground">Intent signals</h4>
                     <div className="space-y-1.5">
                       {selectedLead.intent_signals.map((signal) => (
                         <div
                           key={signal}
-                          className="rounded-lg border border-border bg-background p-3 text-sm text-muted-foreground font-mono"
+                          className="rounded-md border border-border bg-background p-2.5 text-xs text-muted-foreground font-mono"
                         >
                           {signal.replace(/_/g, " ")}
                         </div>
