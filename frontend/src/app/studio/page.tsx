@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   SlidersHorizontal,
   FileText,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +29,7 @@ import { BrandRulesSheet } from "@/components/studio/BrandRulesSheet";
 import { LinkedInPreview } from "@/components/studio/LinkedInPreview";
 import { GroundingChecks } from "@/components/studio/GroundingChecks";
 import { SchedulePopover } from "@/components/studio/SchedulePopover";
+import { BorderTrail } from "@/components/ui/motion";
 
 const tones = [
   { id: "thought_leadership", label: "Thought Leadership" },
@@ -117,7 +119,6 @@ export default function ContentStudioPage() {
   };
 
   const handleScheduleConfirm = async (targetIso: string) => {
-    // In a real run this attaches to a post ID or creates one
     toast({
       title: "Scheduled for publication",
       description: `Post will dispatch at ${new Date(targetIso).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}.`,
@@ -128,21 +129,21 @@ export default function ContentStudioPage() {
   const currentText = completion || (variants[selectedVariantIndex] ?? "");
 
   return (
-    <div className="space-y-6 pb-24 max-w-7xl mx-auto">
+    <div className="space-y-6 pb-28 max-w-7xl mx-auto">
       {/* Header */}
       <PageHeader
-        title="Studio"
-        description="Draft, inspect against brand rules, preview against LinkedIn specifications, and schedule."
+        title="Content Studio"
+        description="Draft with editorial nuance, ground in verified memory, and simulate LinkedIn feed reception."
         action={
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setBrandRulesOpen(true)}
-              className="h-8 text-xs gap-1.5 border-border hover:bg-accent text-foreground"
+              className="h-9 text-xs gap-1.5 border-border/80 bg-surface/60 backdrop-blur-sm hover:bg-accent/70 hover:border-border text-foreground transition-all duration-200"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Brand Rules</span>
+              <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+              <span>Brand Directives</span>
             </Button>
           </div>
         }
@@ -150,22 +151,22 @@ export default function ContentStudioPage() {
 
       {/* Two-Pane Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Pane: Simplified Brief Form */}
+        {/* Left Pane: Composition & Parameters */}
         <div className="lg:col-span-5 space-y-5">
-          <div className="rounded-lg border border-border bg-card p-5 space-y-4 shadow-subtle">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h2 className="text-xs font-semibold text-foreground">Post Parameters</h2>
+          <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 space-y-4 shadow-warm-sm overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <h2 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Post Parameters</h2>
               {linkedInConnected ? (
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-500/25">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   LinkedIn Active
                 </span>
               ) : (
                 <Link
                   href="/connections"
-                  className="text-[11px] font-mono text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
+                  className="text-[11px] font-mono text-amber-400 hover:text-amber-300 bg-amber-950/30 px-2 py-0.5 rounded-full border border-amber-500/25 flex items-center gap-1.5 transition-colors"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                   Connect LinkedIn
                 </Link>
               )}
@@ -173,11 +174,13 @@ export default function ContentStudioPage() {
 
             {/* Brand Grounding Indicator */}
             {brandProfile ? (
-              <div className="rounded-md border border-border bg-surface p-3 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+              <div className="rounded-xl border border-border/80 bg-surface/70 backdrop-blur-sm p-3.5 flex items-center justify-between text-xs transition-all duration-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
                   <div>
-                    <span className="font-semibold text-foreground block">
+                    <span className="font-medium text-foreground block">
                       {brandProfile.brand_name || "Configured Brand"}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
@@ -188,51 +191,52 @@ export default function ContentStudioPage() {
                 <button
                   type="button"
                   onClick={() => setBrandRulesOpen(true)}
-                  className="text-[11px] text-primary hover:underline font-medium"
+                  className="text-[11px] text-primary hover:text-primary/80 font-medium hover:underline"
                 >
                   View Rules
                 </button>
               </div>
             ) : (
-              <div className="rounded-md border border-dashed border-border bg-surface p-3 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />
-                  <span>No brand guidelines active. Using standard voice.</span>
+              <div className="rounded-xl border border-dashed border-border/90 bg-surface/50 p-3.5 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5 text-muted-foreground">
+                  <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span className="text-xs">No brand guidelines active. Using standard voice.</span>
                 </div>
-                <Link href="/brand" className="text-primary hover:underline text-[11px] font-medium">
+                <Link href="/brand" className="text-primary hover:underline text-[11px] font-medium ml-2 shrink-0">
                   Setup
                 </Link>
               </div>
             )}
 
             {/* Topic / Prompt Brief Input */}
-            <div className="space-y-1.5">
-              <Label htmlFor="post-brief" className="text-xs font-medium text-foreground">
-                Topic or Outline
+            <div className="space-y-2">
+              <Label htmlFor="post-brief" className="text-xs font-medium text-foreground flex items-center justify-between">
+                <span>Topic or Thesis</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Markdown supported</span>
               </Label>
               <Textarea
                 id="post-brief"
                 value={brief}
                 onChange={(e) => setBrief(e.target.value)}
                 placeholder="What tactical lesson, framework, or company update would you like to publish?"
-                className="min-h-[140px] text-xs leading-relaxed bg-surface border-border focus:ring-1 focus:ring-ring"
+                className="min-h-[140px] text-xs leading-relaxed bg-surface/70 border-border/80 focus:ring-primary/25 placeholder:text-muted-foreground/60"
                 disabled={isStreaming}
               />
             </div>
 
             {/* Tone Selector */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs font-medium text-foreground">Voice Tone</Label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 {tones.map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setTone(t.id)}
-                    className={`px-3 py-2 rounded-md border text-left text-xs transition-colors ${
+                    className={`px-3 py-2.5 rounded-xl border text-left text-xs transition-all duration-200 ${
                       tone === t.id
-                        ? "border-primary bg-primary/5 text-foreground font-semibold"
-                        : "border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                        ? "border-primary/50 bg-gradient-to-r from-primary/20 to-primary/5 text-foreground font-medium shadow-warm-sm"
+                        : "border-border/70 bg-surface/50 text-muted-foreground hover:text-foreground hover:bg-surface hover:border-border"
                     }`}
                   >
                     {t.label}
@@ -242,11 +246,12 @@ export default function ContentStudioPage() {
             </div>
 
             {/* Example Prompts */}
-            <div className="pt-2 border-t border-border space-y-1.5">
-              <span className="text-[11px] font-mono text-muted-foreground uppercase font-medium">
-                Example Prompts
-              </span>
-              <div className="space-y-1">
+            <div className="pt-3 border-t border-border/60 space-y-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground uppercase font-medium">
+                <Lightbulb className="h-3 w-3 text-amber-400" />
+                <span>Example Sparks</span>
+              </div>
+              <div className="space-y-1.5">
                 {EXAMPLE_PROMPTS.map((example, i) => (
                   <button
                     key={i}
@@ -255,8 +260,9 @@ export default function ContentStudioPage() {
                       setBrief(example);
                       handleGenerate(example);
                     }}
-                    className="w-full text-left p-2 rounded border border-border/80 bg-surface/60 hover:bg-accent hover:border-border text-[11px] text-muted-foreground hover:text-foreground transition-colors leading-snug"
+                    className="w-full text-left p-2.5 rounded-xl border border-border/60 bg-surface/40 hover:bg-surface/80 hover:border-border text-[11px] text-muted-foreground hover:text-foreground transition-all duration-200 leading-snug group"
                   >
+                    <span className="text-primary/70 group-hover:text-primary mr-1">✦</span>
                     &ldquo;{example}&rdquo;
                   </button>
                 ))}
@@ -268,7 +274,7 @@ export default function ContentStudioPage() {
         {/* Right Pane: Live LinkedIn Preview or Empty State */}
         <div className="lg:col-span-7 space-y-5">
           {!currentText && !isStreaming ? (
-            <div className="rounded-lg border border-border bg-card p-12 text-center shadow-subtle">
+            <div className="relative rounded-2xl border border-border/80 bg-card/75 backdrop-blur-xl p-12 text-center shadow-warm-sm overflow-hidden">
               <EmptyState
                 icon={FileText}
                 title="No draft generated yet"
@@ -277,10 +283,10 @@ export default function ContentStudioPage() {
                   <Button
                     onClick={() => handleGenerate()}
                     disabled={!brief.trim()}
-                    className="h-8 text-xs gap-1.5 font-medium mt-2"
+                    className="h-9 text-xs gap-1.5 font-medium mt-3 bg-gradient-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-500 shadow-warm-sm"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    <span>Generate post</span>
+                    <span>Generate Draft</span>
                   </Button>
                 }
               />
@@ -319,13 +325,13 @@ export default function ContentStudioPage() {
         </div>
       </div>
 
-      {/* Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-64 right-0 z-30 border-t border-border bg-background/95 backdrop-blur px-8 py-3 flex items-center justify-between">
+      {/* Sticky Bottom Action Bar with Warm Glass & Surrealist Shadows */}
+      <div className="fixed bottom-0 left-64 right-0 z-30 border-t border-border/80 bg-background/85 backdrop-blur-xl px-8 py-3.5 flex items-center justify-between shadow-warm-lg">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="font-mono text-[11px] tabular-nums">
-            {currentText ? `${currentText.split(/\s+/).filter(Boolean).length} words` : "Ready"}
+          <span className="font-mono text-[11px] tabular-nums text-foreground/80">
+            {currentText ? `${currentText.split(/\s+/).filter(Boolean).length} words` : "Studio Ready"}
           </span>
-          <span className="hidden sm:inline">•</span>
+          <span className="hidden sm:inline text-border-strong">•</span>
           <span className="hidden sm:inline">
             {brandProfile ? `Grounded in ${brandProfile.brand_name || "Brand Rules"}` : "Standard voice"}
           </span>
@@ -338,7 +344,7 @@ export default function ContentStudioPage() {
               variant="destructive"
               size="sm"
               onClick={stop}
-              className="h-8 gap-1.5 text-xs font-medium"
+              className="h-9 gap-1.5 text-xs font-medium"
             >
               <Square className="h-3.5 w-3.5 fill-current" />
               <span>Stop Generating</span>
@@ -352,9 +358,9 @@ export default function ContentStudioPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleGenerate()}
-                    className="h-8 gap-1.5 text-xs font-medium border-border hover:bg-accent text-foreground"
+                    className="h-9 gap-1.5 text-xs font-medium border-border/80 bg-surface/70 hover:bg-surface text-foreground shadow-xs"
                   >
-                    <RefreshCw className="h-3.5 w-3.5" />
+                    <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>Regenerate</span>
                   </Button>
 
@@ -363,9 +369,9 @@ export default function ContentStudioPage() {
                     variant="outline"
                     size="sm"
                     onClick={handleSaveDraft}
-                    className="h-8 gap-1.5 text-xs font-medium border-border hover:bg-accent text-foreground"
+                    className="h-9 gap-1.5 text-xs font-medium border-border/80 bg-surface/70 hover:bg-surface text-foreground shadow-xs"
                   >
-                    <Save className="h-3.5 w-3.5" />
+                    <Save className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>Save Draft</span>
                   </Button>
 
@@ -376,16 +382,21 @@ export default function ContentStudioPage() {
                 </>
               )}
 
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => handleGenerate()}
-                disabled={!brief.trim() || isStreaming}
-                className="h-8 px-4 text-xs gap-1.5 font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-subtle"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{currentText ? "Generate Variant" : "Generate"}</span>
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleGenerate()}
+                  disabled={!brief.trim() || isStreaming}
+                  className="h-9 px-4 text-xs gap-1.5 font-medium bg-gradient-to-r from-primary via-amber-600 to-primary bg-[length:200%_auto] text-primary-foreground hover:opacity-95 transition-all shadow-warm-md"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{currentText ? "Generate Variant" : "Generate Post"}</span>
+                </Button>
+                {brief.trim() && !isStreaming && (
+                  <BorderTrail size={40} className="bg-primary/60" />
+                )}
+              </div>
             </>
           )}
         </div>
