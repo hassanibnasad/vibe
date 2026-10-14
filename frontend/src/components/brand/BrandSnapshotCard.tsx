@@ -55,20 +55,20 @@ export function BrandSnapshotCard({
   ];
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-subtle space-y-4">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+    <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-warm-md space-y-5 overflow-hidden">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
         {/* Brand identity overview with Logo initials */}
-        <div className="flex items-start gap-3.5">
+        <div className="flex items-start gap-4">
           <div
-            className="h-11 w-11 rounded-lg border border-border flex items-center justify-center font-bold text-base shadow-sm shrink-0"
+            className="h-12 w-12 rounded-xl border border-border/80 flex items-center justify-center font-bold text-base shadow-warm-sm shrink-0 font-display"
             style={{ backgroundColor: palettePrimary, color: paletteNeutral }}
           >
             {brandName ? brandName.slice(0, 2).toUpperCase() : "VB"}
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-bold tracking-tight text-foreground">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="font-display text-2xl font-normal tracking-tight text-foreground text-glow">
                 {brandName || "Configured Brand"}
               </h2>
               {websiteUrl && (
@@ -79,31 +79,31 @@ export function BrandSnapshotCard({
                   className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 text-xs"
                   title="Visit live website"
                 >
-                  <Globe className="h-3 w-3" />
+                  <Globe className="h-3 w-3 text-primary" />
                   <span className="font-mono text-[11px] truncate max-w-[160px]">
                     {websiteUrl.replace(/^https?:\/\//, "")}
                   </span>
                   <ExternalLink className="h-2.5 w-2.5 opacity-70" />
                 </a>
               )}
-              <Badge variant="outline" className="text-[10px] font-medium border-border">
+              <Badge variant="outline" className="text-[10px] font-medium border-primary/30 text-primary bg-primary/10">
                 {archetype || "Technical Expert"}
               </Badge>
             </div>
 
             {tagline && (
-              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed italic">
+              <p className="text-xs text-muted-foreground/90 line-clamp-2 leading-relaxed italic font-serif">
                 &ldquo;{tagline}&rdquo;
               </p>
             )}
 
             {/* Active Voice Traits */}
             {toneAttributes.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 {toneAttributes.map((trait) => (
                   <span
                     key={trait}
-                    className="inline-flex items-center rounded bg-surface border border-border px-2 py-0.5 text-[10px] font-medium text-foreground"
+                    className="inline-flex items-center rounded-full bg-surface/80 border border-border/80 px-2.5 py-0.5 text-[10px] font-medium text-foreground/80 backdrop-blur-xs"
                   >
                     {trait}
                   </span>
@@ -115,9 +115,9 @@ export function BrandSnapshotCard({
 
         {/* Color Palette as Roles (Primary, Accent, Neutral with Hex & Copy) */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
-          <div className="rounded-lg border border-border bg-surface p-2.5 space-y-1.5">
-            <span className="text-[10px] font-medium text-muted-foreground block">
-              Brand Color Tokens
+          <div className="rounded-xl border border-border/70 bg-surface/60 backdrop-blur-sm p-3 space-y-2">
+            <span className="text-[10px] font-mono tracking-wide uppercase text-muted-foreground block">
+              Color Tokens
             </span>
             <div className="flex items-center gap-2">
               {colors.map(({ role, hex }) => {
@@ -127,11 +127,11 @@ export function BrandSnapshotCard({
                     key={role}
                     type="button"
                     onClick={() => copyToClipboard(hex, role)}
-                    className="group flex items-center gap-1.5 rounded border border-border bg-card px-2 py-1 text-left transition-colors hover:border-border-strong hover:bg-accent/40"
+                    className="group flex items-center gap-1.5 rounded-lg border border-border/70 bg-card/70 px-2.5 py-1.5 text-left transition-all hover:border-primary/50 hover:bg-surface/80"
                     title={`Click to copy ${role} color (${hex})`}
                   >
                     <div
-                      className="h-3.5 w-3.5 rounded-full border border-black/10 shrink-0"
+                      className="h-3.5 w-3.5 rounded-full border border-black/20 shadow-xs shrink-0"
                       style={{ backgroundColor: hex }}
                     />
                     <div className="flex flex-col">
@@ -141,7 +141,7 @@ export function BrandSnapshotCard({
                       </span>
                     </div>
                     {isCopied ? (
-                      <Check className="h-2.5 w-2.5 text-emerald-500 ml-0.5" />
+                      <Check className="h-2.5 w-2.5 text-emerald-400 ml-0.5" />
                     ) : (
                       <Copy className="h-2.5 w-2.5 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
                     )}
@@ -154,27 +154,27 @@ export function BrandSnapshotCard({
       </div>
 
       {/* Navigation Quick Links */}
-      <div className="flex items-center justify-between pt-3 border-t border-border/70 text-xs">
+      <div className="flex items-center justify-between pt-3.5 border-t border-border/60 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-muted-foreground text-[11px]">Jump to section:</span>
+          <span className="text-muted-foreground text-[11px]">Direct access:</span>
           <button
             type="button"
             onClick={() => onSelectTab("voice")}
-            className="px-2.5 py-1 rounded-md border border-border bg-surface hover:bg-accent text-foreground text-xs font-medium transition-colors"
+            className="px-3 py-1 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface hover:border-primary/40 text-foreground text-xs font-medium transition-all duration-200"
           >
             Identity & Voice
           </button>
           <button
             type="button"
             onClick={() => onSelectTab("icp")}
-            className="px-2.5 py-1 rounded-md border border-border bg-surface hover:bg-accent text-foreground text-xs font-medium transition-colors"
+            className="px-3 py-1 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface hover:border-primary/40 text-foreground text-xs font-medium transition-all duration-200"
           >
             Value Props ({valuePropsCount}) & ICP ({painPointsCount})
           </button>
           <button
             type="button"
             onClick={() => onSelectTab("compliance")}
-            className="px-2.5 py-1 rounded-md border border-border bg-surface hover:bg-accent text-foreground text-xs font-medium transition-colors"
+            className="px-3 py-1 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface hover:border-primary/40 text-foreground text-xs font-medium transition-all duration-200"
           >
             Guardrails & Rules ({guardrailsCount})
           </button>
@@ -186,9 +186,9 @@ export function BrandSnapshotCard({
             variant="ghost"
             size="sm"
             onClick={onReExtract}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+            className="h-8 text-xs text-muted-foreground hover:text-foreground"
           >
-            Re-sync from website
+            Re-sync from site
           </Button>
         )}
       </div>
