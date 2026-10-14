@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
-const syne = Syne({
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["500", "600", "700", "800"],
+  weight: ["400"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   weight: ["400", "500", "600", "700"],
@@ -37,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${syne.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${instrumentSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body className="font-sans bg-background text-foreground antialiased">

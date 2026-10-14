@@ -3,92 +3,92 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── LIGHT MODE (Quiet Pro Editorial Tool) ── */
+  /* ── LIGHT MODE (Warm Parchment) ── */
   :root {
-    --background: 210 20% 98%;          /* #F8FAFC Tinted neutral canvas */
-    --canvas: 210 20% 98%;
-    --surface: 0 0% 100%;               /* #FFFFFF Clean flat surface */
-    --surface-raised: 0 0% 100%;
-    --surface-elevated: 0 0% 100%;
+    --background: 35 30% 96%;          /* #FAF5ED — Warm parchment */
+    --canvas: 35 30% 96%;
+    --surface: 35 25% 98%;             /* #FDFAF5 — Cream white */
+    --surface-raised: 35 20% 96%;
+    --surface-elevated: 30 15% 94%;
 
-    --foreground: 222 47% 11%;          /* #0F172A Deep slate ink */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --foreground: 20 30% 12%;          /* #261C12 — Deep warm brown */
+    --card: 35 25% 98%;
+    --card-foreground: 20 30% 12%;
+    --popover: 35 25% 98%;
+    --popover-foreground: 20 30% 12%;
 
     /* Typography & Hierarchy */
-    --primary: 221.2 83.2% 53.3%;       /* #2563EB Pro Cobalt */
-    --primary-foreground: 0 0% 100%;
-    --text-primary: 222 47% 11%;
-    --text-secondary: 215 16% 40%;      /* #475569 Crisp readable secondary */
-    --text-disabled: 215 16% 62%;       /* #94A3B8 */
+    --primary: 20 80% 45%;             /* #CC5C1A — Deep terracotta */
+    --primary-foreground: 35 30% 98%;
+    --text-primary: 20 30% 12%;
+    --text-secondary: 25 15% 40%;
+    --text-disabled: 25 10% 62%;
 
-    --secondary: 210 20% 95%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 16% 45%;
+    --secondary: 30 18% 92%;
+    --secondary-foreground: 20 30% 12%;
+    --muted: 30 18% 92%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 210 20% 93%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 30 20% 90%;
+    --accent-foreground: 20 30% 12%;
 
-    /* Crisp Precision Borders (Stronger for light mode) */
-    --border: 214 32% 90%;              /* #E2E8F0 */
-    --border-strong: 215 25% 75%;       /* #CBD5E1 Visible 3:1 ratio */
-    --input: 214 32% 88%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 6px;
+    /* Warm Sand Borders */
+    --border: 30 20% 85%;
+    --border-strong: 30 15% 72%;
+    --input: 30 18% 83%;
+    --ring: 20 80% 45%;
+    --radius: 8px;
 
-    /* Semantic Status Tokens (4.5:1 text contrast) */
-    --status-draft: 215 16% 45%;
-    --status-scheduled: 221 83% 50%;
-    --status-published: 158 64% 36%;
-    --status-danger: 350 89% 45%;
-    --status-warning: 38 92% 40%;
+    /* Semantic Status Tokens */
+    --status-draft: 25 12% 50%;
+    --status-scheduled: 35 70% 42%;
+    --status-published: 150 45% 35%;
+    --status-danger: 5 70% 45%;
+    --status-warning: 38 80% 42%;
   }
 
-  /* ── DARK MODE (Surfaces get lighter as they elevate) ── */
+  /* ── DARK MODE (Warm Surrealism — Smoky Charcoal) ── */
   .dark {
-    --background: 224 71% 4%;           /* #030712 Deep base */
-    --canvas: 224 71% 4%;
-    --surface: 222 47% 7%;              /* #0B0F19 Base surface */
-    --surface-raised: 217 33% 11%;      /* #111827 Elevated card */
-    --surface-elevated: 215 28% 16%;    /* #1F2937 Popover / Modal */
+    --background: 20 15% 4%;           /* #0D0A08 — Near-black with brown warmth */
+    --canvas: 20 15% 4%;
+    --surface: 20 12% 8%;              /* #171210 — Base surface */
+    --surface-raised: 22 10% 12%;      /* #221D19 — Card level */
+    --surface-elevated: 25 8% 16%;     /* #2C2622 — Modal / popover */
 
-    --foreground: 210 40% 98%;          /* #F8FAFC Crisp text */
-    --card: 217 33% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 215 28% 16%;
-    --popover-foreground: 210 40% 98%;
+    --foreground: 35 30% 92%;          /* #F5EDE0 — Warm parchment white */
+    --card: 22 10% 12%;
+    --card-foreground: 35 30% 92%;
+    --popover: 25 8% 16%;
+    --popover-foreground: 35 30% 92%;
 
     /* Typography & Hierarchy */
-    --primary: 217 91% 60%;             /* #3B82F6 Pro Cobalt */
-    --primary-foreground: 0 0% 100%;
-    --text-primary: 210 40% 98%;
-    --text-secondary: 215 20% 68%;      /* #A0AEC0 High readability */
-    --text-disabled: 215 16% 45%;       /* #64748B */
+    --primary: 24 85% 55%;             /* #E07830 — Rich terracotta */
+    --primary-foreground: 35 30% 96%;
+    --text-primary: 35 30% 92%;
+    --text-secondary: 30 12% 62%;
+    --text-disabled: 25 8% 45%;
 
-    --secondary: 217 33% 15%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 14%;
-    --muted-foreground: 215 20% 60%;
+    --secondary: 22 10% 15%;
+    --secondary-foreground: 35 30% 92%;
+    --muted: 20 10% 14%;
+    --muted-foreground: 30 12% 55%;
 
-    --accent: 217 33% 16%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 30 20% 15%;
+    --accent-foreground: 35 30% 92%;
 
-    /* Crisp Precision Borders */
-    --border: 217 33% 18%;              /* Clean visible border */
-    --border-strong: 217 33% 28%;       /* Higher contrast border */
-    --input: 217 33% 20%;
-    --ring: 217 91% 60%;
-    --radius: 6px;
+    /* Warm Sepia Borders */
+    --border: 25 10% 18%;
+    --border-strong: 25 12% 28%;
+    --input: 25 10% 20%;
+    --ring: 24 85% 55%;
+    --radius: 8px;
 
-    /* Semantic Status Tokens (4.5:1 text contrast) */
-    --status-draft: 215 20% 70%;
-    --status-scheduled: 217 91% 68%;
-    --status-published: 158 64% 55%;
-    --status-danger: 350 89% 65%;
-    --status-warning: 38 92% 60%;
+    /* Semantic Status (warm-shifted) */
+    --status-draft: 30 12% 60%;
+    --status-scheduled: 35 70% 55%;
+    --status-published: 150 50% 50%;
+    --status-danger: 5 75% 55%;
+    --status-warning: 40 85% 55%;
   }
 }
 
@@ -97,26 +97,105 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Clear focus-visible ring for keyboard navigation */
+  /* Warm terracotta focus ring */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-1 ring-offset-background;
   }
 }
 
-/* Neutral Surfaces */
+/* ── Surrealist Ambient Gradient ── */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 5%, hsla(24, 70%, 30%, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 85% 90%, hsla(5, 55%, 22%, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, hsla(35, 45%, 18%, 0.06) 0%, transparent 60%);
+}
+
+/* ── Organic Floating Shapes ── */
+.surreal-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  animation: float 25s ease-in-out infinite;
+}
+
+.surreal-blob-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, hsla(24, 70%, 35%, 0.3), transparent 70%);
+  top: -10%;
+  left: -5%;
+  animation-delay: 0s;
+}
+
+.surreal-blob-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, hsla(5, 55%, 30%, 0.25), transparent 70%);
+  bottom: -8%;
+  right: -3%;
+  animation-delay: -8s;
+  animation-duration: 30s;
+}
+
+.surreal-blob-3 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, hsla(35, 50%, 28%, 0.2), transparent 70%);
+  top: 40%;
+  right: 20%;
+  animation-delay: -15s;
+  animation-duration: 35s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  25% { transform: translate(30px, -25px) scale(1.05) rotate(2deg); }
+  50% { transform: translate(-15px, 20px) scale(0.97) rotate(-1deg); }
+  75% { transform: translate(20px, 10px) scale(1.02) rotate(1deg); }
+}
+
+/* ── Warm Card Glass ── */
+.glass-warm {
+  background: hsla(22, 10%, 12%, 0.65);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid hsla(25, 10%, 20%, 0.6);
+}
+
+.dark .glass-warm {
+  background: hsla(22, 10%, 12%, 0.65);
+}
+
+:root .glass-warm {
+  background: hsla(35, 25%, 98%, 0.75);
+  border-color: hsla(30, 20%, 85%, 0.7);
+}
+
+/* ── Glow Text ── */
+.text-glow {
+  text-shadow: 0 0 40px hsla(24, 85%, 55%, 0.25);
+}
+
+/* ── Warm Glass Panel ── */
 .glass-panel {
   @apply bg-card border border-border;
 }
 
 .glass-panel-hover {
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 .glass-panel-hover:hover {
-  @apply border-border-strong bg-accent/30;
+  @apply border-border-strong;
+  box-shadow: 0 0 20px hsla(24, 70%, 30%, 0.06);
 }
 
 /* Tabular numerals utility */
@@ -124,10 +203,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle, clean scrollbar */
+/* ── Warm Sepia Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -138,6 +217,33 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--border-strong));
+}
+
+/* ── Warm Shimmer Skeleton ── */
+@keyframes warm-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-warm-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsla(24, 30%, 25%, 0.3) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: warm-shimmer 2s ease-in-out infinite;
+}
+
+/* ── Glow Pulse ── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 15px hsla(24, 85%, 55%, 0.1); }
+  50% { box-shadow: 0 0 30px hsla(24, 85%, 55%, 0.2); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
 }
 
 /* Respect user's motion preference */
