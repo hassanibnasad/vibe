@@ -36,15 +36,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider delayDuration={200}>
       <ToastProvider>
-        <div className="relative min-h-screen flex bg-background text-foreground antialiased selection:bg-foreground selection:text-background">
-          {/* Subtle Micro-Grain Noise Backdrop */}
+        <div className="relative min-h-screen flex bg-background text-foreground antialiased">
+          {/* Warm Sepia Grain Texture */}
           <FluidShader />
+
+          {/* Surrealist Ambient Gradient Wash */}
+          <div className="ambient-glow" aria-hidden="true" />
+
+          {/* Floating Organic Blobs */}
+          <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+            <div className="surreal-blob surreal-blob-1" />
+            <div className="surreal-blob surreal-blob-2" />
+            <div className="surreal-blob surreal-blob-3" />
+          </div>
 
           {/* Navigation Sidebar (hidden on mobile, rail on tablet, full on desktop) */}
           <Sidebar />
 
           {/* Main Content Workspace */}
-          <div className="relative z-10 flex-1 ml-0 md:ml-16 lg:ml-64 flex flex-col min-h-screen pb-16 md:pb-0 transition-all duration-200">
+          <div className="relative z-10 flex-1 ml-0 md:ml-16 lg:ml-64 flex flex-col min-h-screen pb-16 md:pb-0 transition-all duration-300">
             <Header
               onOpenCommandDialog={() => setCommandOpen(true)}
               onOpenCopilotDrawer={() => setCopilotOpen(true)}
@@ -56,8 +66,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </main>
           </div>
 
-          {/* Mobile Bottom Navigation (Visible under 768px, 44px touch targets) */}
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur border-t border-border flex items-center justify-around h-14 px-2 safe-area-pb">
+          {/* Mobile Bottom Navigation — Warm Surreal Treatment */}
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-xl border-t border-border flex items-center justify-around h-14 px-2 safe-area-pb">
             {mobileNavItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -66,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[48px] min-h-[44px] py-1 px-2 rounded-md transition-colors text-[10px] font-medium",
+                    "flex flex-col items-center justify-center min-w-[48px] min-h-[44px] py-1 px-2 rounded-lg transition-all duration-200 text-[10px] font-medium",
                     isActive
                       ? "text-primary font-semibold"
                       : "text-muted-foreground hover:text-foreground"

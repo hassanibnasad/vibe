@@ -21,19 +21,19 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 pb-6 border-b border-border sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 pb-6 border-b border-border/40 sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >
-      <div className="space-y-1">
-        <div className="flex items-center gap-2.5">
-          <h1 className="font-sans text-xl font-semibold tracking-tight text-foreground">
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-3">
+          <h1 className="font-display text-3xl tracking-tight text-foreground text-glow">
             {title}
           </h1>
           {badge}
         </div>
         {description && (
-          <p className="font-sans text-xs sm:text-sm text-muted-foreground leading-normal">
+          <p className="font-sans text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
             {description}
           </p>
         )}

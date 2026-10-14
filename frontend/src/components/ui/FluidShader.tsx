@@ -20,7 +20,7 @@ export function FluidShader() {
       }
     `;
 
-    // Fragment shader: Clean, monochromatic organic grain noise texture (no colors)
+    // Fragment shader: Warm sepia organic grain texture
     const fsSource = `
       precision highp float;
       uniform vec2 u_resolution;
@@ -34,11 +34,12 @@ export function FluidShader() {
 
       void main() {
         vec2 st = gl_FragCoord.xy / u_resolution.xy;
-        float grain = hash(st + fract(u_time * 0.05));
+        float grain = hash(st + fract(u_time * 0.04));
         
-        // Gentle, soft monochromatic noise
-        float intensity = (grain - 0.5) * 0.06;
-        gl_FragColor = vec4(vec3(0.5 + intensity), 0.08);
+        // Warm sepia grain — terracotta tinted
+        float intensity = (grain - 0.5) * 0.07;
+        vec3 warmTint = vec3(0.56, 0.44, 0.34);
+        gl_FragColor = vec4(warmTint + vec3(intensity * 1.2, intensity, intensity * 0.8), 0.06);
       }
     `;
 
@@ -126,7 +127,7 @@ export function FluidShader() {
   return (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-20 dark:opacity-25"
+      className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-25 dark:opacity-30"
       aria-hidden="true"
     />
   );

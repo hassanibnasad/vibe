@@ -78,26 +78,26 @@ export function Sidebar() {
   }, []);
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 z-40 h-screen w-16 lg:w-64 flex-col border-r border-border bg-card text-foreground select-none transition-all duration-200">
-      {/* Brand Header - Compact 56px */}
-      <div className="flex h-14 items-center justify-center lg:justify-between border-b border-border px-3 lg:px-5 shrink-0">
+    <aside className="hidden md:flex fixed left-0 top-0 z-40 h-screen w-16 lg:w-64 flex-col border-r border-border/60 bg-gradient-to-b from-[hsl(22,10%,10%)] to-[hsl(20,15%,4%)] text-foreground select-none transition-all duration-300">
+      {/* Brand Header — Warm Serif Treatment */}
+      <div className="flex h-14 items-center justify-center lg:justify-between border-b border-border/40 px-3 lg:px-5 shrink-0">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-background transition-transform duration-150 group-hover:scale-105 shrink-0">
-            <Radio className="h-3.5 w-3.5" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-terracotta-400 to-terracotta-600 text-white transition-all duration-300 group-hover:shadow-glow group-hover:scale-105 shrink-0">
+            <Radio className="h-4 w-4" />
           </div>
           <div className="hidden lg:block">
-            <span className="font-sans font-bold text-sm tracking-tight text-foreground block leading-none">
+            <span className="font-display text-lg tracking-tight text-foreground block leading-none">
               VibeAgent
             </span>
           </div>
         </Link>
       </div>
 
-      {/* Navigation Groups - Tightened 32-34px items to fit 768px height */}
-      <nav className="flex-1 overflow-y-auto px-2 lg:px-3 py-3 space-y-4">
+      {/* Navigation Groups — Warm Surreal Styling */}
+      <nav className="flex-1 overflow-y-auto px-2 lg:px-3 py-4 space-y-5">
         {navigationGroups.map((group) => (
           <div key={group.label} className="space-y-0.5">
-            <div className="hidden lg:block px-2.5 pb-1 text-[11px] font-medium text-muted-foreground">
+            <div className="hidden lg:block px-2.5 pb-1.5 text-[11px] font-display italic text-muted-foreground/70 tracking-wide">
               {group.label}
             </div>
             {group.items.map((item) => {
@@ -110,17 +110,17 @@ export function Sidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "group flex h-[34px] items-center justify-center lg:justify-between rounded-md px-2 lg:px-2.5 text-xs font-medium transition-colors",
+                    "group relative flex h-[36px] items-center justify-center lg:justify-between rounded-lg px-2 lg:px-3 text-xs font-medium transition-all duration-200",
                     isActive
-                      ? "bg-accent text-foreground font-semibold"
-                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                      ? "bg-primary/10 text-foreground font-semibold border border-primary/20 shadow-warm"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent"
                   )}
                 >
                   <div className="flex items-center gap-2.5">
                     <Icon
                       className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                        "h-4 w-4 shrink-0 transition-colors duration-200",
+                        isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                       )}
                     />
                     <span className="hidden lg:inline font-sans truncate">{item.name}</span>
@@ -164,7 +164,7 @@ export function Sidebar() {
       </nav>
 
       {/* Consolidated System Status Popover */}
-      <div className="p-2 lg:p-3 border-t border-border bg-card shrink-0">
+      <div className="p-2 lg:p-3 border-t border-border/40 shrink-0">
         <SystemStatusPopover />
       </div>
     </aside>
