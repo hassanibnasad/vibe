@@ -361,14 +361,14 @@ export default function KnowledgeBasePage() {
 
       {/* Documents Table */}
       <FadeIn delay={0.1}>
-        <Card className="p-0 overflow-hidden border-border bg-card shadow-subtle">
+        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-warm-md overflow-hidden">
           <Table>
-            <TableHeader className="bg-surface/50 border-b border-border">
-              <TableRow>
-                <TableHead className="pl-6 text-xs">Document</TableHead>
-                <TableHead className="w-[120px] text-xs">Category</TableHead>
-                <TableHead className="w-[100px] text-right text-xs">Sections</TableHead>
-                <TableHead className="w-[110px] text-right text-xs pr-6">Status</TableHead>
+            <TableHeader className="bg-surface/60 border-b border-border/70">
+              <TableRow className="hover:bg-transparent border-border/70">
+                <TableHead className="pl-6 text-xs uppercase tracking-wider font-mono text-muted-foreground">Document</TableHead>
+                <TableHead className="w-[130px] text-xs uppercase tracking-wider font-mono text-muted-foreground">Category</TableHead>
+                <TableHead className="w-[100px] text-right text-xs uppercase tracking-wider font-mono text-muted-foreground">Sections</TableHead>
+                <TableHead className="w-[120px] text-right text-xs uppercase tracking-wider font-mono text-muted-foreground pr-6">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -444,7 +444,7 @@ export default function KnowledgeBasePage() {
               )}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       </FadeIn>
 
       {/* Detail / Preview Drawer */}

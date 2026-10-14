@@ -334,14 +334,14 @@ export default function ReviewQueuePage() {
         }
       />
 
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+      <div className="flex items-center gap-1.5 p-1 bg-surface/80 border border-border/80 rounded-xl backdrop-blur-md w-fit shadow-warm-xs">
         <button
           type="button"
           onClick={() => setActiveQueueTab("replies")}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
             activeQueueTab === "replies"
-              ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              ? "bg-gradient-to-r from-primary/25 to-primary/10 text-foreground border border-primary/40 font-semibold shadow-warm-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-surface/60"
           }`}
         >
           Lead Replies ({items.length})
@@ -349,10 +349,10 @@ export default function ReviewQueuePage() {
         <button
           type="button"
           onClick={() => setActiveQueueTab("posts")}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
             activeQueueTab === "posts"
-              ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              ? "bg-gradient-to-r from-primary/25 to-primary/10 text-foreground border border-primary/40 font-semibold shadow-warm-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-surface/60"
           }`}
         >
           Post Drafts ({postDraftsCount})

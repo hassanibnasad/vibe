@@ -35,12 +35,12 @@ const MONTH_NAMES = [
 ] as const;
 
 const STATUS_STYLES: Record<Post["status"], { chip: string; badge: string; label: string; dotColor: string }> = {
-  draft:      { chip: "bg-muted border-border text-muted-foreground", badge: "bg-muted text-muted-foreground", label: "Draft", dotColor: "bg-zinc-400 dark:bg-zinc-500" },
-  approved:   { chip: "bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400", badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400", label: "Approved", dotColor: "bg-blue-500" },
-  scheduled:  { chip: "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300", label: "Scheduled", dotColor: "bg-blue-500" },
-  publishing: { chip: "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300", badge: "bg-amber-500/10 text-amber-700 dark:text-amber-300", label: "Publishing", dotColor: "bg-amber-500" },
-  published:  { chip: "bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", label: "Published", dotColor: "bg-emerald-500" },
-  failed:     { chip: "bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400", badge: "bg-rose-500/10 text-rose-600 dark:text-rose-400", label: "Failed", dotColor: "bg-rose-500" },
+  draft:      { chip: "bg-surface/80 border-border/80 text-muted-foreground", badge: "bg-muted text-muted-foreground", label: "Draft", dotColor: "bg-zinc-500" },
+  approved:   { chip: "bg-amber-500/15 border-amber-500/30 text-amber-400 dark:text-amber-300", badge: "bg-amber-500/15 text-amber-400 dark:text-amber-300", label: "Approved", dotColor: "bg-amber-400" },
+  scheduled:  { chip: "bg-amber-500/15 border-amber-500/35 text-amber-400 dark:text-amber-300", badge: "bg-amber-500/15 text-amber-400 dark:text-amber-300", label: "Scheduled", dotColor: "bg-amber-400" },
+  publishing: { chip: "bg-orange-500/15 border-orange-500/35 text-orange-400 dark:text-orange-300", badge: "bg-orange-500/15 text-orange-400 dark:text-orange-300", label: "Publishing", dotColor: "bg-orange-400" },
+  published:  { chip: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 dark:text-emerald-300", badge: "bg-emerald-500/15 text-emerald-400 dark:text-emerald-300", label: "Published", dotColor: "bg-emerald-400" },
+  failed:     { chip: "bg-rose-500/15 border-rose-500/30 text-rose-400 dark:text-rose-300", badge: "bg-rose-500/15 text-rose-400 dark:text-rose-300", label: "Failed", dotColor: "bg-rose-400" },
 };
 
 type ViewMode = "month" | "week" | "agenda";

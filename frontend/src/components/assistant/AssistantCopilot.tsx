@@ -215,9 +215,9 @@ export function AssistantCopilot({ isDrawer = false }: { isDrawer?: boolean }) {
   };
 
   return (
-    <div className={`flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden ${isDrawer ? "border-0" : ""}`}>
+    <div className={`flex flex-col h-full bg-card/85 backdrop-blur-xl rounded-2xl border border-border/80 overflow-hidden shadow-warm-md ${isDrawer ? "border-0 shadow-none" : ""}`}>
       {/* Messages Thread */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -226,16 +226,16 @@ export function AssistantCopilot({ isDrawer = false }: { isDrawer?: boolean }) {
             }`}
           >
             {msg.role === "assistant" && (
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground border border-border">
-                <Bot className="h-3.5 w-3.5" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-amber-700/10 text-primary border border-primary/25 shadow-warm-xs">
+                <Bot className="h-4 w-4" />
               </div>
             )}
 
             <div
-              className={`max-w-[85%] space-y-2 rounded-md p-3 border ${
+              className={`max-w-[85%] space-y-2 rounded-2xl p-4 border transition-all ${
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted/50 text-foreground border-border"
+                  ? "bg-gradient-to-r from-primary to-amber-600 text-primary-foreground border-primary/50 shadow-warm-sm"
+                  : "bg-surface/70 text-foreground border-border/80 backdrop-blur-sm"
               }`}
             >
               <div className="whitespace-pre-wrap">{msg.content}</div>
