@@ -30,6 +30,8 @@ import { LinkedInPreview } from "@/components/studio/LinkedInPreview";
 import { GroundingChecks } from "@/components/studio/GroundingChecks";
 import { SchedulePopover } from "@/components/studio/SchedulePopover";
 import { BorderTrail } from "@/components/ui/motion";
+import { FadeIn } from "@/lib/motion";
+import { GenerativePress } from "@/components/figures/GenerativePress";
 
 const tones = [
   { id: "thought_leadership", label: "Thought Leadership" },
@@ -148,6 +150,15 @@ export default function ContentStudioPage() {
           </div>
         }
       />
+
+      {/* Bespoke Isometric Instrument: Generative Printing Press */}
+      <FadeIn delay={0.05}>
+        <GenerativePress
+          isStreaming={isStreaming}
+          rate={isStreaming ? 54 : 0}
+          tokensCount={completion ? completion.length : 0}
+        />
+      </FadeIn>
 
       {/* Two-Pane Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
