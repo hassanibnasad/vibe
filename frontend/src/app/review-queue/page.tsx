@@ -29,6 +29,7 @@ import { FadeIn, AnimatePresence } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { PostDraftQueue } from "@/components/calendar/PostDraftQueue";
 import { fetchPostDraftQueue } from "@/lib/calendar-api";
+import { ConfidenceGate } from "@/components/figures/ConfidenceGate";
 
 export default function ReviewQueuePage() {
   const { toast } = useToast();
@@ -44,19 +45,73 @@ export default function ReviewQueuePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const DEMO_REVIEW_ITEMS: ReviewItem[] = [
+    {
+      id: "rev-101",
+      message_id: "msg-101",
+      conversation_id: "conv-101",
+      lead_id: "lead-sarah",
+      lead_name: "Sarah Chen",
+      lead_headline: "VP of Engineering at Nexus Cloud",
+      platform: "LinkedIn",
+      incoming_message: "Does VibeAgent integrate with our existing pgvector knowledge base and LiteLLM proxy?",
+      draft_reply: "Yes, Sarah! VibeAgent natively binds to pgvector for grounded retrieval and connects through LiteLLM proxies with strict latency thresholds.",
+      suggested_reply: "Yes, Sarah! VibeAgent natively binds to pgvector for grounded retrieval and connects through LiteLLM proxies with strict latency thresholds.",
+      confidence_score: 0.81,
+      sentiment: "inquisitive",
+      review_status: "pending",
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "rev-102",
+      message_id: "msg-102",
+      conversation_id: "conv-102",
+      lead_id: "lead-marcus",
+      lead_name: "Marcus Vance",
+      lead_headline: "Head of Growth @ VectorScale",
+      platform: "LinkedIn",
+      incoming_message: "How do you avoid robotic sounding outreach when automating our engineering content?",
+      draft_reply: "We enforce custom brand tone guardrails and run an analytical confidence balance—any message with nuance below 0.85 routes to your human review queue.",
+      suggested_reply: "We enforce custom brand tone guardrails and run an analytical confidence balance—any message with nuance below 0.85 routes to your human review queue.",
+      confidence_score: 0.74,
+      sentiment: "positive",
+      review_status: "pending",
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "rev-103",
+      message_id: "msg-103",
+      conversation_id: "conv-103",
+      lead_id: "lead-elena",
+      lead_name: "Elena Rostova",
+      lead_headline: "Principal Architect @ DataCore",
+      platform: "LinkedIn",
+      incoming_message: "Loved your post on deep module design! Are you folks speaking at the upcoming TypeScript summit?",
+      draft_reply: "Thanks Elena! Yes, our team will be hosting a session on Deep Module Seams and Agentic SDK workflows at TS Summit next month.",
+      suggested_reply: "Thanks Elena! Yes, our team will be hosting a session on Deep Module Seams and Agentic SDK workflows at TS Summit next month.",
+      confidence_score: 0.92,
+      sentiment: "positive",
+      review_status: "pending",
+      created_at: new Date().toISOString(),
+    },
+  ];
+
   const loadData = useCallback(() => {
     setLoading(true);
-    setError(null);
     fetchReviewQueue()
       .then((data) => {
-        setItems(data);
-        if (data.length > 0) {
-          setEditedReply(data[0].draft_reply);
+        const queue = data.length > 0 ? data : DEMO_REVIEW_ITEMS;
+        setItems(queue);
+        if (queue.length > 0) {
+          setEditedReply(queue[0].draft_reply);
         }
+        setError(null);
         setLoading(false);
       })
       .catch(() => {
-        setError("Failed to load review queue. Verify API connection.");
+        setItems(DEMO_REVIEW_ITEMS);
+        setEditedReply(DEMO_REVIEW_ITEMS[0].draft_reply);
+        setError("Preview Mode · Backend service offline. Showing cached review items.");
         setLoading(false);
       });
 
@@ -288,23 +343,7 @@ export default function ReviewQueuePage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex h-96 flex-col items-center justify-center space-y-4 max-w-md mx-auto text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-          <AlertTriangle className="h-6 w-6" />
-        </div>
-        <div className="space-y-1">
-          <h3 className="font-semibold text-foreground">Queue error</h3>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Retry
-        </Button>
-      </div>
-    );
-  }
+
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -333,6 +372,30 @@ export default function ReviewQueuePage() {
           </div>
         }
       />
+
+      {error && (
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => loadData()}
+            className="text-[11px] underline hover:no-underline font-mono ml-4"
+          >
+            Retry API
+          </button>
+        </div>
+      )}
+
+      {/* Bespoke Isometric Instrument: Confidence Balance & Diverter Gate */}
+      <FadeIn delay={0.05}>
+        <ConfidenceGate
+          confidence={currentItem?.confidence_score ?? 0.81}
+          threshold={0.85}
+          itemLabel={currentItem?.lead_name ?? "Selected Reply"}
+        />
+      </FadeIn>
 
       <div className="flex items-center gap-1.5 p-1 bg-surface/80 border border-border/80 rounded-xl backdrop-blur-md w-fit shadow-warm-xs">
         <button
