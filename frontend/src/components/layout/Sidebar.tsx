@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Link2,
   ShieldCheck,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,12 @@ const navigationGroups: NavGroup[] = [
     items: [
       { name: "Lead Pipeline",     href: "/leads",         icon: Users, countKey: "mql_sql_leads" },
       { name: "Connectors",        href: "/connections",   icon: Link2 },
+    ],
+  },
+  {
+    label: "Anatomy",
+    items: [
+      { name: "Custom Figures",    href: "/figures",       icon: Layers },
     ],
   },
 ];
