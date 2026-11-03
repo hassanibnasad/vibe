@@ -3,92 +3,92 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── LIGHT MODE (Warm Parchment) ── */
+  /* ── LIGHT MODE (Shopify Editions Bone / Paper) ── */
   :root {
-    --background: 35 30% 96%;          /* #FAF5ED — Warm parchment */
-    --canvas: 35 30% 96%;
-    --surface: 35 25% 98%;             /* #FDFAF5 — Cream white */
-    --surface-raised: 35 20% 96%;
-    --surface-elevated: 30 15% 94%;
+    --background: 60 5% 98%;           /* #FAFAF9 — Crisp editorial bone */
+    --canvas: 60 5% 98%;
+    --surface: 0 0% 100%;              /* #FFFFFF — Pure stark white */
+    --surface-raised: 240 5% 96%;      /* #F4F4F5 — Subtle light card */
+    --surface-elevated: 240 6% 90%;    /* #E4E4E7 — Popover / modal */
 
-    --foreground: 20 30% 12%;          /* #261C12 — Deep warm brown */
-    --card: 35 25% 98%;
-    --card-foreground: 20 30% 12%;
-    --popover: 35 25% 98%;
-    --popover-foreground: 20 30% 12%;
+    --foreground: 240 10% 4%;          /* #09090B — Deep obsidian black */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
 
     /* Typography & Hierarchy */
-    --primary: 20 80% 45%;             /* #CC5C1A — Deep terracotta */
-    --primary-foreground: 35 30% 98%;
-    --text-primary: 20 30% 12%;
-    --text-secondary: 25 15% 40%;
-    --text-disabled: 25 10% 62%;
+    --primary: 161 94% 30%;            /* #008060 — Shopify deep emerald */
+    --primary-foreground: 0 0% 100%;
+    --text-primary: 240 10% 4%;
+    --text-secondary: 240 4% 40%;
+    --text-disabled: 240 4% 65%;
 
-    --secondary: 30 18% 92%;
-    --secondary-foreground: 20 30% 12%;
-    --muted: 30 18% 92%;
-    --muted-foreground: 25 15% 45%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 4%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 45%;
 
-    --accent: 30 20% 90%;
-    --accent-foreground: 20 30% 12%;
+    --accent: 240 5% 94%;
+    --accent-foreground: 240 10% 4%;
 
-    /* Warm Sand Borders */
-    --border: 30 20% 85%;
-    --border-strong: 30 15% 72%;
-    --input: 30 18% 83%;
-    --ring: 20 80% 45%;
+    /* Precision Hairline Borders */
+    --border: 240 6% 90%;              /* #E4E4E7 */
+    --border-strong: 240 5% 78%;
+    --input: 240 6% 90%;
+    --ring: 161 94% 30%;
     --radius: 8px;
 
     /* Semantic Status Tokens */
-    --status-draft: 25 12% 50%;
-    --status-scheduled: 35 70% 42%;
-    --status-published: 150 45% 35%;
-    --status-danger: 5 70% 45%;
-    --status-warning: 38 80% 42%;
+    --status-draft: 240 4% 50%;
+    --status-scheduled: 38 92% 50%;
+    --status-published: 161 94% 30%;
+    --status-danger: 0 84% 60%;
+    --status-warning: 38 92% 50%;
   }
 
-  /* ── DARK MODE (Warm Surrealism — Smoky Charcoal) ── */
+  /* ── DARK MODE (Shopify Editions Obsidian / Carbon) ── */
   .dark {
-    --background: 20 15% 4%;           /* #0D0A08 — Near-black with brown warmth */
-    --canvas: 20 15% 4%;
-    --surface: 20 12% 8%;              /* #171210 — Base surface */
-    --surface-raised: 22 10% 12%;      /* #221D19 — Card level */
-    --surface-elevated: 25 8% 16%;     /* #2C2622 — Modal / popover */
+    --background: 240 10% 4%;           /* #09090B — Rich matte obsidian */
+    --canvas: 240 10% 4%;
+    --surface: 240 6% 7%;              /* #111113 — Deep carbon surface */
+    --surface-raised: 240 5% 10%;      /* #18181B — Elevated card level */
+    --surface-elevated: 240 4% 14%;     /* #222226 — Popover / modal */
 
-    --foreground: 35 30% 92%;          /* #F5EDE0 — Warm parchment white */
-    --card: 22 10% 12%;
-    --card-foreground: 35 30% 92%;
-    --popover: 25 8% 16%;
-    --popover-foreground: 35 30% 92%;
+    --foreground: 0 0% 98%;            /* #FAFAFA — High-contrast white */
+    --card: 240 6% 7%;                 /* #111113 */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5% 10%;             /* #18181B */
+    --popover-foreground: 0 0% 98%;
 
-    /* Typography & Hierarchy */
-    --primary: 24 85% 55%;             /* #E07830 — Rich terracotta */
-    --primary-foreground: 35 30% 96%;
-    --text-primary: 35 30% 92%;
-    --text-secondary: 30 12% 62%;
-    --text-disabled: 25 8% 45%;
+    /* Precision Hierarchy & Shopify Mint Accent */
+    --primary: 160 100% 45%;           /* #00E599 — Shopify Editions electric mint */
+    --primary-foreground: 240 10% 4%;  /* #09090B */
+    --text-primary: 0 0% 98%;
+    --text-secondary: 240 5% 65%;      /* #A1A1AA */
+    --text-disabled: 240 4% 45%;       /* #71717A */
 
-    --secondary: 22 10% 15%;
-    --secondary-foreground: 35 30% 92%;
-    --muted: 20 10% 14%;
-    --muted-foreground: 30 12% 55%;
+    --secondary: 240 5% 12%;           /* #1F1F23 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 240 5% 60%;
 
-    --accent: 30 20% 15%;
-    --accent-foreground: 35 30% 92%;
+    --accent: 240 5% 14%;
+    --accent-foreground: 0 0% 98%;
 
-    /* Warm Sepia Borders */
-    --border: 25 10% 18%;
-    --border-strong: 25 12% 28%;
-    --input: 25 10% 20%;
-    --ring: 24 85% 55%;
+    /* Precision Hairline Borders */
+    --border: 240 4% 16%;              /* #27272A */
+    --border-strong: 240 5% 26%;       /* #3F3F46 */
+    --input: 240 4% 16%;
+    --ring: 160 100% 45%;
     --radius: 8px;
 
-    /* Semantic Status (warm-shifted) */
-    --status-draft: 30 12% 60%;
-    --status-scheduled: 35 70% 55%;
-    --status-published: 150 50% 50%;
-    --status-danger: 5 75% 55%;
-    --status-warning: 40 85% 55%;
+    /* Semantic Status Tokens */
+    --status-draft: 240 4% 60%;
+    --status-scheduled: 38 92% 50%;
+    --status-published: 160 100% 45%;
+    --status-danger: 0 84% 60%;
+    --status-warning: 38 92% 50%;
   }
 }
 
@@ -101,112 +101,93 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Warm terracotta focus ring */
+  /* Precision Focus Ring */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-1 ring-offset-background;
   }
 }
 
-/* ── Surrealist Ambient Gradient ── */
-.ambient-glow {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 5%, hsla(24, 70%, 30%, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 85% 90%, hsla(5, 55%, 22%, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 50% at 50% 50%, hsla(35, 45%, 18%, 0.06) 0%, transparent 60%);
+/* ── Shopify Editions Technical Grid Background ── */
+.bg-editions-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 }
 
-/* ── Organic Floating Shapes ── */
-.surreal-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.12;
-  animation: float 25s ease-in-out infinite;
+:root:not(.dark) .bg-editions-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
 }
 
-.surreal-blob-1 {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, hsla(24, 70%, 35%, 0.3), transparent 70%);
-  top: -10%;
-  left: -5%;
-  animation-delay: 0s;
+/* ── Hairline Editions Card ── */
+.editions-card {
+  @apply relative rounded-xl border border-border/70 bg-card/90 backdrop-blur-md transition-all duration-200;
 }
 
-.surreal-blob-2 {
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, hsla(5, 55%, 30%, 0.25), transparent 70%);
-  bottom: -8%;
-  right: -3%;
-  animation-delay: -8s;
-  animation-duration: 30s;
-}
-
-.surreal-blob-3 {
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(circle, hsla(35, 50%, 28%, 0.2), transparent 70%);
-  top: 40%;
-  right: 20%;
-  animation-delay: -15s;
-  animation-duration: 35s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  25% { transform: translate(30px, -25px) scale(1.05) rotate(2deg); }
-  50% { transform: translate(-15px, 20px) scale(0.97) rotate(-1deg); }
-  75% { transform: translate(20px, 10px) scale(1.02) rotate(1deg); }
-}
-
-/* ── Warm Card Glass ── */
-.glass-warm {
-  background: hsla(22, 10%, 12%, 0.65);
-  backdrop-filter: blur(16px) saturate(1.3);
-  border: 1px solid hsla(25, 10%, 20%, 0.6);
-}
-
-.dark .glass-warm {
-  background: hsla(22, 10%, 12%, 0.65);
-}
-
-:root .glass-warm {
-  background: hsla(35, 25%, 98%, 0.75);
-  border-color: hsla(30, 20%, 85%, 0.7);
-}
-
-/* ── Glow Text ── */
-.text-glow {
-  text-shadow: 0 0 40px hsla(24, 85%, 55%, 0.25);
-}
-
-/* ── Warm Glass Panel ── */
-.glass-panel {
-  @apply bg-card border border-border;
-}
-
-.glass-panel-hover {
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-}
-.glass-panel-hover:hover {
+.editions-card:hover {
   @apply border-border-strong;
-  box-shadow: 0 0 20px hsla(24, 70%, 30%, 0.06);
 }
 
-/* Tabular numerals utility */
+/* ── Subtle Card Spotlight Effect ── */
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(400px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(255, 255, 255, 0.12), transparent 40%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-spotlight:hover::before {
+  opacity: 1;
+}
+
+/* ── Crosshair Technical Markers ── */
+.corner-crosshair {
+  position: relative;
+}
+.corner-crosshair::before,
+.corner-crosshair::after {
+  content: "+";
+  position: absolute;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  line-height: 1;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.6;
+  pointer-events: none;
+}
+.corner-crosshair::before {
+  top: 4px;
+  left: 6px;
+}
+.corner-crosshair::after {
+  top: 4px;
+  right: 6px;
+}
+
+/* ── Tabular Numerals ── */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Warm Sepia Scrollbar ── */
+/* ── Minimalist Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -217,33 +198,6 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--border-strong));
-}
-
-/* ── Warm Shimmer Skeleton ── */
-@keyframes warm-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-warm-shimmer {
-  background: linear-gradient(
-    90deg,
-    hsl(var(--muted)) 0%,
-    hsla(24, 30%, 25%, 0.3) 50%,
-    hsl(var(--muted)) 100%
-  );
-  background-size: 200% 100%;
-  animation: warm-shimmer 2s ease-in-out infinite;
-}
-
-/* ── Glow Pulse ── */
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 15px hsla(24, 85%, 55%, 0.1); }
-  50% { box-shadow: 0 0 30px hsla(24, 85%, 55%, 0.2); }
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
 }
 
 /* Respect user's motion preference */

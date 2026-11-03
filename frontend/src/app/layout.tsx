@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
+import { Syne, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
-const instrumentSerif = Instrument_Serif({
+const syne = Syne({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["400"],
-  style: ["normal", "italic"],
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -38,10 +37,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${instrumentSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${syne.variable} ${inter.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="font-sans bg-background text-foreground antialiased">
+      <body className="font-sans bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
         <ThemeProvider>
           <AppShell>{children}</AppShell>
         </ThemeProvider>
