@@ -194,9 +194,9 @@ function ConnectorsContent() {
           </div>
         ) : (
           <div
-            className={`rounded-2xl p-7 sm:p-8 border backdrop-blur-xl transition-all duration-300 shadow-warm-md ${
+            className={`rounded-2xl p-7 sm:p-8 border backdrop-blur-xl transition-all duration-300 shadow-subtle ${
               isLinkedInActive
-                ? "border-emerald-500/30 bg-card/85 shadow-warm-lg"
+                ? "border-emerald-500/30 bg-card/90 shadow-elevated"
                 : "border-border/80 bg-card/80"
             }`}
           >
@@ -204,12 +204,12 @@ function ConnectorsContent() {
               {/* Connector Card Top Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/70 pb-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#0A66C2]/15 text-[#0A66C2] border border-[#0A66C2]/30 shadow-warm-xs">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#0A66C2]/15 text-[#0A66C2] border border-[#0A66C2]/30 shadow-subtle">
                     <LinkedInBrandIcon className="h-6 w-6" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2.5">
-                      <h3 className="font-display font-normal text-2xl text-foreground text-glow">LinkedIn Personal Profile</h3>
+                      <h3 className="font-display font-bold text-xl text-foreground">LinkedIn Personal Profile</h3>
                       <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-surface border border-border/80 text-muted-foreground">
                         OAuth 2.0
                       </span>

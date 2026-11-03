@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Clock,
   Sparkles,
+  Layers,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,8 +39,9 @@ import {
   KnowledgeDoc,
 } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
-import { FadeIn, WarmFadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/lib/motion";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CardSpotlight } from "@/components/ui/CardSpotlight";
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -196,7 +199,7 @@ export default function DashboardPage() {
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-warm rounded-xl p-5 space-y-3">
+            <div key={i} className="rounded-xl border border-border/80 bg-card p-5 space-y-3">
               <Skeleton className="h-3.5 w-24" />
               <Skeleton className="h-8 w-16" />
             </div>
@@ -207,46 +210,57 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Compact Page Header */}
-      <PageHeader
-        title="Today"
-        description="Operational overview of scheduled content, required reviews, and pipeline progress."
-        action={
-          error ? (
-            <button
-              type="button"
-              onClick={loadData}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-status-warning/10 border border-status-warning/20 text-status-warning text-xs font-mono hover:bg-status-warning/20 transition-all duration-200"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Reconnect backend
-            </button>
-          ) : undefined
-        }
-      />
+    <div className="space-y-8 pb-16 max-w-7xl mx-auto">
+      {/* ── Shopify Editions Chapter Banner ── */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded bg-primary/10 border border-primary/25 text-primary font-semibold">
+              Edition 2026
+            </span>
+            <span className="text-muted-foreground font-mono text-[11px]">· Operational Command</span>
+          </div>
+          <h1 className="font-display font-bold text-3xl text-foreground tracking-tight">
+            Today
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Real-time synthesis telemetry, scheduled queues, and qualified lead conversion strata.
+          </p>
+        </div>
+
+        {error && (
+          <button
+            type="button"
+            onClick={loadData}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono hover:bg-amber-500/20 transition-all duration-150"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Reconnect backend
+          </button>
+        )}
+      </div>
 
       {/* Setup Checklist (Shown on first-run or incomplete setup) */}
       {showChecklist && (
-        <WarmFadeIn>
-          <div className="rounded-xl border border-border/40 glass-warm p-5 space-y-4">
+        <FadeIn>
+          <div className="rounded-xl border border-border/80 bg-card/90 p-5 space-y-4 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Getting started</h2>
+                  <h2 className="text-sm font-semibold text-foreground">Activation Checklist</h2>
                   <span className="text-xs font-mono text-muted-foreground tabular-nums">
-                    {completedCount} of {checklist.length}
+                    [{completedCount} / {checklist.length}]
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5 ml-6.5">
+                <p className="text-xs text-muted-foreground mt-0.5 ml-6">
                   Complete these steps to activate automated LinkedIn content generation and lead tracking.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setChecklistDismissed(true)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground font-mono transition-colors"
               >
                 Dismiss
               </button>
@@ -258,17 +272,17 @@ export default function DashboardPage() {
                 return (
                   <StaggerItem key={item.id}>
                     <div
-                      className={`rounded-xl border p-4 flex flex-col justify-between transition-all duration-300 ${
+                      className={`rounded-xl border p-4 flex flex-col justify-between transition-all duration-200 ${
                         item.completed
-                          ? "border-status-published/30 bg-status-published/[0.04]"
-                          : "border-border/40 glass-warm hover:border-primary/20 hover:shadow-warm"
+                          ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+                          : "border-border/80 bg-surface/50 hover:border-border-strong hover:bg-surface"
                       }`}
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Icon className={`h-4 w-4 ${item.completed ? "text-status-published" : "text-muted-foreground"}`} />
+                          <Icon className={`h-4 w-4 ${item.completed ? "text-primary" : "text-muted-foreground"}`} />
                           {item.completed ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-status-published">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-primary">
                               <Check className="h-3 w-3" /> Done
                             </span>
                           ) : (
@@ -299,12 +313,12 @@ export default function DashboardPage() {
               })}
             </StaggerContainer>
           </div>
-        </WarmFadeIn>
+        </FadeIn>
       )}
 
       {/* Needs Your Attention List */}
       <FadeIn delay={0.1}>
-        <div className="rounded-xl border border-border/40 glass-warm p-5 space-y-3.5">
+        <div className="rounded-xl border border-border/80 bg-card/90 p-5 space-y-3.5 backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-foreground">Needs your attention</h2>
@@ -313,16 +327,16 @@ export default function DashboardPage() {
                   {attentionItems.length} active
                 </Badge>
               ) : (
-                <span className="inline-flex items-center gap-1 text-xs text-status-published font-medium">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> All clear
+                <span className="inline-flex items-center gap-1 text-xs text-primary font-mono font-medium">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> All clear
                 </span>
               )}
             </div>
           </div>
 
           {attentionItems.length === 0 ? (
-            <div className="rounded-lg border border-border/30 bg-surface/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-status-published shrink-0" />
+            <div className="rounded-lg border border-border/60 bg-surface/50 p-3 text-xs text-muted-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
               <span>No blocked drafts, failed dispatches, or offline connectors requiring operator intervention.</span>
             </div>
           ) : (
@@ -330,16 +344,16 @@ export default function DashboardPage() {
               {attentionItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all duration-150 ${
                     item.type === "danger"
-                      ? "border-status-danger/30 bg-status-danger/[0.04]"
-                      : "border-status-warning/30 bg-status-warning/[0.04]"
+                      ? "border-rose-500/30 bg-rose-500/[0.04]"
+                      : "border-amber-500/30 bg-amber-500/[0.04]"
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
                     <AlertTriangle
                       className={`h-4 w-4 shrink-0 mt-0.5 ${
-                        item.type === "danger" ? "text-status-danger" : "text-status-warning"
+                        item.type === "danger" ? "text-rose-400" : "text-amber-400"
                       }`}
                     />
                     <div>
@@ -353,8 +367,8 @@ export default function DashboardPage() {
                       size="sm"
                       className={`h-7 text-xs font-medium gap-1 rounded-lg ${
                         item.type === "danger"
-                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
-                          : "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700"
+                          ? "bg-rose-600 text-white hover:bg-rose-500"
+                          : "bg-amber-600 text-white hover:bg-amber-500"
                       }`}
                     >
                       <span>{item.actionText}</span>
@@ -368,7 +382,7 @@ export default function DashboardPage() {
         </div>
       </FadeIn>
 
-      {/* Compact 3-Metric Stats Row */}
+      {/* Compact 3-Metric Stats Row — Shopify Editions Bento Cards */}
       <StaggerContainer className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           {
@@ -393,16 +407,16 @@ export default function DashboardPage() {
           const Icon = stat.icon;
           return (
             <StaggerItem key={stat.label}>
-              <div className="glass-warm rounded-xl p-5 space-y-2 border border-border/30 hover:border-primary/20 hover:shadow-warm transition-all duration-300 group">
+              <CardSpotlight className="p-5 space-y-2 group">
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="text-xs font-medium">{stat.label}</span>
-                  <Icon className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
+                  <span className="text-xs font-medium font-mono uppercase tracking-wider">{stat.label}</span>
+                  <Icon className="h-4 w-4 group-hover:text-primary transition-colors" />
                 </div>
-                <div className="font-display text-3xl font-normal text-foreground tabular-nums text-glow">
+                <div className="font-display text-4xl font-bold text-foreground tabular-nums tracking-tight">
                   {stat.value}
                 </div>
                 <p className="text-[11px] text-muted-foreground">{stat.sub}</p>
-              </div>
+              </CardSpotlight>
             </StaggerItem>
           );
         })}
@@ -412,11 +426,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Coming up this week */}
         <FadeIn delay={0.15}>
-          <div className="glass-warm rounded-xl border border-border/30 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/30">
+          <div className="rounded-xl border border-border/80 bg-card/90 overflow-hidden flex flex-col backdrop-blur-md shadow-subtle">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/70">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-xs font-semibold text-foreground">Coming up this week</h2>
+                <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+                  Coming up this week
+                </h2>
               </div>
               <Link href="/calendar">
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground">
@@ -438,9 +454,9 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-border/60">
                   {scheduledUpcoming.map((post) => (
-                    <div key={post.id} className="p-3.5 space-y-1.5 hover:bg-accent/20 transition-colors">
+                    <div key={post.id} className="p-3.5 space-y-1.5 hover:bg-surface/50 transition-colors">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="font-mono text-muted-foreground">
                           {post.scheduled_at ? new Date(post.scheduled_at).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Scheduled"}
@@ -460,11 +476,13 @@ export default function DashboardPage() {
 
         {/* Real Post Results */}
         <FadeIn delay={0.2}>
-          <div className="glass-warm rounded-xl border border-border/30 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/30">
+          <div className="rounded-xl border border-border/80 bg-card/90 overflow-hidden flex flex-col backdrop-blur-md shadow-subtle">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/70">
               <div className="flex items-center gap-2">
                 <Send className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-xs font-semibold text-foreground">Recent published posts</h2>
+                <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+                  Recent published posts
+                </h2>
               </div>
               <Link href="/studio">
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground">
@@ -480,15 +498,15 @@ export default function DashboardPage() {
                   <Send className="h-6 w-6 text-muted-foreground/30 mx-auto" />
                   <p className="text-xs text-muted-foreground">No posts published yet.</p>
                   <Link href="/studio">
-                    <Button size="sm" className="h-7 text-xs gap-1 mt-1">
+                    <Button size="sm" className="h-7 text-xs gap-1 mt-1 bg-foreground text-background">
                       <Plus className="h-3 w-3" /> Create first post
                     </Button>
                   </Link>
                 </div>
               ) : (
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-border/60">
                   {publishedPosts.slice(0, 4).map((post) => (
-                    <div key={post.id} className="p-3.5 space-y-1.5 hover:bg-accent/20 transition-colors">
+                    <div key={post.id} className="p-3.5 space-y-1.5 hover:bg-surface/50 transition-colors">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="font-mono text-muted-foreground">
                           {formatRelativeTime(post.created_at)}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ChevronRight, RefreshCw, AlertCircle, Users, Sparkles, TrendingUp, Filter } from "lucide-react";
+import { Search, ChevronRight, RefreshCw, AlertCircle, Users, Sparkles, TrendingUp, Filter, UserCheck, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,8 @@ import {
 } from "@/components/ui/sheet";
 import { Lead, fetchLeads } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
-import { FadeIn, WarmFadeIn } from "@/lib/motion";
+import { FadeIn } from "@/lib/motion";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { AnimatedNumber } from "@/components/ui/motion";
-import { LeadFractionationColumn } from "@/components/figures/LeadFractionationColumn";
 
 const stages = [
   { id: "all", label: "All Leads" },
@@ -171,7 +169,6 @@ export default function LeadsPipelinePage() {
     setDrawerOpen(true);
   };
 
-  // Compute counts from live data
   const stageCounts = leads.reduce(
     (acc, l) => {
       acc[l.lead_stage] = (acc[l.lead_stage] || 0) + 1;
@@ -185,7 +182,7 @@ export default function LeadsPipelinePage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <Skeleton className="h-10 w-48 rounded-xl" />
         <Skeleton className="h-12 w-full rounded-xl" />
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-6 space-y-4">
+        <div className="rounded-xl border border-border/80 bg-card p-6 space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-14 w-full rounded-xl" />
           ))}
@@ -194,10 +191,8 @@ export default function LeadsPipelinePage() {
     );
   }
 
-
-
   return (
-    <div className="max-w-5xl mx-auto space-y-7 pb-16">
+    <div className="max-w-5xl mx-auto space-y-6 pb-16">
       <PageHeader
         title="Lead Pipeline"
         description="Autonomous intent detection and BANT qualifying signals mined from social interactions."
@@ -207,9 +202,9 @@ export default function LeadsPipelinePage() {
               <Badge
                 key={stage}
                 variant={getStageBadgeVariant(stage as Lead["lead_stage"])}
-                className="font-mono text-xs uppercase px-2.5 py-1"
+                className="font-mono text-xs uppercase px-2.5 py-0.5"
               >
-                <AnimatedNumber value={count} /> {stage}
+                {count} {stage}
               </Badge>
             ))}
           </div>
@@ -217,7 +212,7 @@ export default function LeadsPipelinePage() {
       />
 
       {error && (
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-xs text-amber-400 font-mono">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
             <span>{error}</span>
@@ -231,35 +226,76 @@ export default function LeadsPipelinePage() {
         </div>
       )}
 
-      {/* Bespoke Isometric Instrument: Hydrostatic Fractionation Column */}
+      {/* ── Shopify Editions Intent Strata Ribbon ── */}
       <FadeIn delay={0.05}>
-        <LeadFractionationColumn
-          activeStage={selectedStage === "all" ? "hot" : selectedStage}
-          onSelectStage={(stage) => setSelectedStage(stage)}
-        />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-border/80 bg-card/90 p-3.5 backdrop-blur-md space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground text-[10px] font-mono uppercase tracking-wider">
+              <span>SQL Qualification</span>
+              <span className="h-2 w-2 rounded-full bg-primary" />
+            </div>
+            <div className="font-display font-bold text-2xl text-foreground tracking-tight tabular-nums">
+              {stageCounts["sql"] || 0}
+            </div>
+            <p className="text-[11px] text-muted-foreground font-mono">Avg Score: 94/100</p>
+          </div>
+
+          <div className="rounded-xl border border-border/80 bg-card/90 p-3.5 backdrop-blur-md space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground text-[10px] font-mono uppercase tracking-wider">
+              <span>MQL Threshold</span>
+              <span className="h-2 w-2 rounded-full bg-sky-400" />
+            </div>
+            <div className="font-display font-bold text-2xl text-foreground tracking-tight tabular-nums">
+              {stageCounts["mql"] || 0}
+            </div>
+            <p className="text-[11px] text-muted-foreground font-mono">Avg Score: 82/100</p>
+          </div>
+
+          <div className="rounded-xl border border-border/80 bg-card/90 p-3.5 backdrop-blur-md space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground text-[10px] font-mono uppercase tracking-wider">
+              <span>Hot Intent Signals</span>
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+            </div>
+            <div className="font-display font-bold text-2xl text-foreground tracking-tight tabular-nums">
+              {stageCounts["hot"] || 0}
+            </div>
+            <p className="text-[11px] text-muted-foreground font-mono">Direct queries & DMs</p>
+          </div>
+
+          <div className="rounded-xl border border-border/80 bg-card/90 p-3.5 backdrop-blur-md space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground text-[10px] font-mono uppercase tracking-wider">
+              <span>Nurture Funnel</span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+            </div>
+            <div className="font-display font-bold text-2xl text-foreground tracking-tight tabular-nums">
+              {(stageCounts["warm"] || 0) + (stageCounts["cold"] || 0)}
+            </div>
+            <p className="text-[11px] text-muted-foreground font-mono">Warm & cold contacts</p>
+          </div>
+        </div>
       </FadeIn>
 
       {/* Filter and Search Bar */}
-      <WarmFadeIn delay={0.05}>
+      <FadeIn delay={0.08}>
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-muted-foreground/70" />
+            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search leads by persona, company, or thesis..."
-              className="pl-10 h-10 text-xs bg-card/75 border-border/80 shadow-warm-xs"
+              className="pl-10 h-9 text-xs bg-card/80 border-border/80 shadow-subtle"
             />
           </div>
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/80 border border-border/80 backdrop-blur-md overflow-x-auto w-full sm:w-auto">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-surface/80 border border-border backdrop-blur-md overflow-x-auto w-full sm:w-auto">
             {stages.map((st) => (
               <button
                 key={st.id}
                 onClick={() => setSelectedStage(st.id)}
-                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs transition-all duration-200 ${
+                className={`whitespace-nowrap rounded-lg px-3 py-1 text-xs transition-all duration-150 ${
                   selectedStage === st.id
-                    ? "bg-gradient-to-r from-primary/25 to-primary/10 text-foreground border border-primary/40 font-medium shadow-warm-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-surface/60"
+                    ? "bg-foreground text-background font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {st.label}
@@ -267,17 +303,17 @@ export default function LeadsPipelinePage() {
             ))}
           </div>
         </div>
-      </WarmFadeIn>
+      </FadeIn>
 
-      {/* Table with Warm Glass styling */}
-      <WarmFadeIn delay={0.1}>
-        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-warm-md overflow-hidden">
+      {/* Table with Clean Hairline Editions Styling */}
+      <FadeIn delay={0.1}>
+        <div className="rounded-xl border border-border/80 bg-card/90 backdrop-blur-xl shadow-subtle overflow-hidden">
           <Table>
-            <TableHeader className="bg-surface/60 border-b border-border/70">
+            <TableHeader className="bg-surface/50 border-b border-border/70">
               <TableRow className="hover:bg-transparent border-border/70">
                 <TableHead className="pl-6 text-xs uppercase tracking-wider font-mono text-muted-foreground">Prospect</TableHead>
                 <TableHead className="w-[110px] text-xs uppercase tracking-wider font-mono text-muted-foreground">Stage</TableHead>
-                <TableHead className="w-[90px] text-right text-xs uppercase tracking-wider font-mono text-muted-foreground">Score</TableHead>
+                <TableHead className="w-[90px] text-right text-xs uppercase tracking-wider font-mono text-muted-foreground">BANT Score</TableHead>
                 <TableHead className="w-[130px] text-xs uppercase tracking-wider font-mono text-muted-foreground">Last Activity</TableHead>
                 <TableHead className="w-[50px] text-right pr-6" />
               </TableRow>
@@ -287,10 +323,10 @@ export default function LeadsPipelinePage() {
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={5} className="text-center py-20">
                     <div className="space-y-3">
-                      <div className="h-12 w-12 rounded-2xl bg-surface border border-border/80 flex items-center justify-center mx-auto text-muted-foreground">
+                      <div className="h-12 w-12 rounded-xl bg-surface border border-border flex items-center justify-center mx-auto text-muted-foreground">
                         <Users className="h-6 w-6" />
                       </div>
-                      <p className="text-sm font-medium text-foreground">No leads found</p>
+                      <p className="text-sm font-semibold text-foreground">No leads found</p>
                       <p className="text-xs text-muted-foreground">Try adjusting your search criteria or filter stage.</p>
                     </div>
                   </TableCell>
@@ -300,15 +336,15 @@ export default function LeadsPipelinePage() {
                   <TableRow
                     key={lead.id}
                     onClick={() => handleRowClick(lead)}
-                    className="cursor-pointer hover:bg-primary/5 transition-colors duration-150 border-b border-border/50 group"
+                    className="cursor-pointer hover:bg-surface/60 transition-colors duration-150 border-b border-border/60 group"
                   >
-                    <TableCell className="pl-6 py-4">
+                    <TableCell className="pl-6 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-amber-700/10 border border-primary/25 flex items-center justify-center text-xs font-semibold text-primary font-mono shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-foreground text-background flex items-center justify-center text-xs font-mono font-bold shrink-0">
                           {lead.full_name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                          <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                             {lead.full_name}
                           </div>
                           {lead.headline && (
@@ -341,14 +377,14 @@ export default function LeadsPipelinePage() {
             </TableBody>
           </Table>
         </div>
-      </WarmFadeIn>
+      </FadeIn>
 
-      {/* Lead Detail Drawer with Warm Surrealist Styling */}
+      {/* Lead Detail Drawer with Clean Editions Styling */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md bg-card/95 backdrop-blur-2xl p-0 flex flex-col border-l border-border/80 shadow-warm-xl">
+        <SheetContent side="right" className="w-full sm:max-w-md bg-card/95 backdrop-blur-2xl p-0 flex flex-col border-l border-border/80 shadow-elevated">
           {selectedLead && (
             <>
-              <SheetHeader className="p-6 pb-5 border-b border-border/70 bg-surface/50">
+              <SheetHeader className="p-6 pb-5 border-b border-border/70 bg-surface/40">
                 <div className="flex items-center justify-between">
                   <Badge variant={getStageBadgeVariant(selectedLead.lead_stage)} className="uppercase font-mono text-xs">
                     {selectedLead.lead_stage}
@@ -359,11 +395,11 @@ export default function LeadsPipelinePage() {
                     <span className="text-muted-foreground text-[11px]">/100</span>
                   </div>
                 </div>
-                <SheetTitle className="font-display text-2xl font-normal mt-3 text-glow text-foreground">
+                <SheetTitle className="font-display font-bold text-xl mt-3 text-foreground">
                   {selectedLead.full_name}
                 </SheetTitle>
                 {selectedLead.headline && (
-                  <p className="text-xs text-muted-foreground/90 leading-relaxed font-sans mt-1">
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-1">
                     {selectedLead.headline}
                   </p>
                 )}
@@ -371,7 +407,7 @@ export default function LeadsPipelinePage() {
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Info Card */}
-                <div className="rounded-xl border border-border/80 bg-surface/60 p-4 space-y-2.5 backdrop-blur-sm">
+                <div className="rounded-xl border border-border/80 bg-surface/50 p-4 space-y-2.5">
                   {[
                     { label: "Company", value: selectedLead.company || "—" },
                     {
@@ -391,24 +427,26 @@ export default function LeadsPipelinePage() {
                     },
                   ].map((row) => (
                     <div key={row.label} className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{row.label}</span>
+                      <span className="text-muted-foreground font-mono text-[11px]">{row.label}</span>
                       <span className="text-foreground font-medium">{row.value}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* BANT Breakdown */}
-                <div className="rounded-xl border border-border/80 bg-surface/70 p-4 space-y-3.5 backdrop-blur-sm">
+                <div className="rounded-xl border border-border/80 bg-surface/60 p-4 space-y-3.5">
                   <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                    <h4 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">BANT Qualification</h4>
-                    <span className="font-mono text-[10px] text-primary">Framework Audit</span>
+                    <h4 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground font-mono">
+                      BANT Qualification Audit
+                    </h4>
+                    <span className="font-mono text-[10px] text-primary">Framework</span>
                   </div>
 
                   <div className="space-y-3 text-xs">
                     <div className="flex items-start gap-2.5">
-                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold ${
+                      <span className={`h-4 w-4 rounded-md flex items-center justify-center text-[10px] shrink-0 font-bold ${
                         selectedLead.lead_score >= 70
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-primary/20 text-primary border border-primary/30"
                           : "bg-surface border border-border text-muted-foreground"
                       }`}>
                         {selectedLead.lead_score >= 70 ? "✓" : "—"}
@@ -424,9 +462,9 @@ export default function LeadsPipelinePage() {
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold ${
+                      <span className={`h-4 w-4 rounded-md flex items-center justify-center text-[10px] shrink-0 font-bold ${
                         /(director|head|vp|chief|lead|founder|partner)/i.test(selectedLead.headline || selectedLead.job_title || "")
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-primary/20 text-primary border border-primary/30"
                           : "bg-surface border border-border text-muted-foreground"
                       }`}>
                         {/(director|head|vp|chief|lead|founder|partner)/i.test(selectedLead.headline || selectedLead.job_title || "") ? "✓" : "—"}
@@ -442,7 +480,7 @@ export default function LeadsPipelinePage() {
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <span className="h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className="h-4 w-4 rounded-md flex items-center justify-center text-[10px] shrink-0 font-bold bg-primary/20 text-primary border border-primary/30">
                         ✓
                       </span>
                       <div>
@@ -456,9 +494,9 @@ export default function LeadsPipelinePage() {
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold ${
+                      <span className={`h-4 w-4 rounded-md flex items-center justify-center text-[10px] shrink-0 font-bold ${
                         selectedLead.lead_stage === "sql" || selectedLead.lead_stage === "hot"
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-primary/20 text-primary border border-primary/30"
                           : "bg-surface border border-border text-muted-foreground"
                       }`}>
                         {selectedLead.lead_stage === "sql" || selectedLead.lead_stage === "hot" ? "✓" : "—"}
@@ -467,7 +505,7 @@ export default function LeadsPipelinePage() {
                         <span className="font-semibold text-foreground">Timeline: </span>
                         <span className="text-muted-foreground leading-relaxed">
                           {selectedLead.lead_stage === "sql" || selectedLead.lead_stage === "hot"
-                            ? "Q4 2026 deployment roadmap"
+                            ? "Immediate deployment roadmap"
                             : "Evaluation pipeline (45–60 days)"}
                         </span>
                       </div>
@@ -478,12 +516,12 @@ export default function LeadsPipelinePage() {
                 {/* Intent Signals */}
                 {selectedLead.intent_signals.length > 0 && (
                   <div className="space-y-2.5">
-                    <h4 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Intent Signals</h4>
+                    <h4 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground font-mono">Intent Signals</h4>
                     <div className="space-y-1.5">
                       {selectedLead.intent_signals.map((signal) => (
                         <div
                           key={signal}
-                          className="rounded-xl border border-border/70 bg-surface/50 p-3 text-xs text-foreground/80 font-mono flex items-center gap-2"
+                          className="rounded-lg border border-border/80 bg-surface/50 p-2.5 text-xs text-foreground font-mono flex items-center gap-2"
                         >
                           <span className="text-primary">✦</span>
                           <span>{signal.replace(/_/g, " ")}</span>
@@ -495,11 +533,11 @@ export default function LeadsPipelinePage() {
               </div>
 
               {/* Actions */}
-              <div className="p-6 border-t border-border/70 bg-surface/50 flex gap-3">
+              <div className="p-6 border-t border-border/70 bg-surface/40 flex gap-3">
                 <Button variant="outline" size="sm" className="flex-1 text-xs border-border/80 bg-surface/70">
                   Export to CRM
                 </Button>
-                <Button size="sm" className="flex-1 text-xs bg-primary text-primary-foreground shadow-warm-sm">
+                <Button size="sm" className="flex-1 text-xs bg-foreground text-background hover:bg-foreground/90">
                   Draft Outreach
                 </Button>
               </div>

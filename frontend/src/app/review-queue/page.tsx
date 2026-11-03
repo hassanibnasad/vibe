@@ -14,6 +14,9 @@ import {
   Split,
   Eye,
   CornerDownRight,
+  ShieldAlert,
+  Sliders,
+  CheckCircle2,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +32,6 @@ import { FadeIn, AnimatePresence } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { PostDraftQueue } from "@/components/calendar/PostDraftQueue";
 import { fetchPostDraftQueue } from "@/lib/calendar-api";
-import { ConfidenceGate } from "@/components/figures/ConfidenceGate";
 
 export default function ReviewQueuePage() {
   const { toast } = useToast();
@@ -154,7 +156,8 @@ export default function ReviewQueuePage() {
     setIsEditing(false);
     toast({
       title: "Reply approved and published",
-      description: `Sent reply to ${itemToApprove.lead_name || "lead"}.`,
+      description: `Dispatched reply to ${itemToApprove.lead_name || "lead"}.`,
+      variant: "success",
     });
   }, [currentItem, isEditing, editedReply, items, toast]);
 
@@ -200,6 +203,7 @@ export default function ReviewQueuePage() {
     toast({
       title: `Batch approved ${count} items`,
       description: "Replies published successfully.",
+      variant: "success",
     });
   }, [selectedIds, items, toast]);
 
@@ -247,7 +251,6 @@ export default function ReviewQueuePage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isEditing) return;
-      // Ignore if user is typing in any input or textarea
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
@@ -343,25 +346,26 @@ export default function ReviewQueuePage() {
     );
   }
 
-
+  const confidenceValue = currentItem ? currentItem.confidence_score : 0.85;
+  const isHighConfidence = confidenceValue >= 0.85;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 pb-16">
       <PageHeader
         title="Review Queue"
-        description="Replies and drafts below confidence threshold requiring your approval."
+        description="Drafts and replies requiring human oversight before social platform dispatch."
         action={
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">A</kbd>
+            <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px]">A</kbd>
               <span>Approve</span>
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] ml-1.5">R</kbd>
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] ml-1.5">R</kbd>
               <span>Reject</span>
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] ml-1.5">E</kbd>
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] ml-1.5">E</kbd>
               <span>Edit</span>
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] ml-1.5">X</kbd>
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] ml-1.5">X</kbd>
               <span>Select</span>
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] ml-1.5">D</kbd>
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] ml-1.5">D</kbd>
               <span>Diff</span>
             </div>
             {resolvedCount > 0 && (
@@ -374,7 +378,7 @@ export default function ReviewQueuePage() {
       />
 
       {error && (
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-xs text-amber-400 font-mono">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
             <span>{error}</span>
@@ -388,23 +392,55 @@ export default function ReviewQueuePage() {
         </div>
       )}
 
-      {/* Bespoke Isometric Instrument: Confidence Balance & Diverter Gate */}
-      <FadeIn delay={0.05}>
-        <ConfidenceGate
-          confidence={currentItem?.confidence_score ?? 0.81}
-          threshold={0.85}
-          itemLabel={currentItem?.lead_name ?? "Selected Reply"}
-        />
-      </FadeIn>
+      {/* ── Shopify Editions Confidence Telemetry Barometer ── */}
+      {currentItem && (
+        <FadeIn delay={0.05}>
+          <div className="rounded-xl border border-border/80 bg-card/90 p-4 backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${
+                isHighConfidence
+                  ? "bg-primary/10 text-primary border border-primary/25"
+                  : "bg-amber-500/10 text-amber-400 border border-amber-500/25"
+              }`}>
+                {isHighConfidence ? "✓" : "!"}
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-foreground flex items-center gap-2">
+                  <span>Confidence Audit: {currentItem.lead_name || "Lead"}</span>
+                  <Badge variant={isHighConfidence ? "published" : "warning"} className="font-mono text-[10px]">
+                    {Math.round(confidenceValue * 100)}% Match
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground font-mono">
+                  {isHighConfidence
+                    ? "Exceeds standard 0.85 threshold · Safe for direct broadcast"
+                    : "Below 0.85 threshold · Diverted to human approval queue"}
+                </p>
+              </div>
+            </div>
 
-      <div className="flex items-center gap-1.5 p-1 bg-surface/80 border border-border/80 rounded-xl backdrop-blur-md w-fit shadow-warm-xs">
+            <div className="flex items-center gap-2 font-mono text-xs">
+              <span className="text-muted-foreground">THRESHOLD:</span>
+              <span className="text-foreground font-semibold">0.85</span>
+              <span className="text-muted-foreground">|</span>
+              <span className="text-muted-foreground">STATUS:</span>
+              <span className={isHighConfidence ? "text-primary font-semibold" : "text-amber-400 font-semibold"}>
+                {isHighConfidence ? "AUTONOMOUS PASS" : "HUMAN GATE"}
+              </span>
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Queue Type Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-surface/80 border border-border rounded-xl backdrop-blur-md w-fit shadow-subtle">
         <button
           type="button"
           onClick={() => setActiveQueueTab("replies")}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
             activeQueueTab === "replies"
-              ? "bg-gradient-to-r from-primary/25 to-primary/10 text-foreground border border-primary/40 font-semibold shadow-warm-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-surface/60"
+              ? "bg-foreground text-background font-semibold shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Lead Replies ({items.length})
@@ -412,10 +448,10 @@ export default function ReviewQueuePage() {
         <button
           type="button"
           onClick={() => setActiveQueueTab("posts")}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
             activeQueueTab === "posts"
-              ? "bg-gradient-to-r from-primary/25 to-primary/10 text-foreground border border-primary/40 font-semibold shadow-warm-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-surface/60"
+              ? "bg-foreground text-background font-semibold shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Post Drafts ({postDraftsCount})
@@ -428,16 +464,16 @@ export default function ReviewQueuePage() {
         <FadeIn delay={0.1}>
           <Card className="p-16 text-center max-w-lg mx-auto">
             <div className="flex justify-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <ShieldCheck className="h-7 w-7" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/25">
+                <CheckCircle2 className="h-7 w-7" />
               </div>
             </div>
             <h3 className="mt-5 text-base font-semibold text-foreground">Queue is clear</h3>
-            <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
-              All recent replies met the confidence threshold. Nothing requires your attention.
+            <p className="mt-2 text-xs text-muted-foreground max-w-xs mx-auto">
+              All recent replies met the confidence threshold. No dispatches currently blocked.
             </p>
             <Button variant="outline" size="sm" onClick={loadData} className="gap-2 mt-6">
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
               Check for new items
             </Button>
           </Card>
@@ -447,11 +483,11 @@ export default function ReviewQueuePage() {
           {/* Left: Queue List with Batch Support */}
           <div className="md:col-span-5 space-y-2.5 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
             {/* Batch Header Bar */}
-            <div className="flex items-center justify-between px-2 py-1 bg-surface border border-border rounded-md text-xs">
+            <div className="flex items-center justify-between px-2.5 py-1.5 bg-surface border border-border rounded-lg text-xs">
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition-colors font-mono text-[11px]"
               >
                 {selectedIds.size > 0 && selectedIds.size === items.length ? (
                   <CheckSquare className="h-4 w-4 text-primary" />
@@ -471,7 +507,7 @@ export default function ReviewQueuePage() {
                     size="sm"
                     variant="outline"
                     onClick={handleBatchApprove}
-                    className="h-6 px-2 text-[11px] gap-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 border-border"
+                    className="h-6 px-2 text-[11px] gap-1 text-primary hover:bg-primary/10 border-border"
                   >
                     <Check className="h-3 w-3" />
                     Approve ({selectedIds.size})
@@ -480,7 +516,7 @@ export default function ReviewQueuePage() {
                     size="sm"
                     variant="outline"
                     onClick={handleBatchReject}
-                    className="h-6 px-2 text-[11px] gap-1 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border-border"
+                    className="h-6 px-2 text-[11px] gap-1 text-rose-400 hover:bg-rose-500/10 border-border"
                   >
                     <X className="h-3 w-3" />
                     Reject
@@ -499,13 +535,13 @@ export default function ReviewQueuePage() {
                   <motion.div
                     key={item.id}
                     layout
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                    className={`group relative rounded-lg border p-3.5 transition-colors cursor-pointer ${
+                    exit={{ opacity: 0, x: -16, transition: { duration: 0.15 } }}
+                    className={`group relative rounded-xl border p-3.5 transition-all duration-150 cursor-pointer ${
                       isSelected
-                        ? "border-primary bg-primary/5 shadow-subtle ring-1 ring-primary/20"
-                        : "border-border bg-card hover:bg-surface"
+                        ? "border-primary bg-primary/[0.04] shadow-subtle ring-1 ring-primary/20"
+                        : "border-border/80 bg-card/90 hover:bg-surface"
                     }`}
                     onClick={() => {
                       setSelectedIndex(index);
@@ -529,7 +565,7 @@ export default function ReviewQueuePage() {
                       </button>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground truncate">
                             <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                             <span className="truncate">{item.lead_name || "Unknown Lead"}</span>
@@ -554,11 +590,11 @@ export default function ReviewQueuePage() {
             <div className="md:col-span-7 space-y-4">
               {/* Inbound Message */}
               <FadeIn>
-                <Card className="border-border bg-card shadow-subtle">
-                  <CardHeader className="px-5 py-3 border-b border-border bg-surface/50">
+                <Card className="border-border/80 bg-card shadow-subtle">
+                  <CardHeader className="px-5 py-3 border-b border-border/70 bg-surface/40">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs border border-primary/20">
+                        <div className="h-7 w-7 rounded-lg bg-foreground text-background flex items-center justify-center font-bold text-xs font-mono">
                           {(currentItem.lead_name || "Lead").charAt(0)}
                         </div>
                         <div>
@@ -573,12 +609,12 @@ export default function ReviewQueuePage() {
                         </div>
                       </div>
                       <Badge variant="outline" className="text-[10px] font-mono">
-                        Inbound Message
+                        Inbound Touchpoint
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <div className="rounded-md border border-border bg-surface p-3.5 text-xs leading-relaxed text-foreground">
+                    <div className="rounded-lg border border-border/80 bg-surface/50 p-3.5 text-xs leading-relaxed text-foreground">
                       {currentItem.incoming_message}
                     </div>
                   </CardContent>
@@ -587,8 +623,8 @@ export default function ReviewQueuePage() {
 
               {/* Proposed Reply & Diff Toggle */}
               <FadeIn delay={0.1}>
-                <Card className="border-border bg-card shadow-subtle">
-                  <CardHeader className="px-5 py-3 border-b border-border bg-surface/50">
+                <Card className="border-border/80 bg-card shadow-subtle">
+                  <CardHeader className="px-5 py-3 border-b border-border/70 bg-surface/40">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <CornerDownRight className="h-4 w-4 text-primary" />
@@ -599,13 +635,13 @@ export default function ReviewQueuePage() {
 
                       <div className="flex items-center gap-2">
                         {/* Toggle Diff / Preview */}
-                        <div className="flex items-center rounded-md border border-border bg-muted p-0.5">
+                        <div className="flex items-center rounded-lg border border-border bg-surface p-0.5">
                           <button
                             type="button"
                             onClick={() => setViewMode("preview")}
-                            className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                               viewMode === "preview"
-                                ? "bg-background text-foreground shadow-xs"
+                                ? "bg-foreground text-background shadow-xs font-semibold"
                                 : "text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -615,9 +651,9 @@ export default function ReviewQueuePage() {
                           <button
                             type="button"
                             onClick={() => setViewMode("diff")}
-                            className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                               viewMode === "diff"
-                                ? "bg-background text-foreground shadow-xs"
+                                ? "bg-foreground text-background shadow-xs font-semibold"
                                 : "text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -665,7 +701,7 @@ export default function ReviewQueuePage() {
                           >
                             Cancel
                           </Button>
-                          <Button size="sm" onClick={handleApprove}>
+                          <Button size="sm" onClick={handleApprove} className="bg-foreground text-background">
                             Save and approve
                           </Button>
                         </div>
@@ -673,32 +709,32 @@ export default function ReviewQueuePage() {
                     ) : viewMode === "diff" ? (
                       /* Diff View Mode */
                       <div className="space-y-3">
-                        <div className="rounded-md border border-border bg-surface p-3 text-xs space-y-3">
-                          <div className="flex items-center justify-between pb-2 border-b border-border">
+                        <div className="rounded-lg border border-border/80 bg-surface/50 p-3.5 text-xs space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-border/60">
                             <span className="font-mono text-[10px] uppercase font-semibold text-muted-foreground">
                               Diff Inspector
                             </span>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-[11px] text-muted-foreground font-mono">
                               {diffComparison?.isModified
-                                ? "Edited relative to initial generated draft"
-                                : "Draft matches original recommendation"}
+                                ? "Modified relative to synthetic recommendation"
+                                : "Exact match with suggested draft"}
                             </span>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1">
-                              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                              <span className="text-[10px] font-semibold text-rose-400 font-mono">
                                 Original Draft:
                               </span>
-                              <div className="p-2.5 rounded bg-rose-500/5 border border-rose-500/20 text-muted-foreground text-xs leading-relaxed">
+                              <div className="p-2.5 rounded-md bg-rose-500/5 border border-rose-500/20 text-muted-foreground text-xs leading-relaxed">
                                 {diffComparison?.original}
                               </div>
                             </div>
                             <div className="space-y-1">
-                              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              <span className="text-[10px] font-semibold text-primary font-mono">
                                 Current Proposed Reply:
                               </span>
-                              <div className="p-2.5 rounded bg-emerald-500/5 border border-emerald-500/20 text-foreground text-xs leading-relaxed">
+                              <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20 text-foreground text-xs leading-relaxed">
                                 {diffComparison?.edited}
                               </div>
                             </div>
@@ -707,24 +743,24 @@ export default function ReviewQueuePage() {
                       </div>
                     ) : (
                       /* Standard Preview Mode */
-                      <div className="rounded-md border border-border bg-surface p-4 text-xs leading-relaxed text-foreground">
+                      <div className="rounded-lg border border-border/80 bg-surface/50 p-4 text-xs leading-relaxed text-foreground">
                         {editedReply}
                       </div>
                     )}
 
                     {/* Actions Bar */}
                     {!isEditing && (
-                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                      <div className="flex items-center justify-between pt-3 border-t border-border/70">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleReject}
-                          className="gap-1.5 text-rose-600 dark:text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 border-border text-xs"
+                          className="gap-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-border text-xs"
                         >
                           <X className="h-3.5 w-3.5" />
                           Reject
                         </Button>
-                        <Button size="sm" onClick={handleApprove} className="gap-1.5 text-xs">
+                        <Button size="sm" onClick={handleApprove} className="gap-1.5 text-xs bg-foreground text-background hover:bg-foreground/90">
                           <Check className="h-3.5 w-3.5" />
                           Approve and publish
                         </Button>

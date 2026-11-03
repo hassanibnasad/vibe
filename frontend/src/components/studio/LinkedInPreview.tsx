@@ -49,7 +49,7 @@ export function LinkedInPreview({
   const charCount = content ? content.length : 0;
 
   return (
-    <div className="flex flex-col rounded-2xl border border-border/80 bg-card/85 backdrop-blur-xl shadow-warm-md overflow-hidden transition-all duration-300">
+    <div className="flex flex-col rounded-2xl border border-border/80 bg-card/90 backdrop-blur-xl shadow-subtle overflow-hidden transition-all duration-300">
       {/* Top Preview Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/70 bg-surface/60 text-xs">
         <div className="flex items-center gap-2">
@@ -63,7 +63,7 @@ export function LinkedInPreview({
                   onClick={() => onSelectVariant(i)}
                   className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono transition-all duration-200 ${
                     selectedVariantIndex === i
-                      ? "bg-primary text-primary-foreground font-semibold shadow-warm-xs"
+                      ? "bg-foreground text-background font-semibold shadow-xs"
                       : "bg-surface/80 text-muted-foreground hover:text-foreground border border-border/60"
                   }`}
                 >
@@ -103,7 +103,7 @@ export function LinkedInPreview({
         {/* Author Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-amber-700/20 text-primary font-bold text-sm select-none border border-primary/30 shadow-warm-xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground text-background font-mono font-bold text-sm select-none shadow-subtle">
               {authorName.slice(0, 2).toUpperCase()}
             </div>
             <div>
@@ -137,7 +137,7 @@ export function LinkedInPreview({
               placeholder="Edit your post text directly..."
             />
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => setIsEditing(false)} className="h-8 text-xs font-medium bg-primary text-primary-foreground">
+              <Button size="sm" onClick={() => setIsEditing(false)} className="h-8 text-xs font-medium bg-foreground text-background hover:bg-foreground/90">
                 Finish editing
               </Button>
             </div>
