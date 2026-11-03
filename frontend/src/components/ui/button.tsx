@@ -4,22 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 select-none",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 select-none",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-terracotta-400 to-terracotta-500 text-white shadow-warm hover:from-terracotta-500 hover:to-terracotta-600 hover:shadow-warm-lg active:scale-[0.98]",
+          "bg-foreground text-background hover:bg-foreground/90 shadow-subtle active:scale-[0.98]",
+        editions:
+          "bg-primary text-black font-semibold shadow-glow hover:opacity-90 active:scale-[0.98]",
         destructive:
-          "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-subtle hover:from-red-600 hover:to-red-700",
+          "bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 active:scale-[0.98]",
         outline:
-          "border border-border/60 bg-surface/50 backdrop-blur-sm shadow-subtle hover:border-border-strong hover:bg-accent/50 hover:text-foreground",
+          "border border-border/80 bg-surface/60 backdrop-blur-sm shadow-subtle hover:border-border-strong hover:bg-surface hover:text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground shadow-subtle hover:bg-secondary/80",
-        ghost: "hover:bg-accent/50 hover:text-foreground",
+        ghost: "hover:bg-surface hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         success:
-          "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-subtle hover:from-emerald-600 hover:to-emerald-700",
+          "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25",
       },
       size: {
         default: "h-8 px-3.5 text-xs",
