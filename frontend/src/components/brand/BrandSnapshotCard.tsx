@@ -55,12 +55,12 @@ export function BrandSnapshotCard({
   ];
 
   return (
-    <div className="relative rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-6 shadow-warm-md space-y-5 overflow-hidden">
+    <div className="relative rounded-2xl border border-border/80 bg-card/90 backdrop-blur-xl p-6 shadow-subtle space-y-5 overflow-hidden">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
         {/* Brand identity overview with Logo initials */}
         <div className="flex items-start gap-4">
           <div
-            className="h-12 w-12 rounded-xl border border-border/80 flex items-center justify-center font-bold text-base shadow-warm-sm shrink-0 font-display"
+            className="h-12 w-12 rounded-xl border border-border/80 flex items-center justify-center font-bold text-base shadow-subtle shrink-0 font-mono"
             style={{ backgroundColor: palettePrimary, color: paletteNeutral }}
           >
             {brandName ? brandName.slice(0, 2).toUpperCase() : "VB"}
@@ -68,7 +68,7 @@ export function BrandSnapshotCard({
 
           <div className="space-y-1.5">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="font-display text-2xl font-normal tracking-tight text-foreground text-glow">
+              <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
                 {brandName || "Configured Brand"}
               </h2>
               {websiteUrl && (
@@ -79,20 +79,20 @@ export function BrandSnapshotCard({
                   className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 text-xs"
                   title="Visit live website"
                 >
-                  <Globe className="h-3 w-3 text-primary" />
+                  <Globe className="h-3.5 w-3.5 text-primary" />
                   <span className="font-mono text-[11px] truncate max-w-[160px]">
                     {websiteUrl.replace(/^https?:\/\//, "")}
                   </span>
                   <ExternalLink className="h-2.5 w-2.5 opacity-70" />
                 </a>
               )}
-              <Badge variant="outline" className="text-[10px] font-medium border-primary/30 text-primary bg-primary/10">
+              <Badge variant="default" className="text-[10px] font-mono">
                 {archetype || "Technical Expert"}
               </Badge>
             </div>
 
             {tagline && (
-              <p className="text-xs text-muted-foreground/90 line-clamp-2 leading-relaxed italic font-serif">
+              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                 &ldquo;{tagline}&rdquo;
               </p>
             )}
@@ -103,7 +103,7 @@ export function BrandSnapshotCard({
                 {toneAttributes.map((trait) => (
                   <span
                     key={trait}
-                    className="inline-flex items-center rounded-full bg-surface/80 border border-border/80 px-2.5 py-0.5 text-[10px] font-medium text-foreground/80 backdrop-blur-xs"
+                    className="inline-flex items-center rounded-full bg-surface border border-border px-2.5 py-0.5 text-[10px] font-medium text-foreground"
                   >
                     {trait}
                   </span>
@@ -117,7 +117,7 @@ export function BrandSnapshotCard({
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
           <div className="rounded-xl border border-border/70 bg-surface/60 backdrop-blur-sm p-3 space-y-2">
             <span className="text-[10px] font-mono tracking-wide uppercase text-muted-foreground block">
-              Color Tokens
+              Visual Tokens
             </span>
             <div className="flex items-center gap-2">
               {colors.map(({ role, hex }) => {
@@ -127,7 +127,7 @@ export function BrandSnapshotCard({
                     key={role}
                     type="button"
                     onClick={() => copyToClipboard(hex, role)}
-                    className="group flex items-center gap-1.5 rounded-lg border border-border/70 bg-card/70 px-2.5 py-1.5 text-left transition-all hover:border-primary/50 hover:bg-surface/80"
+                    className="group flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-left transition-all hover:border-border-strong hover:bg-surface"
                     title={`Click to copy ${role} color (${hex})`}
                   >
                     <div
@@ -141,9 +141,9 @@ export function BrandSnapshotCard({
                       </span>
                     </div>
                     {isCopied ? (
-                      <Check className="h-2.5 w-2.5 text-emerald-400 ml-0.5" />
+                      <Check className="h-2.5 w-2.5 text-primary ml-0.5" />
                     ) : (
-                      <Copy className="h-2.5 w-2.5 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
+                      <Copy className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
                     )}
                   </button>
                 );
@@ -156,25 +156,25 @@ export function BrandSnapshotCard({
       {/* Navigation Quick Links */}
       <div className="flex items-center justify-between pt-3.5 border-t border-border/60 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-muted-foreground text-[11px]">Direct access:</span>
+          <span className="text-muted-foreground text-[11px] font-mono">DIRECT ACCESS:</span>
           <button
             type="button"
             onClick={() => onSelectTab("voice")}
-            className="px-3 py-1 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface hover:border-primary/40 text-foreground text-xs font-medium transition-all duration-200"
+            className="px-3 py-1 rounded-lg border border-border bg-surface hover:bg-surface/80 hover:border-border-strong text-foreground text-xs font-medium transition-all duration-150"
           >
             Identity & Voice
           </button>
           <button
             type="button"
             onClick={() => onSelectTab("icp")}
-            className="px-3 py-1 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface hover:border-primary/40 text-foreground text-xs font-medium transition-all duration-200"
+            className="px-3 py-1 rounded-lg border border-border bg-surface hover:bg-surface/80 hover:border-border-strong text-foreground text-xs font-medium transition-all duration-150"
           >
             Value Props ({valuePropsCount}) & ICP ({painPointsCount})
           </button>
           <button
             type="button"
             onClick={() => onSelectTab("compliance")}
-            className="px-3 py-1 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface hover:border-primary/40 text-foreground text-xs font-medium transition-all duration-200"
+            className="px-3 py-1 rounded-lg border border-border bg-surface hover:bg-surface/80 hover:border-border-strong text-foreground text-xs font-medium transition-all duration-150"
           >
             Guardrails & Rules ({guardrailsCount})
           </button>
@@ -186,7 +186,7 @@ export function BrandSnapshotCard({
             variant="ghost"
             size="sm"
             onClick={onReExtract}
-            className="h-8 text-xs text-muted-foreground hover:text-foreground"
+            className="h-8 text-xs text-muted-foreground hover:text-foreground font-mono"
           >
             Re-sync from site
           </Button>

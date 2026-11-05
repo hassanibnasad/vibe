@@ -112,24 +112,27 @@ export function BrandOfferingsTab({
   return (
     <div className="space-y-6">
       {/* 1. Core Value Propositions */}
-      <Card className="border-border bg-card">
-        <CardHeader className="pb-3">
+      <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+        <CardHeader className="pb-3 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Target className="h-4 w-4 text-foreground" />
+              <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block mb-1">
+                [ 01 · POSITIONING PILLARS ]
+              </span>
+              <CardTitle className="text-base font-display font-medium tracking-tight text-white flex items-center gap-2">
+                <Target className="h-4 w-4 text-editions-mint" />
                 Core Value Propositions
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
                 Differentiating selling points highlighted in generated posts and outbound responses.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="border-border bg-muted text-foreground font-mono text-xs">
+            <Badge variant="outline" className="border-border/80 bg-surface/50 text-bone font-mono text-xs">
               {valueProps.length} Registered
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           <div className="flex gap-2">
             <Input
               value={newValueProp}
@@ -141,13 +144,13 @@ export function BrandOfferingsTab({
                 }
               }}
               placeholder="e.g. Sub-second qualification latency with zero human intervention required"
-              className="bg-surface border-border text-sm h-10 rounded-lg"
+              className="bg-obsidian border-border/80 text-xs h-10 rounded-lg focus:border-editions-mint/50"
             />
             <Button
               type="button"
               onClick={addValueProp}
               disabled={!newValueProp.trim()}
-              className="h-10 px-4 text-xs bg-foreground text-background hover:bg-foreground/90 rounded-lg font-medium shrink-0 transition-colors shadow-subtle"
+              className="h-10 px-4 text-xs bg-white text-black hover:bg-white/90 rounded-lg font-medium shrink-0 transition-colors shadow-subtle disabled:opacity-50"
             >
               <Plus className="h-3.5 w-3.5 mr-1" />
               Add Value Prop
@@ -158,27 +161,27 @@ export function BrandOfferingsTab({
             {valueProps.map((prop, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface text-xs text-foreground group hover:border-border-strong transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-obsidian/60 text-xs text-foreground group hover:border-border transition-colors"
               >
                 <div className="flex items-center gap-2.5 flex-1 pr-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground">
-                    {idx + 1}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-surface border border-border/60 font-mono text-[10px] text-editions-mint">
+                    0{idx + 1}
                   </span>
-                  <span className="leading-relaxed font-sans">{prop}</span>
+                  <span className="leading-relaxed font-sans text-bone/90">{prop}</span>
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => removeValueProp(idx)}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500 opacity-60 group-hover:opacity-100 transition-opacity"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-400 opacity-60 group-hover:opacity-100 transition-opacity"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             ))}
             {valueProps.length === 0 && (
-              <div className="p-6 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
+              <div className="p-6 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-lg bg-surface/20">
                 No value propositions registered. Add your product advantages above or run the website extractor.
               </div>
             )}
@@ -187,32 +190,35 @@ export function BrandOfferingsTab({
       </Card>
 
       {/* 2. ICP Pain Points & Hook Matrix */}
-      <Card className="border-border bg-card">
-        <CardHeader className="pb-3">
+      <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+        <CardHeader className="pb-3 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Layers className="h-4 w-4 text-foreground" />
+              <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block mb-1">
+                [ 02 · HOOK MATRIX ]
+              </span>
+              <CardTitle className="text-base font-display font-medium tracking-tight text-white flex items-center gap-2">
+                <Layers className="h-4 w-4 text-editions-mint" />
                 ICP Pain Points & Hook Matrix
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
                 Pairs concrete product capabilities with painful customer symptoms and target personas.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="border-border bg-muted text-foreground font-mono text-xs">
+            <Badge variant="outline" className="border-border/80 bg-surface/50 text-bone font-mono text-xs">
               {icpPainPoints.length} Hooks
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           {/* Inline Add Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 rounded-lg border border-border bg-surface">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 rounded-lg border border-border/60 bg-obsidian/60">
             <div className="sm:col-span-4">
               <Input
                 value={newFeature}
                 onChange={(e) => setNewFeature(e.target.value)}
                 placeholder="Product Feature (e.g. Durable Orchestration)"
-                className="bg-card border-border text-xs h-9"
+                className="bg-card border-border/80 text-xs h-9 focus:border-editions-mint/50"
               />
             </div>
             <div className="sm:col-span-4">
@@ -220,7 +226,7 @@ export function BrandOfferingsTab({
                 value={newPainHook}
                 onChange={(e) => setNewPainHook(e.target.value)}
                 placeholder="Pain Symptom (e.g. Lost state on worker crashes)"
-                className="bg-card border-border text-xs h-9"
+                className="bg-card border-border/80 text-xs h-9 focus:border-editions-mint/50"
               />
             </div>
             <div className="sm:col-span-3">
@@ -228,7 +234,7 @@ export function BrandOfferingsTab({
                 value={newPersona}
                 onChange={(e) => setNewPersona(e.target.value)}
                 placeholder="Target Persona (e.g. VP of Eng)"
-                className="bg-card border-border text-xs h-9"
+                className="bg-card border-border/80 text-xs h-9 focus:border-editions-mint/50"
               />
             </div>
             <div className="sm:col-span-1">
@@ -236,7 +242,7 @@ export function BrandOfferingsTab({
                 type="button"
                 onClick={addPainPoint}
                 disabled={!newFeature.trim() || !newPainHook.trim()}
-                className="w-full h-9 bg-foreground text-background hover:bg-foreground/90 p-0 rounded-lg text-xs transition-colors shadow-subtle"
+                className="w-full h-9 bg-white text-black hover:bg-white/90 p-0 rounded-lg text-xs transition-colors shadow-subtle disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -245,27 +251,27 @@ export function BrandOfferingsTab({
 
           {/* Pain Point Table */}
           {icpPainPoints.length > 0 ? (
-            <div className="rounded-lg border border-border overflow-hidden">
+            <div className="rounded-lg border border-border/80 overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border bg-surface/50">
-                    <TableHead className="text-xs font-mono">Product Feature</TableHead>
-                    <TableHead className="text-xs font-mono">Customer Pain Point / Hook</TableHead>
-                    <TableHead className="text-xs font-mono">Target Persona</TableHead>
+                  <TableRow className="border-border/80 bg-surface/40 hover:bg-surface/40">
+                    <TableHead className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">Product Feature</TableHead>
+                    <TableHead className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">Customer Pain Point / Hook</TableHead>
+                    <TableHead className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">Target Persona</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {icpPainPoints.map((item, idx) => (
-                    <TableRow key={idx} className="border-border">
-                      <TableCell className="font-medium text-xs text-foreground">
+                    <TableRow key={idx} className="border-border/60 hover:bg-white/[0.02]">
+                      <TableCell className="font-medium text-xs text-white">
                         {item.feature}
                       </TableCell>
-                      <TableCell className="text-xs text-foreground/90">
+                      <TableCell className="text-xs text-bone/90">
                         {item.pain_hook}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="text-[10px] font-mono bg-muted border border-border text-muted-foreground">
+                        <Badge variant="outline" className="text-[10px] font-mono bg-white/5 border border-white/10 text-muted-foreground">
                           {item.target_persona}
                         </Badge>
                       </TableCell>
@@ -275,7 +281,7 @@ export function BrandOfferingsTab({
                           variant="ghost"
                           size="sm"
                           onClick={() => removePainPoint(idx)}
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-400"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -286,7 +292,7 @@ export function BrandOfferingsTab({
               </Table>
             </div>
           ) : (
-            <div className="p-6 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
+            <div className="p-6 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-lg bg-surface/20">
               No ICP hooks mapped yet. Add capability-to-pain point mappings above to seed high-conversion hooks.
             </div>
           )}
@@ -296,28 +302,31 @@ export function BrandOfferingsTab({
       {/* 3. Conversion Assets & CTAs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Lead Magnets */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+        <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block">
+              [ 03A · MAGNETS ]
+            </span>
+            <CardTitle className="text-sm font-display font-medium text-white">
               Lead Magnets
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Whitepapers, calculators & teardowns offered in DMs.
+              Whitepapers & teardowns offered in DMs.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             <div className="flex gap-1.5">
               <Input
                 value={newLeadMagnet}
                 onChange={(e) => setNewLeadMagnet(e.target.value)}
                 placeholder="e.g. 2026 AI Agent Benchmark"
-                className="bg-surface border-border text-xs h-8"
+                className="bg-obsidian border-border/80 text-xs h-8 focus:border-editions-mint/50"
               />
               <Button
                 type="button"
                 size="sm"
                 onClick={() => addSimpleTag(newLeadMagnet, leadMagnets, setLeadMagnets, () => setNewLeadMagnet(""))}
-                className="h-8 px-2.5 bg-foreground text-background hover:bg-foreground/90 text-xs shrink-0"
+                className="h-8 px-2.5 bg-white text-black hover:bg-white/90 text-xs shrink-0"
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -326,13 +335,13 @@ export function BrandOfferingsTab({
               {leadMagnets.map((lm) => (
                 <div
                   key={lm}
-                  className="flex items-center justify-between p-2 rounded-lg border border-border bg-surface text-xs text-foreground"
+                  className="flex items-center justify-between p-2 rounded-md border border-border/60 bg-obsidian/60 text-xs text-foreground"
                 >
-                  <span className="truncate pr-2">{lm}</span>
+                  <span className="truncate pr-2 font-mono text-[11px] text-bone/90">{lm}</span>
                   <button
                     type="button"
                     onClick={() => removeSimpleTag(lm, leadMagnets, setLeadMagnets)}
-                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    className="text-muted-foreground hover:text-rose-400 shrink-0 font-mono"
                   >
                     ×
                   </button>
@@ -343,28 +352,31 @@ export function BrandOfferingsTab({
         </Card>
 
         {/* CTA Templates */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+        <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block">
+              [ 03B · CTAS ]
+            </span>
+            <CardTitle className="text-sm font-display font-medium text-white">
               CTA Templates
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              High-converting closing calls to action for post footers.
+              High-converting closing calls to action.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             <div className="flex gap-1.5">
               <Input
                 value={newCta}
                 onChange={(e) => setNewCta(e.target.value)}
                 placeholder="e.g. DM 'BENCHMARK' for raw data"
-                className="bg-surface border-border text-xs h-8"
+                className="bg-obsidian border-border/80 text-xs h-8 focus:border-editions-mint/50"
               />
               <Button
                 type="button"
                 size="sm"
                 onClick={() => addSimpleTag(newCta, ctaTemplates, setCtaTemplates, () => setNewCta(""))}
-                className="h-8 px-2.5 bg-foreground text-background hover:bg-foreground/90 text-xs shrink-0"
+                className="h-8 px-2.5 bg-white text-black hover:bg-white/90 text-xs shrink-0"
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -373,13 +385,13 @@ export function BrandOfferingsTab({
               {ctaTemplates.map((cta) => (
                 <div
                   key={cta}
-                  className="flex items-center justify-between p-2 rounded-lg border border-border bg-surface text-xs text-foreground"
+                  className="flex items-center justify-between p-2 rounded-md border border-border/60 bg-obsidian/60 text-xs text-foreground"
                 >
-                  <span className="truncate pr-2">{cta}</span>
+                  <span className="truncate pr-2 font-mono text-[11px] text-bone/90">{cta}</span>
                   <button
                     type="button"
                     onClick={() => removeSimpleTag(cta, ctaTemplates, setCtaTemplates)}
-                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    className="text-muted-foreground hover:text-rose-400 shrink-0 font-mono"
                   >
                     ×
                   </button>
@@ -390,28 +402,31 @@ export function BrandOfferingsTab({
         </Card>
 
         {/* Offer Hooks */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+        <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block">
+              [ 03C · OFFERS ]
+            </span>
+            <CardTitle className="text-sm font-display font-medium text-white">
               Offer Hooks
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Irresistible trial, pilot, or consultation hooks.
+              Irresistible trial or pilot hooks.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             <div className="flex gap-1.5">
               <Input
                 value={newOffer}
                 onChange={(e) => setNewOffer(e.target.value)}
                 placeholder="e.g. Free 14-day production pilot"
-                className="bg-surface border-border text-xs h-8"
+                className="bg-obsidian border-border/80 text-xs h-8 focus:border-editions-mint/50"
               />
               <Button
                 type="button"
                 size="sm"
                 onClick={() => addSimpleTag(newOffer, offerHooks, setOfferHooks, () => setNewOffer(""))}
-                className="h-8 px-2.5 bg-foreground text-background hover:bg-foreground/90 text-xs shrink-0"
+                className="h-8 px-2.5 bg-white text-black hover:bg-white/90 text-xs shrink-0"
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -420,13 +435,13 @@ export function BrandOfferingsTab({
               {offerHooks.map((off) => (
                 <div
                   key={off}
-                  className="flex items-center justify-between p-2 rounded-lg border border-border bg-surface text-xs text-foreground"
+                  className="flex items-center justify-between p-2 rounded-md border border-border/60 bg-obsidian/60 text-xs text-foreground"
                 >
-                  <span className="truncate pr-2">{off}</span>
+                  <span className="truncate pr-2 font-mono text-[11px] text-bone/90">{off}</span>
                   <button
                     type="button"
                     onClick={() => removeSimpleTag(off, offerHooks, setOfferHooks)}
-                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    className="text-muted-foreground hover:text-rose-400 shrink-0 font-mono"
                   >
                     ×
                   </button>

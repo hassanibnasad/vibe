@@ -142,7 +142,7 @@ export function BrandIdentityVoiceTab({
       {/* 1. Core Profile & Visual Palette */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Basic Brand Info */}
-        <Card className="md:col-span-7 border-border bg-card">
+        <Card className="md:col-span-7 border-border/80 bg-card/90 shadow-subtle">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-foreground">
               Core Identity & Positioning
@@ -162,7 +162,7 @@ export function BrandIdentityVoiceTab({
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   placeholder="e.g. Acme Corp"
-                  className="bg-surface border-border text-sm h-9"
+                  className="bg-surface/60 border-border/80 text-sm h-9"
                 />
               </div>
               <div className="space-y-1.5">
@@ -175,7 +175,7 @@ export function BrandIdentityVoiceTab({
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
                     placeholder="https://acme.ai"
-                    className="bg-surface border-border text-sm h-9 pr-8"
+                    className="bg-surface/60 border-border/80 text-sm h-9 pr-8"
                   />
                   {websiteUrl && (
                     <a
@@ -201,7 +201,7 @@ export function BrandIdentityVoiceTab({
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 placeholder="e.g. Autonomous social marketing infrastructure for enterprise B2B teams"
-                className="bg-surface border-border text-sm h-9"
+                className="bg-surface/60 border-border/80 text-sm h-9"
               />
             </div>
 
@@ -215,14 +215,14 @@ export function BrandIdentityVoiceTab({
                 value={aestheticSummary}
                 onChange={(e) => setAestheticSummary(e.target.value)}
                 placeholder="Brief summary of your design aesthetic, product category, and positioning tone extracted from website."
-                className="bg-surface border-border text-xs resize-none"
+                className="bg-surface/60 border-border/80 text-xs resize-none"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Visual Palette */}
-        <Card className="md:col-span-5 border-border bg-card">
+        <Card className="md:col-span-5 border-border/80 bg-card/90 shadow-subtle">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-foreground">
@@ -236,7 +236,7 @@ export function BrandIdentityVoiceTab({
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Color Swatch Preview Strip */}
-            <div className="flex h-10 w-full rounded-lg overflow-hidden border border-border shadow-inner">
+            <div className="flex h-10 w-full rounded-lg overflow-hidden border border-border/80 shadow-inner">
               <div
                 className="flex-1 flex items-center justify-center text-[10px] font-mono font-medium text-white drop-shadow"
                 style={{ backgroundColor: palettePrimary }}
@@ -262,9 +262,9 @@ export function BrandIdentityVoiceTab({
 
             {/* Hex Inputs */}
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="rounded-lg border border-border bg-surface p-2 text-center">
+              <div className="rounded-lg border border-border/80 bg-surface/50 p-2 text-center">
                 <div
-                  className="w-full h-4 rounded mb-1.5 border border-border"
+                  className="w-full h-4 rounded mb-1.5 border border-border/60"
                   style={{ backgroundColor: palettePrimary }}
                 />
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider block font-mono">
@@ -278,9 +278,9 @@ export function BrandIdentityVoiceTab({
                 />
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-2 text-center">
+              <div className="rounded-lg border border-border/80 bg-surface/50 p-2 text-center">
                 <div
-                  className="w-full h-4 rounded mb-1.5 border border-border"
+                  className="w-full h-4 rounded mb-1.5 border border-border/60"
                   style={{ backgroundColor: paletteAccent }}
                 />
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider block font-mono">
@@ -294,9 +294,9 @@ export function BrandIdentityVoiceTab({
                 />
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-2 text-center">
+              <div className="rounded-lg border border-border/80 bg-surface/50 p-2 text-center">
                 <div
-                  className="w-full h-4 rounded mb-1.5 border border-border"
+                  className="w-full h-4 rounded mb-1.5 border border-border/60"
                   style={{ backgroundColor: paletteNeutral }}
                 />
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider block font-mono">
@@ -312,7 +312,7 @@ export function BrandIdentityVoiceTab({
             </div>
 
             {/* Visual Prompts Configuration */}
-            <div className="space-y-2 pt-2 border-t border-border">
+            <div className="space-y-2 pt-2 border-t border-border/60">
               <div className="space-y-1">
                 <Label htmlFor="imageryStyle" className="text-xs font-medium text-foreground">
                   FLUX Imagery Style Preset
@@ -322,7 +322,7 @@ export function BrandIdentityVoiceTab({
                   value={imageryStyle}
                   onChange={(e) => setImageryStyle(e.target.value)}
                   placeholder="e.g. editorial dark photography, grain texture, minimalist studio"
-                  className="bg-surface border-border text-xs h-8"
+                  className="bg-surface/60 border-border/80 text-xs h-8"
                 />
               </div>
               <div className="space-y-1">
@@ -334,7 +334,7 @@ export function BrandIdentityVoiceTab({
                   value={negativePrompts}
                   onChange={(e) => setNegativePrompts(e.target.value)}
                   placeholder="e.g. cartoon, blurry, low resolution, saturated neon"
-                  className="bg-surface border-border text-xs h-8"
+                  className="bg-surface/60 border-border/80 text-xs h-8"
                 />
               </div>
             </div>
@@ -343,7 +343,7 @@ export function BrandIdentityVoiceTab({
       </div>
 
       {/* 2. Voice Archetype Selection */}
-      <Card className="border-border bg-card">
+      <Card className="border-border/80 bg-card/90 shadow-subtle">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
@@ -354,7 +354,7 @@ export function BrandIdentityVoiceTab({
                 Select the primary persona and intellectual stance for your generated posts and replies.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="border-border bg-muted text-foreground font-mono text-xs">
+            <Badge variant="outline" className="border-border bg-surface text-foreground font-mono text-xs">
               Selected: {archetype}
             </Badge>
           </div>
@@ -369,10 +369,10 @@ export function BrandIdentityVoiceTab({
                   key={config.name}
                   type="button"
                   onClick={() => setArchetype(config.name)}
-                  className={`group flex flex-col items-start p-3.5 rounded-xl border text-left transition-colors relative ${
+                  className={`group flex flex-col items-start p-3.5 rounded-xl border text-left transition-all duration-150 relative ${
                     isSelected
-                      ? "border-primary bg-primary/5 shadow-subtle ring-1 ring-primary/30"
-                      : "border-border bg-card hover:border-border-strong hover:bg-accent/40"
+                      ? "border-primary bg-primary/[0.06] shadow-subtle ring-1 ring-primary/30"
+                      : "border-border/80 bg-card hover:border-border-strong hover:bg-surface"
                   }`}
                 >
                   <div className="flex items-center justify-between w-full mb-1.5">
@@ -380,17 +380,17 @@ export function BrandIdentityVoiceTab({
                       <div
                         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
                           isSelected
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "bg-muted text-muted-foreground group-hover:text-foreground"
+                            ? "bg-primary text-black font-semibold"
+                            : "bg-surface border border-border text-muted-foreground group-hover:text-foreground"
                         }`}
                       >
                         <Icon className="h-4 w-4" />
                       </div>
-                      <span className={`text-xs font-semibold ${isSelected ? "text-foreground font-bold" : "text-foreground"}`}>
+                      <span className="text-xs font-semibold text-foreground">
                         {config.name}
                       </span>
                     </div>
-                    <Badge variant="secondary" className="text-[9px] font-mono px-1.5 py-0 h-4 bg-muted border border-border text-muted-foreground">
+                    <Badge variant="secondary" className="text-[9px] font-mono px-1.5 py-0 h-4 bg-surface border border-border text-muted-foreground">
                       {config.badge}
                     </Badge>
                   </div>
@@ -403,7 +403,7 @@ export function BrandIdentityVoiceTab({
           </div>
 
           {/* Live Sample Sentence Preview */}
-          <div className="mt-4 rounded-lg border border-border bg-surface p-3.5 space-y-1.5">
+          <div className="mt-4 rounded-xl border border-border/80 bg-surface/50 p-4 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -411,7 +411,7 @@ export function BrandIdentityVoiceTab({
               </span>
               <span className="text-[10px] font-mono text-muted-foreground">Real-time simulation</span>
             </div>
-            <p className="text-xs font-serif italic text-foreground/90 leading-relaxed pl-3 border-l-2 border-primary/50">
+            <p className="text-xs italic text-foreground leading-relaxed pl-3 border-l-2 border-primary">
               {archetype === "Technical Expert"
                 ? "“We benchmarked 100k vector embeddings across pgvector and specialized vector databases. The surprising bottleneck wasn't memory bandwidth—it was index quantization latency.”"
                 : archetype === "Visionary Leader"
@@ -425,7 +425,7 @@ export function BrandIdentityVoiceTab({
                 : "“A teardown of why clean, keyboard-first UX wins: zero marketing fluff, instant responsive interactions, and state changes that never block the operator.”"}
             </p>
             {toneAttributes.length > 0 && (
-              <p className="text-[10px] text-muted-foreground pt-1">
+              <p className="text-[10px] text-muted-foreground pt-1 font-mono">
                 Tuned with traits: <span className="text-foreground font-medium">{toneAttributes.join(" · ")}</span>
               </p>
             )}
@@ -436,7 +436,7 @@ export function BrandIdentityVoiceTab({
       {/* 3. Tone Attributes & Formatting Engine */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Tone Traits */}
-        <Card className="md:col-span-6 border-border bg-card">
+        <Card className="md:col-span-6 border-border/80 bg-card/90 shadow-subtle">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-foreground">
               Tone Traits & Vocabulary Rules
@@ -463,14 +463,14 @@ export function BrandIdentityVoiceTab({
                     }
                   }}
                   placeholder="e.g. Sarcastic, Highly Technical, Conversational"
-                  className="bg-surface border-border text-xs h-9"
+                  className="bg-surface/60 border-border/80 text-xs h-9"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => addTone(newToneInput)}
-                  className="h-9 px-3 border-border hover:bg-accent text-xs"
+                  className="h-9 px-3 border-border hover:bg-surface text-xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
@@ -491,7 +491,7 @@ export function BrandIdentityVoiceTab({
                       type="button"
                       disabled={alreadyAdded}
                       onClick={() => addTone(tone)}
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${
+                      className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border transition-colors ${
                         alreadyAdded
                           ? "border-transparent text-muted-foreground/40 cursor-default"
                           : "border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground"
@@ -505,16 +505,16 @@ export function BrandIdentityVoiceTab({
             </div>
 
             {/* Active Tone Pills */}
-            <div className="border-t border-border pt-3 space-y-2">
-              <span className="text-[11px] font-medium text-foreground block">
-                Active Tone Traits ({toneAttributes.length})
+            <div className="border-t border-border/60 pt-3 space-y-2">
+              <span className="text-[11px] font-medium text-foreground block font-mono">
+                ACTIVE TONE TRAITS ({toneAttributes.length})
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {toneAttributes.map((attr) => (
                   <Badge
                     key={attr}
                     variant="secondary"
-                    className="gap-1.5 py-1 px-2.5 text-xs font-mono bg-muted border border-border text-foreground hover:bg-muted/80"
+                    className="gap-1.5 py-0.5 px-2.5 text-xs font-mono bg-surface border border-border text-foreground hover:bg-surface/80"
                   >
                     <span>{attr}</span>
                     <button
@@ -533,7 +533,7 @@ export function BrandIdentityVoiceTab({
         </Card>
 
         {/* Formatting Rules */}
-        <Card className="md:col-span-6 border-border bg-card">
+        <Card className="md:col-span-6 border-border/80 bg-card/90 shadow-subtle">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-foreground">
               Syntax, Structure & Formatting Engine
@@ -553,7 +553,7 @@ export function BrandIdentityVoiceTab({
                 value={formattingRules}
                 onChange={(e) => setFormattingRules(e.target.value)}
                 placeholder="- Hook must be under 120 characters&#10;- Use short 1-2 sentence paragraphs&#10;- Max 2 emojis per post&#10;- Never use hashtags&#10;- End with an engaging open-ended question"
-                className="bg-surface border-border text-xs resize-none font-mono leading-relaxed"
+                className="bg-surface/60 border-border/80 text-xs resize-none font-mono leading-relaxed"
               />
             </div>
             <p className="text-[11px] text-muted-foreground">

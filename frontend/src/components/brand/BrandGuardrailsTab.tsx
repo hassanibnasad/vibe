@@ -72,22 +72,27 @@ export function BrandGuardrailsTab({
       {/* 1. Banned Buzzwords & Competitor Blacklist */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Banned Words */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
+        <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <AlertOctagon className="h-4 w-4 text-rose-500" />
-                Banned Buzzwords & Phrases
-              </CardTitle>
-              <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-mono text-xs">
+              <div>
+                <span className="font-mono text-[10px] tracking-widest text-rose-400 uppercase block mb-1">
+                  [ 01 · BANNED JARGON ]
+                </span>
+                <CardTitle className="text-base font-display font-medium tracking-tight text-white flex items-center gap-2">
+                  <AlertOctagon className="h-4 w-4 text-rose-500" />
+                  Banned Buzzwords & Phrases
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                  Corporate jargon, AI hallmarks and cliches blocked from all posts.
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-400 font-mono text-xs">
                 {bannedWords.length} Banned
               </Badge>
             </div>
-            <CardDescription className="text-xs text-muted-foreground">
-              Corporate jargon, AI hallmarks and cliches blocked from all posts.
-            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="flex gap-2">
               <Input
                 value={newBanned}
@@ -99,14 +104,14 @@ export function BrandGuardrailsTab({
                   }
                 }}
                 placeholder="e.g. game-changer, delve into"
-                className="bg-surface border-border text-xs h-9"
+                className="bg-obsidian border-border/80 text-xs h-9 focus:border-rose-500/50"
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => addTag(newBanned, bannedWords, setBannedWords, () => setNewBanned(""))}
-                className="h-9 border-border px-3 text-xs"
+                className="h-9 border-border/80 px-3 text-xs bg-surface/50 hover:bg-surface text-bone"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -128,8 +133,8 @@ export function BrandGuardrailsTab({
                       onClick={() => addTag(w, bannedWords, setBannedWords, () => {})}
                       className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${
                         alreadyBanned
-                          ? "border-transparent text-muted-foreground/40 cursor-default"
-                          : "border-border bg-surface text-muted-foreground hover:border-rose-400/40 hover:text-rose-500"
+                          ? "border-transparent text-muted-foreground/30 cursor-default"
+                          : "border-border/80 bg-obsidian text-muted-foreground hover:border-rose-400/40 hover:text-rose-400"
                       }`}
                     >
                       + {w}
@@ -140,8 +145,8 @@ export function BrandGuardrailsTab({
             </div>
 
             {/* Active Banned Pills */}
-            <div className="border-t border-border pt-3 space-y-2">
-              <span className="text-[11px] font-medium text-foreground block">
+            <div className="border-t border-border/60 pt-3 space-y-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground block">
                 Active Banned Phrases ({bannedWords.length})
               </span>
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
@@ -149,13 +154,13 @@ export function BrandGuardrailsTab({
                   <Badge
                     key={word}
                     variant="outline"
-                    className="gap-1.5 py-0.5 px-2 text-xs font-mono border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400"
+                    className="gap-1.5 py-0.5 px-2 text-xs font-mono border-rose-500/30 bg-rose-500/10 text-rose-300"
                   >
                     <span>{word}</span>
                     <button
                       type="button"
                       onClick={() => removeTag(word, bannedWords, setBannedWords)}
-                      className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400"
+                      className="text-rose-400/70 hover:text-rose-300 font-mono"
                       title="Unban word"
                     >
                       ×
@@ -173,22 +178,27 @@ export function BrandGuardrailsTab({
         </Card>
 
         {/* Competitor Blacklist */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
+        <Card className="border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-amber-500" />
-                Competitor Name Blacklist
-              </CardTitle>
-              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-xs">
+              <div>
+                <span className="font-mono text-[10px] tracking-widest text-amber-400 uppercase block mb-1">
+                  [ 02 · BLACKLIST ]
+                </span>
+                <CardTitle className="text-base font-display font-medium tracking-tight text-white flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-amber-500" />
+                  Competitor Name Blacklist
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                  Direct competitors that should never be mentioned or tagged.
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-xs">
                 {competitorBlacklist.length} Blacklisted
               </Badge>
             </div>
-            <CardDescription className="text-xs text-muted-foreground">
-              Direct competitors that should never be mentioned, tagged or promoted.
-            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="flex gap-2">
               <Input
                 value={newCompetitor}
@@ -200,22 +210,22 @@ export function BrandGuardrailsTab({
                   }
                 }}
                 placeholder="e.g. RivalCorp, Competitor Inc"
-                className="bg-surface border-border text-xs h-9"
+                className="bg-obsidian border-border/80 text-xs h-9 focus:border-amber-500/50"
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => addTag(newCompetitor, competitorBlacklist, setCompetitorBlacklist, () => setNewCompetitor(""))}
-                className="h-9 border-border px-3 text-xs"
+                className="h-9 border-border/80 px-3 text-xs bg-surface/50 hover:bg-surface text-bone"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Active Competitor Pills */}
-            <div className="border-t border-border pt-3 space-y-2">
-              <span className="text-[11px] font-medium text-foreground block">
+            <div className="border-t border-border/60 pt-3 space-y-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground block">
                 Restricted Competitors ({competitorBlacklist.length})
               </span>
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
@@ -223,13 +233,13 @@ export function BrandGuardrailsTab({
                   <Badge
                     key={comp}
                     variant="outline"
-                    className="gap-1.5 py-0.5 px-2 text-xs font-mono border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-300"
+                    className="gap-1.5 py-0.5 px-2 text-xs font-mono border-amber-500/30 bg-amber-500/10 text-amber-300"
                   >
                     <span>{comp}</span>
                     <button
                       type="button"
                       onClick={() => removeTag(comp, competitorBlacklist, setCompetitorBlacklist)}
-                      className="text-muted-foreground hover:text-amber-700 dark:hover:text-amber-300"
+                      className="text-amber-400/70 hover:text-amber-300 font-mono"
                       title="Remove competitor"
                     >
                       ×
@@ -250,17 +260,20 @@ export function BrandGuardrailsTab({
       {/* 2. Sensitive Topics & Mandatory Disclaimers */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Sensitive Topics */}
-        <Card className="md:col-span-5 border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-foreground" />
-              Off-Limits & Sensitive Topics
+        <Card className="md:col-span-5 border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block">
+              [ 03 · RESTRICTED TOPICS ]
+            </span>
+            <CardTitle className="text-base font-display font-medium tracking-tight text-white flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-editions-mint" />
+              Off-Limits Topics
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Internal roadmaps, unannounced pricing, or controversial topics.
+              Internal roadmaps, pricing, or controversial topics.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="flex gap-2">
               <Input
                 value={newSensitive}
@@ -272,14 +285,14 @@ export function BrandGuardrailsTab({
                   }
                 }}
                 placeholder="e.g. Unreleased V2 pricing, M&A rumors"
-                className="bg-surface border-border text-xs h-9"
+                className="bg-obsidian border-border/80 text-xs h-9 focus:border-editions-mint/50"
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => addTag(newSensitive, sensitiveTopics, setSensitiveTopics, () => setNewSensitive(""))}
-                className="h-9 border-border px-3 text-xs"
+                className="h-9 border-border/80 px-3 text-xs bg-surface/50 hover:bg-surface text-bone"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -289,13 +302,13 @@ export function BrandGuardrailsTab({
               {sensitiveTopics.map((topic) => (
                 <div
                   key={topic}
-                  className="flex items-center justify-between p-2 rounded-lg border border-border bg-surface text-xs text-foreground"
+                  className="flex items-center justify-between p-2 rounded-md border border-border/60 bg-obsidian/60 text-xs text-foreground"
                 >
-                  <span className="truncate pr-2">{topic}</span>
+                  <span className="truncate pr-2 font-mono text-[11px] text-bone/90">{topic}</span>
                   <button
                     type="button"
                     onClick={() => removeTag(topic, sensitiveTopics, setSensitiveTopics)}
-                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    className="text-muted-foreground hover:text-rose-400 shrink-0 font-mono"
                   >
                     ×
                   </button>
@@ -311,17 +324,20 @@ export function BrandGuardrailsTab({
         </Card>
 
         {/* Mandatory Disclaimers */}
-        <Card className="md:col-span-7 border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <Card className="md:col-span-7 border-border/80 bg-card/90 backdrop-blur-sm">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <span className="font-mono text-[10px] tracking-widest text-editions-mint uppercase block">
+              [ 04 · COMPLIANCE ]
+            </span>
+            <CardTitle className="text-base font-display font-medium tracking-tight text-white flex items-center gap-2">
               <HelpCircle className="h-4 w-4 text-muted-foreground" />
               Mandatory Legal Disclaimers
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Statements automatically appended when discussing financial, medical, or security topics.
+              Statements automatically appended to regulated content.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="flex gap-2">
               <Input
                 value={newDisclaimer}
@@ -333,14 +349,14 @@ export function BrandGuardrailsTab({
                   }
                 }}
                 placeholder="e.g. Not financial advice. Past performance does not guarantee future results."
-                className="bg-surface border-border text-xs h-9"
+                className="bg-obsidian border-border/80 text-xs h-9 focus:border-editions-mint/50"
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => addTag(newDisclaimer, mandatoryDisclaimers, setMandatoryDisclaimers, () => setNewDisclaimer(""))}
-                className="h-9 border-border px-3 text-xs"
+                className="h-9 border-border/80 px-3 text-xs bg-surface/50 hover:bg-surface text-bone"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -350,7 +366,7 @@ export function BrandGuardrailsTab({
               {mandatoryDisclaimers.map((disc, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface text-xs text-foreground group"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-obsidian/60 text-xs text-foreground group"
                 >
                   <span className="pr-3 leading-relaxed font-mono text-[11px] text-muted-foreground">
                     &quot;{disc}&quot;
@@ -360,14 +376,14 @@ export function BrandGuardrailsTab({
                     variant="ghost"
                     size="sm"
                     onClick={() => removeTag(disc, mandatoryDisclaimers, setMandatoryDisclaimers)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500 opacity-60 group-hover:opacity-100"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-400 opacity-60 group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
               {mandatoryDisclaimers.length === 0 && (
-                <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
+                <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-lg bg-surface/20">
                   No mandatory disclaimers configured.
                 </div>
               )}

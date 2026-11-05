@@ -280,7 +280,7 @@ export default function BrandIdentityPage() {
             onClick={handleSaveProfile}
             disabled={saving || loading}
             size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8 font-medium gap-1.5 shadow-subtle rounded-md px-3.5 transition-colors"
+            className="bg-white text-black hover:bg-white/90 text-xs h-8 font-medium gap-1.5 shadow-subtle rounded-md px-3.5 transition-colors disabled:opacity-50"
           >
             {saving ? (
               <>
@@ -289,7 +289,7 @@ export default function BrandIdentityPage() {
               </>
             ) : saveSuccess ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-300" />
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
                 Saved
               </>
             ) : (
@@ -377,27 +377,27 @@ export default function BrandIdentityPage() {
       ) : (
         <FadeIn>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-surface border border-border p-1 h-auto flex flex-wrap gap-1 rounded-lg">
+            <TabsList className="bg-obsidian border border-border/80 p-1 h-auto flex flex-wrap gap-1 rounded-lg">
               <TabsTrigger
                 value="voice"
-                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="data-[state=active]:bg-card/90 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-border/80 text-xs font-mono uppercase tracking-wider px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-bone transition-colors"
               >
-                <MessageSquare className="h-3.5 w-3.5 text-foreground" />
-                Identity & Voice
+                <MessageSquare className="h-3.5 w-3.5 text-editions-mint" />
+                [ 01 · Identity & Voice ]
               </TabsTrigger>
               <TabsTrigger
                 value="icp"
-                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="data-[state=active]:bg-card/90 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-border/80 text-xs font-mono uppercase tracking-wider px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-bone transition-colors"
               >
-                <Target className="h-3.5 w-3.5 text-foreground" />
-                Value Props & ICP Hooks
+                <Target className="h-3.5 w-3.5 text-editions-mint" />
+                [ 02 · Value Props & ICP ]
               </TabsTrigger>
               <TabsTrigger
                 value="compliance"
-                className="data-[state=active]:bg-card data-[state=active]:text-foreground text-xs font-medium px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="data-[state=active]:bg-card/90 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-border/80 text-xs font-mono uppercase tracking-wider px-4 py-2 rounded-md gap-2 text-muted-foreground hover:text-bone transition-colors"
               >
-                <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
-                Guardrails & Rules
+                <ShieldCheck className="h-3.5 w-3.5 text-editions-mint" />
+                [ 03 · Guardrails ]
               </TabsTrigger>
             </TabsList>
 
@@ -465,17 +465,17 @@ export default function BrandIdentityPage() {
       )}
 
       {/* Sticky Save Bar when edits occur */}
-      <div className="fixed bottom-0 left-0 md:left-16 lg:left-64 right-0 z-30 border-t border-border bg-background/95 backdrop-blur px-6 py-3 flex items-center justify-between shadow-subtle">
+      <div className="fixed bottom-0 left-0 md:left-16 lg:left-64 right-0 z-30 border-t border-border/80 bg-obsidian/95 backdrop-blur-md px-6 py-3 flex items-center justify-between shadow-subtle">
         <div className="flex items-center gap-2 text-xs">
           {hasUnsavedChanges ? (
-            <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-medium">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-              You have unsaved brand changes
+            <span className="flex items-center gap-1.5 text-amber-400 font-mono text-[11px]">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+              UNSAVED BRAND SPECIFICATION CHANGES
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-              All brand rules in sync
+            <span className="flex items-center gap-1.5 text-muted-foreground font-mono text-[11px]">
+              <Check className="h-3.5 w-3.5 text-editions-mint" />
+              BRAND SPECIFICATIONS IN SYNC
             </span>
           )}
         </div>
@@ -489,7 +489,7 @@ export default function BrandIdentityPage() {
               onClick={() => {
                 if (profile) syncFormFromProfile(profile);
               }}
-              className="h-8 text-xs text-muted-foreground hover:text-foreground"
+              className="h-8 text-xs font-mono text-muted-foreground hover:text-white"
             >
               Reset
             </Button>
@@ -500,7 +500,7 @@ export default function BrandIdentityPage() {
             onClick={handleSaveProfile}
             disabled={saving || !hasUnsavedChanges}
             size="sm"
-            className="h-8 text-xs font-medium gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-subtle disabled:opacity-50"
+            className="h-8 text-xs font-medium gap-1.5 bg-white text-black hover:bg-white/90 transition-colors shadow-subtle disabled:opacity-50"
           >
             {saving ? (
               <>
@@ -509,7 +509,7 @@ export default function BrandIdentityPage() {
               </>
             ) : saveSuccess ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-300" />
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
                 <span>Saved</span>
               </>
             ) : (
