@@ -17,6 +17,7 @@ import {
   FileEdit,
   Activity,
   Layers,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +28,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   fetchConnectors,
   fetchBrandProfile,
+  generateMarketingImage,
   BrandProfile,
 } from "@/lib/api-client";
 import { BrandRulesSheet } from "@/components/studio/BrandRulesSheet";
@@ -59,6 +61,11 @@ export default function ContentStudioPage() {
 
   // Preview Mode: LinkedIn Feed vs. Remotion Motion Reel
   const [previewTab, setPreviewTab] = useState<"feed" | "remotion">("feed");
+
+  // FLUX Visuals state
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageAspectRatio, setImageAspectRatio] = useState<"1:1" | "16:9" | "9:16">("1:1");
 
   // Variant management
   const [variants, setVariants] = useState<string[]>([]);
@@ -109,6 +116,36 @@ export default function ContentStudioPage() {
         brand_profile: brandProfile,
       },
     });
+  };
+
+  const handleGenerateImage = async () => {
+    const prompt = brief.trim() || currentText.trim();
+    if (!prompt || isGeneratingImage) return;
+
+    setIsGeneratingImage(true);
+    try {
+      const results = await generateMarketingImage({
+        prompt,
+        aspect_ratio: imageAspectRatio,
+        brand_profile_id: brandProfile?.id,
+      });
+      if (results && results.length > 0) {
+        setImageUrl(results[0].url);
+        toast({
+          title: "Visual asset generated",
+          description: `Rendered with ${results[0].provider || "FLUX.1-schnell"} (${results[0].width}×${results[0].height}).`,
+          variant: "success",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Image generation notice",
+        description: err instanceof Error ? err.message : "Provider offline or timed out.",
+        variant: "error",
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -304,7 +341,7 @@ export default function ContentStudioPage() {
                     onClick={() => setTone(t.id)}
                     className={`px-3 py-2 rounded-lg border text-left text-xs transition-all duration-150 ${
                       tone === t.id
-                        ? "border-primary/50 bg-primary/10 text-foreground font-semibold shadow-xs"
+                        ? "border-editions-mint/50 bg-editions-mint/10 text-white font-semibold shadow-xs"
                         : "border-border/80 bg-surface/50 text-muted-foreground hover:text-foreground hover:bg-surface hover:border-border-strong"
                     }`}
                   >
@@ -312,6 +349,84 @@ export default function ContentStudioPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* FLUX Visual Generator */}
+            <div className="pt-3 border-t border-border/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-editions-mint" />
+                  <span>FLUX.1 Schnell Visuals</span>
+                </Label>
+                <span className="text-[10px] font-mono text-editions-mint">
+                  {imageUrl ? "Attached" : "Optional"}
+                </span>
+              </div>
+
+              {/* Aspect Ratio Switcher */}
+              <div className="grid grid-cols-3 gap-1.5">
+                {(["1:1", "16:9", "9:16"] as const).map((ratio) => (
+                  <button
+                    key={ratio}
+                    type="button"
+                    onClick={() => setImageAspectRatio(ratio)}
+                    className={`py-1 text-[11px] font-mono rounded border transition-colors ${
+                      imageAspectRatio === ratio
+                        ? "bg-white text-black font-semibold border-white"
+                        : "bg-surface/50 border-border/80 text-muted-foreground hover:text-white"
+                    }`}
+                  >
+                    {ratio}
+                  </button>
+                ))}
+              </div>
+
+              {/* Generate Image Button */}
+              <Button
+                type="button"
+                onClick={handleGenerateImage}
+                disabled={(!brief.trim() && !currentText.trim()) || isGeneratingImage}
+                variant="outline"
+                className="w-full h-8 text-xs font-medium gap-1.5 border-border/80 bg-surface/60 hover:bg-surface text-bone hover:text-white disabled:opacity-50"
+              >
+                {isGeneratingImage ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-editions-mint" />
+                    <span>Rendering with FLUX...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5 text-editions-mint" />
+                    <span>{imageUrl ? "Regenerate Visual" : "Generate FLUX Visual"}</span>
+                  </>
+                )}
+              </Button>
+
+              {/* Image Preview Thumbnail if attached */}
+              {imageUrl && (
+                <div className="flex items-center justify-between p-2 rounded-lg border border-border/80 bg-obsidian text-xs">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl}
+                      alt="Thumbnail"
+                      className="h-9 w-9 rounded object-cover border border-border/80 shrink-0"
+                    />
+                    <div className="truncate">
+                      <span className="text-[11px] font-mono text-white block">FLUX Asset Ready</span>
+                      <span className="text-[10px] font-mono text-muted-foreground">{imageAspectRatio} aspect</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(null)}
+                    className="text-[11px] font-mono text-muted-foreground hover:text-rose-400 px-1.5"
+                    title="Remove image"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Example Prompts */}
@@ -402,6 +517,7 @@ export default function ContentStudioPage() {
                 authorName={brandProfile?.brand_name || "VibeAgent Operator"}
                 authorHeadline={brandProfile?.tagline || "Founder & AI Systems Architect"}
                 brandName={brandProfile?.brand_name || "VibeAgent"}
+                imageUrl={imageUrl}
               />
 
               <GroundingChecks
@@ -431,6 +547,8 @@ export default function ContentStudioPage() {
                   setSelectedVariantIndex(idx);
                   setCompletion(variants[idx]);
                 }}
+                imageUrl={imageUrl}
+                onRemoveImage={() => setImageUrl(null)}
               />
 
               {/* RAG Knowledge Sources & Brand-rule checks */}

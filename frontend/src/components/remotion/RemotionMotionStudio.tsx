@@ -19,6 +19,7 @@ interface RemotionMotionStudioProps {
   authorName?: string;
   authorHeadline?: string;
   brandName?: string;
+  imageUrl?: string | null;
 }
 
 type AspectRatio = "1:1" | "9:16" | "16:9";
@@ -37,6 +38,7 @@ export function RemotionMotionStudio({
   authorName = "VibeAgent Operator",
   authorHeadline = "Founder & AI Systems Architect",
   brandName = "VibeAgent",
+  imageUrl = null,
 }: RemotionMotionStudioProps) {
   const { toast } = useToast();
   const [format, setFormat] = useState<AspectRatio>("1:1");
@@ -128,6 +130,7 @@ export function RemotionMotionStudio({
               authorName,
               authorHeadline,
               brandName,
+              imageUrl,
             }}
             durationInFrames={180}
             compositionWidth={currentConfig.width}

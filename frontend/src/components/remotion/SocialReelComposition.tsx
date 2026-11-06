@@ -3,6 +3,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   interpolate,
   spring,
   useCurrentFrame,
@@ -14,6 +15,7 @@ export interface SocialReelProps extends Record<string, unknown> {
   authorName?: string;
   authorHeadline?: string;
   brandName?: string;
+  imageUrl?: string | null;
 }
 
 export const SocialReelComposition: React.FC<SocialReelProps> = ({
@@ -21,6 +23,7 @@ export const SocialReelComposition: React.FC<SocialReelProps> = ({
   authorName = "VibeAgent Operator",
   authorHeadline = "Founder & AI Systems Architect",
   brandName = "VibeAgent",
+  imageUrl = null,
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -66,6 +69,31 @@ export const SocialReelComposition: React.FC<SocialReelProps> = ({
         boxSizing: "border-box",
       }}
     >
+      {/* ── Optional Background Visual Layer (FLUX.1-schnell) ── */}
+      {imageUrl && (
+        <AbsoluteFill style={{ overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+          <Img
+            src={imageUrl}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: `scale(${interpolate(frame, [0, 180], [1, 1.08], {
+                extrapolateRight: "clamp",
+              })})`,
+              opacity: 0.24,
+              filter: "blur(2px)",
+            }}
+          />
+          <AbsoluteFill
+            style={{
+              background:
+                "radial-gradient(circle at 50% 30%, rgba(9, 9, 11, 0.3) 0%, #09090B 90%)",
+            }}
+          />
+        </AbsoluteFill>
+      )}
+
       {/* ── Top Header Bar ── */}
       <div
         style={{
@@ -75,6 +103,8 @@ export const SocialReelComposition: React.FC<SocialReelProps> = ({
           opacity: headerOpacity,
           borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
           paddingBottom: "24px",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -168,6 +198,8 @@ export const SocialReelComposition: React.FC<SocialReelProps> = ({
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         <div
@@ -266,6 +298,8 @@ export const SocialReelComposition: React.FC<SocialReelProps> = ({
           opacity: headerOpacity,
           borderTop: "1px solid rgba(255, 255, 255, 0.1)",
           paddingTop: "20px",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>

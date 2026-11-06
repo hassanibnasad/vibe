@@ -729,3 +729,57 @@ export async function updateBrandProfile(data: BrandProfileUpdateRequest): Promi
   });
 }
 
+// ──────────────── Visual & Image Generation (FLUX.1-schnell) ────────────────
+
+export interface ImageResult {
+  url: string;
+  prompt: string;
+  width: number;
+  height: number;
+  provider: string;
+  local_path?: string | null;
+}
+
+export interface ImageGenerateRequest {
+  prompt: string;
+  width?: number;
+  height?: number;
+  aspect_ratio?: "1:1" | "16:9" | "9:16" | "4:5" | "3:2";
+  style_preset?: string;
+  brand_profile_id?: string;
+  n?: number;
+}
+
+export async function generateMarketingImage(data: ImageGenerateRequest): Promise<ImageResult[]> {
+  const url = `${API_BASE}/images/generate`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const errorBody = await res.json();
+        detail = errorBody.detail || JSON.stringify(errorBody);
+      } catch {
+        detail = await res.text().catch(() => "");
+      }
+      throw new ApiError(res.status, res.statusText, detail);
+    }
+    return (await res.json()) as ImageResult[];
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ApiError) throw err;
+    throw new Error(`Failed to generate marketing image: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+

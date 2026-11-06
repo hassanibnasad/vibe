@@ -23,6 +23,8 @@ interface LinkedInPreviewProps {
   variants?: string[];
   selectedVariantIndex?: number;
   onSelectVariant?: (index: number) => void;
+  imageUrl?: string | null;
+  onRemoveImage?: () => void;
 }
 
 export function LinkedInPreview({
@@ -34,6 +36,8 @@ export function LinkedInPreview({
   variants = [],
   selectedVariantIndex = 0,
   onSelectVariant,
+  imageUrl,
+  onRemoveImage,
 }: LinkedInPreviewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -146,7 +150,32 @@ export function LinkedInPreview({
           <div className="text-xs text-foreground/95 leading-relaxed whitespace-pre-wrap font-normal select-text">
             {content}
             {isStreaming && (
-              <span className="inline-block w-1.5 h-3.5 ml-1 bg-primary animate-pulse align-middle" />
+              <span className="inline-block w-1.5 h-3.5 ml-1 bg-editions-mint animate-pulse align-middle" />
+            )}
+          </div>
+        )}
+
+        {/* Generated Image Attachment (FLUX.1-schnell) */}
+        {imageUrl && (
+          <div className="relative rounded-xl overflow-hidden border border-border/80 bg-obsidian group shadow-subtle">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt="FLUX generated social visual"
+              className="w-full h-auto max-h-[420px] object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+            />
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-[10px] font-mono text-editions-mint border border-editions-mint/30">
+              FLUX.1 · 1024×1024
+            </div>
+            {onRemoveImage && (
+              <button
+                type="button"
+                onClick={onRemoveImage}
+                className="absolute top-2 right-2 h-6 w-6 rounded-full bg-black/75 backdrop-blur-md text-bone hover:text-rose-400 flex items-center justify-center transition-colors text-xs opacity-0 group-hover:opacity-100 font-mono"
+                title="Remove visual attachment"
+              >
+                ✕
+              </button>
             )}
           </div>
         )}
