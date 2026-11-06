@@ -60,7 +60,7 @@ function DraftRow({ draft, isSelected, onClick }: DraftRowProps) {
   const conf = draft.confidence_score;
   const confColor =
     conf == null ? "text-muted-foreground"
-    : conf >= 0.85 ? "text-emerald-400"
+    : conf >= 0.85 ? "text-editions-mint"
     : conf >= 0.70 ? "text-amber-400"
     : "text-rose-400";
 
@@ -70,24 +70,24 @@ function DraftRow({ draft, isSelected, onClick }: DraftRowProps) {
       className={[
         "w-full text-left rounded-xl border p-4 transition-all",
         isSelected
-          ? "border-foreground/40 bg-accent font-medium shadow-subtle"
-          : "border-border bg-surface hover:border-border-strong hover:bg-accent/40",
+          ? "border-editions-mint/50 bg-editions-mint/5 font-medium shadow-subtle"
+          : "border-border/80 bg-card/80 hover:border-border hover:bg-surface/50",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <LinkedInIcon className="h-3.5 w-3.5 shrink-0 text-[#0A66C2]" />
-          <span className="text-xs font-medium text-foreground truncate">
-            {draft.platform} · Draft
+          <span className="text-xs font-mono font-medium text-white truncate">
+            {draft.platform.toUpperCase()} · DRAFT
           </span>
         </div>
         {conf != null && (
           <span className={`text-[10px] font-mono shrink-0 ${confColor}`}>
-            {Math.round(conf * 100)}% conf
+            {Math.round(conf * 100)}% CONF
           </span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+      <p className="text-xs text-bone/80 line-clamp-2 leading-relaxed">
         {draft.content}
       </p>
       {draft.hashtags.length > 0 && (
@@ -313,21 +313,21 @@ export function PostDraftQueue() {
           </div>
 
           {/* Draft content panel */}
-          <div className="rounded-xl border border-white/[0.07] bg-white/[0.015] overflow-hidden">
+          <div className="rounded-xl border border-border/80 bg-card/90 backdrop-blur-sm overflow-hidden shadow-subtle">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/80 bg-surface/30">
               <div className="flex items-center gap-2">
                 <LinkedInIcon className="h-4 w-4 text-[#0A66C2]" />
-                <span className="text-sm font-medium text-foreground">LinkedIn Draft</span>
+                <span className="text-sm font-display font-medium text-white tracking-tight">LinkedIn Dispatch Draft</span>
                 {current.ai_generated && (
-                  <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border">
+                  <span className="text-[10px] font-mono text-editions-mint bg-editions-mint/10 px-2 py-0.5 rounded-full border border-editions-mint/20">
                     AI-generated
                   </span>
                 )}
               </div>
               {current.confidence_score != null && (
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  {Math.round(current.confidence_score * 100)}% confidence
+                <span className="text-[10px] font-mono text-editions-mint">
+                  {Math.round(current.confidence_score * 100)}% CONFIDENCE
                 </span>
               )}
             </div>
@@ -336,25 +336,25 @@ export function PostDraftQueue() {
             <div className="p-5 space-y-4">
               {mode === "edit" ? (
                 <div className="space-y-3">
-                  <Label className="text-xs text-muted-foreground">Edit content</Label>
+                  <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Edit content</Label>
                   <Textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[180px] text-sm bg-surface border-border rounded-lg focus:border-ring resize-none"
+                    className="min-h-[180px] text-xs bg-obsidian border-border/80 rounded-lg focus:border-editions-mint/50 resize-none font-sans"
                     autoFocus
                   />
                   <div className="text-[10px] font-mono text-muted-foreground text-right">
                     {editContent.length} chars
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setMode("view")}>
+                    <Button variant="ghost" size="sm" onClick={() => setMode("view")} className="text-xs font-mono">
                       Cancel
                     </Button>
                     <Button
                       size="sm"
                       onClick={handleSaveEdit}
                       disabled={!editContent.trim() || processing}
-                      className="gap-2"
+                      className="gap-2 bg-white text-black hover:bg-white/90 text-xs font-medium"
                     >
                       <Check className="h-3.5 w-3.5" />
                       Save and approve
@@ -362,7 +362,7 @@ export function PostDraftQueue() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-bone/90 leading-relaxed whitespace-pre-wrap font-sans">
                   {current.content}
                 </p>
               )}
@@ -373,7 +373,7 @@ export function PostDraftQueue() {
                   {current.hashtags.map((tag) => (
                     <span
                       key={tag}
-                      className="text-[10px] font-mono text-foreground bg-muted border border-border px-2 py-0.5 rounded-full"
+                      className="text-[10px] font-mono text-muted-foreground bg-obsidian border border-border/60 px-2 py-0.5 rounded"
                     >
                       #{tag}
                     </span>
@@ -383,16 +383,16 @@ export function PostDraftQueue() {
 
               {/* CTA */}
               {mode !== "edit" && current.cta && (
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-                  <p className="text-[10px] font-mono text-muted-foreground mb-1">CTA</p>
-                  <p className="text-xs text-foreground/80">{current.cta}</p>
+                <div className="rounded-lg border border-border/60 bg-surface/30 px-4 py-3">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Call to Action</p>
+                  <p className="text-xs text-bone/90 font-mono">{current.cta}</p>
                 </div>
               )}
             </div>
 
             {/* Actions footer */}
             {mode === "view" && (
-              <div className="px-5 py-4 border-t border-white/[0.07] space-y-3">
+              <div className="px-5 py-4 border-t border-border/80 bg-surface/20 space-y-3">
                 {/* Primary actions */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -400,7 +400,7 @@ export function PostDraftQueue() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setMode("reject")}
-                      className="gap-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs"
+                      className="gap-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs font-mono"
                     >
                       <X className="h-3.5 w-3.5" />
                       Reject
@@ -409,7 +409,7 @@ export function PostDraftQueue() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setMode("revision")}
-                      className="gap-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 text-xs"
+                      className="gap-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 text-xs font-mono"
                     >
                       <MessageSquare className="h-3.5 w-3.5" />
                       Request revision
@@ -418,7 +418,7 @@ export function PostDraftQueue() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setMode("edit")}
-                      className="gap-1.5 text-muted-foreground hover:text-white text-xs"
+                      className="gap-1.5 text-muted-foreground hover:text-white text-xs font-mono"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                       Edit
@@ -428,10 +428,10 @@ export function PostDraftQueue() {
                     size="sm"
                     onClick={handleApprove}
                     disabled={processing}
-                    className="gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs"
+                    className="gap-2 bg-editions-mint hover:bg-editions-mint/90 text-black font-medium text-xs shadow-subtle"
                   >
                     <Check className="h-3.5 w-3.5" />
-                    Approve
+                    Approve draft
                   </Button>
                 </div>
               </div>

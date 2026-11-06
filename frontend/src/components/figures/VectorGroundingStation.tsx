@@ -41,39 +41,39 @@ function poly(...points: [number, number][]): string {
 //  Colour palette (matches globals.css tokens)
 // ─────────────────────────────────────────────
 
-// Dark mode values (primary appearance — Smoky Charcoal + Terracotta)
+// Dark mode values (Shopify Editions palette — Obsidian, Carbon, Bone & Electric Mint)
 const C = {
   // Surfaces
-  canvas:         "#0D0A08",
-  card:           "#1A1512",
-  surfaceRaised:  "#221D19",
-  surfaceElevated:"#2C2622",
+  canvas:         "#09090b",
+  card:           "#111113",
+  surfaceRaised:  "#18181b",
+  surfaceElevated:"#27272a",
 
   // Lines & strokes
-  edgeHi:   "#F0E8DC",  // warm parchment white — bright edges
-  edgeMid:  "#7A6A5A",  // medium warm gray
-  edgeLo:   "#3D3328",  // dark warm shadow
-  edgeFaint:"#2A2218",  // barely visible crease
+  edgeHi:   "#fafaf9",  // bone white — bright hairline edges
+  edgeMid:  "#52525b",  // medium graphite
+  edgeLo:   "#27272a",  // dark hairline shadow
+  edgeFaint:"#1c1c1f",  // subtle crease
 
   // Top / face / shading fills
-  faceTop:  "#1F1A16",   // top planes — slightly lighter than card
-  faceFront:"#171210",   // front planes
-  faceSide: "#131008",   // side planes in shadow
+  faceTop:  "#18181b",   // top planes
+  faceFront:"#111113",   // front planes
+  faceSide: "#09090b",   // side planes in shadow
 
-  // Terracotta accent
-  terra:    "#E07830",   // primary terracotta
-  terraLo:  "#8C3E10",   // deep terracotta shadow
-  terraMid: "#B55C22",   // mid terracotta
+  // Editions Mint accent (replaces terracotta)
+  terra:    "#00e599",   // primary electric mint
+  terraLo:  "#006644",   // deep mint shadow
+  terraMid: "#00b377",   // mid mint
 
   // Semantic colours
-  green:    "#3DAA7A",
-  blue:     "#5A7FCC",
-  amber:    "#C88A28",
+  green:    "#00e599",
+  blue:     "#38bdf8",
+  amber:    "#f59e0b",
 
   // Text
-  textPrimary:   "#F5EDE0",
-  textSecondary: "#9A8A7A",
-  textMono:      "#7A6A5A",
+  textPrimary:   "#fafaf9",
+  textSecondary: "#a1a1aa",
+  textMono:      "#71717a",
 } as const;
 
 // ─────────────────────────────────────────────
@@ -404,25 +404,25 @@ export function VectorGroundingStation({ className }: { className?: string }) {
                 {/* Back cap — mostly hidden but edge shows */}
                 <polygon points={backFace} fill={C.faceSide} stroke={C.edgeFaint} strokeWidth={0.4} />
 
-                {/* Terracotta refraction beam in */}
-                <line x1={beamIn[0]} y1={beamIn[1]} x2={beamApex[0]} y2={beamApex[1]}
-                  stroke={C.terra} strokeWidth={1.5} strokeLinecap="round"
-                  style={{ filter: "url(#vgs-glow)" }}
-                />
+          {/* Mint refraction beam in */}
+          <line x1={beamIn[0]} y1={beamIn[1]} x2={beamApex[0]} y2={beamApex[1]}
+            stroke={C.terra} strokeWidth={1.5} strokeLinecap="round"
+            style={{ filter: "url(#vgs-glow)" }}
+          />
 
-                {/* Dispersed beams fanning out from apex to embedding grid */}
-                {[-20, -10, 0, 10, 20].map((rx, i) => {
-                  const target = iso(rx + 62, i * 6 - 10, 14 + i * 4, PX, PY);
-                  const colours = [C.blue, C.green, C.terra, C.amber, C.edgeHi];
-                  return (
-                    <line key={i}
-                      x1={beamApex[0]} y1={beamApex[1]}
-                      x2={target[0]} y2={target[1]}
-                      stroke={colours[i]} strokeWidth={0.8} strokeLinecap="round"
-                      opacity={0.7}
-                    />
-                  );
-                })}
+          {/* Dispersed beams fanning out from apex to embedding grid */}
+          {[-20, -10, 0, 10, 20].map((rx, i) => {
+            const target = iso(rx + 62, i * 6 - 10, 14 + i * 4, PX, PY);
+            const colours = [C.blue, C.green, C.terra, C.amber, C.edgeHi];
+            return (
+              <line key={i}
+                x1={beamApex[0]} y1={beamApex[1]}
+                x2={target[0]} y2={target[1]}
+                stroke={colours[i]} strokeWidth={0.8} strokeLinecap="round"
+                opacity={0.7}
+              />
+            );
+          })}
 
                 {/* Prism label */}
                 {(() => {
