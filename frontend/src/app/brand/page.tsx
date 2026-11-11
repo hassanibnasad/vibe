@@ -123,10 +123,10 @@ export default function BrandIdentityPage() {
     setIcpPainPoints(
       Array.isArray(data.icp_pain_points)
         ? data.icp_pain_points.map((p) => ({
-            feature: p.feature || "",
-            pain_hook: p.pain_hook || "",
-            target_persona: p.target_persona || "General",
-          }))
+          feature: p.feature || "",
+          pain_hook: p.pain_hook || "",
+          target_persona: p.target_persona || "General",
+        }))
         : []
     );
     setHasUnsavedChanges(false);
