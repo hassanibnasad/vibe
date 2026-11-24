@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     analytics,
+    audit_logs,
     campaigns,
     connectors,
     conversations,
@@ -27,3 +28,4 @@ api_v1_router.include_router(analytics.router)
 api_v1_router.include_router(knowledge.router)
 api_v1_router.include_router(onboarding.router)
 api_v1_router.include_router(connectors.router)
+api_v1_router.include_router(audit_logs.router)

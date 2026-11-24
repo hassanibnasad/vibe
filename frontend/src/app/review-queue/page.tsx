@@ -32,6 +32,7 @@ import { FadeIn, AnimatePresence } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { PostDraftQueue } from "@/components/calendar/PostDraftQueue";
 import { fetchPostDraftQueue } from "@/lib/calendar-api";
+import { AuditLogDrawer } from "@/components/review/AuditLogDrawer";
 
 export default function ReviewQueuePage() {
   const { toast } = useToast();
@@ -43,6 +44,7 @@ export default function ReviewQueuePage() {
   const [viewMode, setViewMode] = useState<"preview" | "diff">("preview");
   const [activeQueueTab, setActiveQueueTab] = useState<"replies" | "posts">("replies");
   const [postDraftsCount, setPostDraftsCount] = useState(0);
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
   const [resolvedCount, setResolvedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -373,6 +375,16 @@ export default function ReviewQueuePage() {
                 {resolvedCount} resolved
               </Badge>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAuditDrawerOpen(true)}
+              className="h-8 gap-1.5 text-xs font-mono border-border hover:bg-surface-raised"
+              title="View operator compliance audit log and export CSV/JSON"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              <span>Audit Log</span>
+            </Button>
           </div>
         }
       />
@@ -773,6 +785,9 @@ export default function ReviewQueuePage() {
           )}
         </div>
       )}
+
+      {/* Operator Audit & Compliance Log Drawer */}
+      <AuditLogDrawer open={auditDrawerOpen} onOpenChange={setAuditDrawerOpen} />
     </div>
   );
 }

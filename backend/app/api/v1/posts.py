@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_content_service
+from app.api.deps import get_audit_service, get_content_service
 from app.dependencies import DEFAULT_TENANT_ID, get_db_session
 from app.middleware.auth import get_current_user
 from app.repositories.social_connection_repo import SocialConnectionRepository
@@ -15,6 +15,7 @@ from app.schemas.post import (
     PostResponse,
     PostUpdateRequest,
 )
+from app.services.audit_service import AuditService
 from app.services.content_service import ContentService
 from app.workflows.content_workflow import ContentPipelineInput, content_pipeline_task
 from app.workflows.scheduled_publish import PublishSinglePostInput, publish_single_post_task
@@ -81,10 +82,22 @@ async def generate_post_variants(
 async def approve_post(
     post_id: UUID,
     content_service: ContentService = Depends(get_content_service),
+    audit_service: AuditService = Depends(get_audit_service),
     current_user: dict = Depends(get_current_user),
 ) -> PostResponse:
     """Approve a draft post for publishing/scheduling."""
     post = await content_service.approve_post(post_id)
+    operator_id = UUID(current_user["id"]) if "id" in current_user else DEFAULT_TENANT_ID
+    await audit_service.record_action(
+        tenant_id=DEFAULT_TENANT_ID,
+        operator_id=operator_id,
+        operator_email=current_user.get("email"),
+        action="approve",
+        entity_type="post",
+        entity_id=post_id,
+        summary=f"Approved marketing post draft (length: {len(post.content)} chars)",
+        details={"status": post.status, "scheduled_at": str(post.scheduled_at) if post.scheduled_at else None},
+    )
     return PostResponse.model_validate(post)
 
 

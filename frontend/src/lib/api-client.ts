@@ -783,3 +783,48 @@ export async function generateMarketingImage(data: ImageGenerateRequest): Promis
   }
 }
 
+export interface AuditLogEntry {
+  id: string;
+  tenant_id: string;
+  operator_id: string;
+  operator_email?: string | null;
+  action: "approve" | "reject" | "edit" | "refine" | "publish" | "export" | string;
+  entity_type: "post" | "message" | "draft" | "lead" | string;
+  entity_id: string;
+  summary: string;
+  details?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AuditLogListResponse {
+  data: AuditLogEntry[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
+export async function fetchAuditLogs(params?: {
+  action?: string;
+  entity_type?: string;
+  page?: number;
+  limit?: number;
+}): Promise<AuditLogListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.action) searchParams.set("action", params.action);
+  if (params?.entity_type) searchParams.set("entity_type", params.entity_type);
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  const qs = searchParams.toString();
+  return request<AuditLogListResponse>(`/audit-logs${qs ? `?${qs}` : ""}`);
+}
+
+export function getAuditLogExportUrl(format: "csv" | "json", action?: string, entity_type?: string): string {
+  const searchParams = new URLSearchParams({ format });
+  if (action) searchParams.set("action", action);
+  if (entity_type) searchParams.set("entity_type", entity_type);
+  return `${API_BASE}/audit-logs/export?${searchParams.toString()}`;
+}
+
+

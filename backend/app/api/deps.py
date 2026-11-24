@@ -115,4 +115,20 @@ async def get_performance_repo(
     return PerformanceRepository(session)
 
 
+async def get_audit_log_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> "AuditLogRepository":
+    from app.repositories.audit_log_repo import AuditLogRepository
+    return AuditLogRepository(session)
+
+
+async def get_audit_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> "AuditService":
+    from app.repositories.audit_log_repo import AuditLogRepository
+    from app.services.audit_service import AuditService
+    return AuditService(AuditLogRepository(session))
+
+
+
 

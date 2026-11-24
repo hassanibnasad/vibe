@@ -1,3 +1,4 @@
+from app.models.audit_log import AuditLog
 from app.models.base import Base, BaseModel, TimestampMixin
 from app.models.brand_profile import BrandProfile
 from app.models.campaign import Campaign
@@ -27,6 +28,7 @@ from app.models.social_connection import SocialConnection
 from app.models.webhook_event import WebhookEvent
 
 __all__ = [
+    "AuditLog",
     "Base",
     "BaseModel",
     "TimestampMixin",

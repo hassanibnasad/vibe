@@ -2,7 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import get_engagement_service
+from app.api.deps import get_audit_service, get_engagement_service
+from app.dependencies import DEFAULT_TENANT_ID
 from app.hatchet_client import is_hatchet_configured
 from app.middleware.auth import get_current_user
 from app.schemas.conversation import (
@@ -13,6 +14,7 @@ from app.schemas.conversation import (
     ReviewActionResponse,
     ReviewItemResponse,
 )
+from app.services.audit_service import AuditService
 from app.services.engagement_service import EngagementService
 from app.workflows.engagement_workflow import (
     DispatchApprovedReplyInput,
@@ -68,6 +70,7 @@ async def approve_reply(
     message_id: UUID,
     data: ReviewActionRequest | None = None,
     engagement_service: EngagementService = Depends(get_engagement_service),
+    audit_service: AuditService = Depends(get_audit_service),
     current_user: dict = Depends(get_current_user),
 ) -> ReviewActionResponse:
     if data and (data.reply or data.alternative_reply):
@@ -86,6 +89,18 @@ async def approve_reply(
         # Direct execution fallback mode
         await engagement_service.approve_reply(message_id, dispatch_now=True)
 
+    operator_id = UUID(current_user["id"]) if "id" in current_user else DEFAULT_TENANT_ID
+    await audit_service.record_action(
+        tenant_id=DEFAULT_TENANT_ID,
+        operator_id=operator_id,
+        operator_email=current_user.get("email"),
+        action="approve",
+        entity_type="message",
+        entity_id=message_id,
+        summary="Approved review queue inbound reply",
+        details={"edited": bool(data and (data.reply or data.alternative_reply))},
+    )
+
     return ReviewActionResponse(status="approved", message_id=str(message_id))
 
 
@@ -98,6 +113,7 @@ async def reject_reply(
     message_id: UUID,
     data: ReviewActionRequest | None = None,
     engagement_service: EngagementService = Depends(get_engagement_service),
+    audit_service: AuditService = Depends(get_audit_service),
     current_user: dict = Depends(get_current_user),
 ) -> ReviewActionResponse:
     alt = data.alternative_reply or data.reply if data else None
@@ -105,6 +121,19 @@ async def reject_reply(
         message_id=message_id,
         alternative_reply=alt,
     )
+
+    operator_id = UUID(current_user["id"]) if "id" in current_user else DEFAULT_TENANT_ID
+    await audit_service.record_action(
+        tenant_id=DEFAULT_TENANT_ID,
+        operator_id=operator_id,
+        operator_email=current_user.get("email"),
+        action="reject",
+        entity_type="message",
+        entity_id=message_id,
+        summary="Rejected review queue inbound reply",
+        details={},
+    )
+
     return ReviewActionResponse(
         status=updated.review_status or "rejected",
         message_id=str(message_id),
