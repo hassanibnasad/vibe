@@ -874,5 +874,23 @@ export async function executePlaybookStep(
   );
 }
 
+export interface ChunkCitation {
+  doc_id: string;
+  doc_title: string;
+  chunk_index: number;
+  similarity_score: number;
+  snippet: string;
+  doc_type: string;
+  source_file?: string | null;
+}
+
+export async function inspectKnowledgeCitations(query: string, limit = 4): Promise<ChunkCitation[]> {
+  return request<ChunkCitation[]>("/knowledge/citations/inspect", {
+    method: "POST",
+    body: JSON.stringify({ query, limit, similarity_threshold: 0.2 }),
+  });
+}
+
+
 
 

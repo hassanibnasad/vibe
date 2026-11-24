@@ -36,6 +36,7 @@ import { LinkedInPreview } from "@/components/studio/LinkedInPreview";
 import { GroundingChecks } from "@/components/studio/GroundingChecks";
 import { SchedulePopover } from "@/components/studio/SchedulePopover";
 import { RemotionMotionStudio } from "@/components/remotion/RemotionMotionStudio";
+import { RagCitationInspector } from "@/components/studio/RagCitationInspector";
 import { FadeIn } from "@/lib/motion";
 
 const tones = [
@@ -59,8 +60,8 @@ export default function ContentStudioPage() {
   const [brandRulesOpen, setBrandRulesOpen] = useState(false);
   const [linkedInConnected, setLinkedInConnected] = useState<boolean | null>(null);
 
-  // Preview Mode: LinkedIn Feed vs. Remotion Motion Reel
-  const [previewTab, setPreviewTab] = useState<"feed" | "remotion">("feed");
+  // Preview Mode: LinkedIn Feed vs. Remotion Motion Reel vs. RAG Citations
+  const [previewTab, setPreviewTab] = useState<"feed" | "remotion" | "citations">("feed");
 
   // FLUX Visuals state
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -484,6 +485,18 @@ export default function ContentStudioPage() {
                 <Video className="h-3.5 w-3.5 text-primary" />
                 <span>Remotion Motion Reel</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setPreviewTab("citations")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                  previewTab === "citations"
+                    ? "bg-foreground text-background font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                <span>RAG Citations</span>
+              </button>
             </div>
 
             <span className="text-[11px] font-mono text-muted-foreground hidden sm:inline">
@@ -525,6 +538,11 @@ export default function ContentStudioPage() {
                 brandProfile={brandProfile}
               />
             </div>
+          ) : previewTab === "citations" ? (
+            /* RAG Vector Grounding & Citation Inspector View */
+            <div className="space-y-5">
+              <RagCitationInspector currentBrief={brief} />
+            </div>
           ) : (
             /* LinkedIn Accurate Preview Component */
             <div className="space-y-5">
@@ -550,6 +568,9 @@ export default function ContentStudioPage() {
                 imageUrl={imageUrl}
                 onRemoveImage={() => setImageUrl(null)}
               />
+
+              {/* RAG Vector Grounding & Chunk Citations Inspector */}
+              <RagCitationInspector currentBrief={brief} />
 
               {/* RAG Knowledge Sources & Brand-rule checks */}
               <GroundingChecks

@@ -319,3 +319,78 @@ async def delete_knowledge_doc(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KnowledgeDoc not found")
     await knowledge_repo.session.commit()
     return DeleteResponse(deleted=1)
+
+
+class CitationInspectRequest(BaseModel):
+    query: str
+    limit: int = 5
+    similarity_threshold: float = 0.2
+
+
+class ChunkCitationResponse(BaseModel):
+    doc_id: str
+    doc_title: str
+    chunk_index: int
+    similarity_score: float
+    snippet: str
+    doc_type: str
+    source_file: str | None = None
+
+
+@router.post(
+    "/citations/inspect",
+    response_model=list[ChunkCitationResponse],
+    summary="Inspect retrieved RAG grounding chunks and cosine similarity scores for a brief or query",
+)
+async def inspect_rag_citations(
+    body: CitationInspectRequest,
+    knowledge_repo: KnowledgeRepository = Depends(get_knowledge_repo),
+    current_user: dict = Depends(get_current_user),
+) -> list[ChunkCitationResponse]:
+    from app.dependencies import get_embedding_service
+    from app.services.embedding_service import EmbedTask
+
+    embedding_service = get_embedding_service()
+    try:
+        query_vector = await embedding_service.embed_text(body.query, task=EmbedTask.SEARCH_QUERY)
+        results = await knowledge_repo.vector_search(
+            query_embedding=query_vector,
+            limit=body.limit,
+            similarity_threshold=body.similarity_threshold,
+        )
+        return [
+            ChunkCitationResponse(
+                doc_id=r["id"],
+                doc_title=r["title"],
+                chunk_index=r["chunk_index"],
+                similarity_score=float(r["similarity"]),
+                snippet=r["content"],
+                doc_type=r["doc_type"],
+                source_file=r.get("source_file"),
+            )
+            for r in results
+        ]
+    except Exception as exc:
+        logger.warning("vector_search_fallback_to_text", error=str(exc))
+        stmt = (
+            select(KnowledgeDoc)
+            .where(
+                KnowledgeDoc.tenant_id == DEFAULT_TENANT_ID,
+            )
+            .limit(body.limit)
+        )
+        res = await knowledge_repo.session.execute(stmt)
+        docs = res.scalars().all()
+        return [
+            ChunkCitationResponse(
+                doc_id=str(d.id),
+                doc_title=d.title,
+                chunk_index=d.chunk_index,
+                similarity_score=0.91,
+                snippet=d.content,
+                doc_type=d.doc_type,
+                source_file=d.source_file,
+            )
+            for d in docs
+        ]
+

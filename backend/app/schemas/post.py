@@ -60,6 +60,7 @@ class PostResponse(BaseModel):
     confidence_score: float | None = None
     requires_review: bool = False
     rag_sources: list[str] = []
+    citations: list[dict] = []
     created_at: datetime
 
 
