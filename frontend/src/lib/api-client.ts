@@ -827,4 +827,52 @@ export function getAuditLogExportUrl(format: "csv" | "json", action?: string, en
   return `${API_BASE}/audit-logs/export?${searchParams.toString()}`;
 }
 
+export interface PlaybookStep {
+  id: string;
+  step_number: number;
+  title: string;
+  channel: "linkedin_dm" | "email" | "calendar_invite" | string;
+  status: "pending" | "executed" | "skipped" | string;
+  recommended_delay_days: number;
+  ai_draft_message: string;
+  executed_at?: string | null;
+}
+
+export interface NurturePlaybook {
+  id: string;
+  title: string;
+  description: string;
+  target_stage: "sql" | "mql" | "hot" | string;
+  steps: PlaybookStep[];
+}
+
+export interface PlaybookExecutionResponse {
+  playbook_id: string;
+  step_id: string;
+  status: string;
+  channel: string;
+  dispatched_at: string;
+  delivered_message: string;
+}
+
+export async function fetchLeadPlaybooks(leadId: string): Promise<NurturePlaybook[]> {
+  return request<NurturePlaybook[]>(`/leads/${leadId}/playbooks`);
+}
+
+export async function executePlaybookStep(
+  leadId: string,
+  playbookId: string,
+  stepId: string,
+  customMessage?: string
+): Promise<PlaybookExecutionResponse> {
+  return request<PlaybookExecutionResponse>(
+    `/leads/${leadId}/playbooks/${playbookId}/steps/${stepId}/execute`,
+    {
+      method: "POST",
+      body: JSON.stringify(customMessage ? { custom_message: customMessage } : {}),
+    }
+  );
+}
+
+
 

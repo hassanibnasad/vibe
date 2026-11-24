@@ -2,7 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_lead_service
+from app.api.deps import get_lead_service, get_playbook_service
+from app.dependencies import DEFAULT_TENANT_ID
 from app.middleware.auth import get_current_user
 from app.schemas.lead import (
     LeadListResponse,
@@ -12,7 +13,13 @@ from app.schemas.lead import (
     LeadUpdateRequest,
     PipelineResponse,
 )
+from app.schemas.playbook import (
+    NurturePlaybook,
+    PlaybookExecutionRequest,
+    PlaybookExecutionResponse,
+)
 from app.services.lead_service import LeadService
+from app.services.playbook_service import PlaybookService
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
 
@@ -104,3 +111,41 @@ async def update_lead_score(
         event_type="manual_adjustment",
     )
     return LeadResponse.model_validate(lead)
+
+
+@router.get("/{lead_id}/playbooks", response_model=list[NurturePlaybook])
+async def get_lead_playbooks(
+    lead_id: UUID,
+    lead_service: LeadService = Depends(get_lead_service),
+    playbook_service: PlaybookService = Depends(get_playbook_service),
+    current_user: dict = Depends(get_current_user),
+) -> list[NurturePlaybook]:
+    """Retrieve BANT-driven nurture playbooks tailored with lead context & AI draft messages."""
+    lead = await lead_service.get_lead(lead_id)
+    return playbook_service.generate_playbooks_for_lead(lead)
+
+
+@router.post(
+    "/{lead_id}/playbooks/{playbook_id}/steps/{step_id}/execute",
+    response_model=PlaybookExecutionResponse,
+)
+async def execute_lead_playbook_step(
+    lead_id: UUID,
+    playbook_id: str,
+    step_id: str,
+    data: PlaybookExecutionRequest | None = None,
+    playbook_service: PlaybookService = Depends(get_playbook_service),
+    current_user: dict = Depends(get_current_user),
+) -> PlaybookExecutionResponse:
+    """Execute a step in the lead nurture cadence with tamper-evident audit recording."""
+    operator_id = UUID(current_user["id"]) if "id" in current_user else DEFAULT_TENANT_ID
+    return await playbook_service.execute_step(
+        lead_id=lead_id,
+        tenant_id=DEFAULT_TENANT_ID,
+        playbook_id=playbook_id,
+        step_id=step_id,
+        custom_message=data.custom_message if data else None,
+        operator_id=operator_id,
+        operator_email=current_user.get("email"),
+    )
+

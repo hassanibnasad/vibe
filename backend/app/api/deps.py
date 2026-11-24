@@ -130,5 +130,19 @@ async def get_audit_service(
     return AuditService(AuditLogRepository(session))
 
 
+async def get_playbook_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> "PlaybookService":
+    from app.repositories.audit_log_repo import AuditLogRepository
+    from app.repositories.lead_repo import LeadRepository
+    from app.services.audit_service import AuditService
+    from app.services.playbook_service import PlaybookService
+    return PlaybookService(
+        lead_repo=LeadRepository(session),
+        audit_service=AuditService(AuditLogRepository(session)),
+    )
+
+
+
 
 

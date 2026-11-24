@@ -25,6 +25,7 @@ import { Lead, fetchLeads } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/utils";
 import { FadeIn } from "@/lib/motion";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LeadPlaybookRunner } from "@/components/leads/LeadPlaybookRunner";
 
 const stages = [
   { id: "all", label: "All Leads" },
@@ -381,7 +382,7 @@ export default function LeadsPipelinePage() {
 
       {/* Lead Detail Drawer with Clean Editions Styling */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md bg-card/95 backdrop-blur-2xl p-0 flex flex-col border-l border-border/80 shadow-elevated">
+        <SheetContent side="right" className="w-full sm:max-w-lg md:max-w-xl bg-card/95 backdrop-blur-2xl p-0 flex flex-col border-l border-border/80 shadow-elevated">
           {selectedLead && (
             <>
               <SheetHeader className="p-6 pb-5 border-b border-border/70 bg-surface/40">
@@ -530,6 +531,9 @@ export default function LeadsPipelinePage() {
                     </div>
                   </div>
                 )}
+
+                {/* BANT Nurture Playbook Runner */}
+                <LeadPlaybookRunner lead={selectedLead} />
               </div>
 
               {/* Actions */}
